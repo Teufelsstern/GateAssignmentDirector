@@ -47,8 +47,8 @@ def setup_config_tab(parent_ui, tab):
 
     _label(frame=scroll_frame, text="Interval Settings", size=16, pady=(10, 0), padx=(5,0))
     interval_fields = [
-        ("ground_check_interval", "Delay (ms) between ground checks. Never lower than 500"),
-        ("aircraft_request_interval", "Delay (ms) between aircraft requests. Never lower than 500"),
+        ("ground_check_interval", "Delay (s) between ground checks. Never lower than 0.5"),
+        ("aircraft_request_interval", "Delay (s) between aircraft requests. Never lower than 0.5"),
     ]
 
     for field, label in interval_fields:

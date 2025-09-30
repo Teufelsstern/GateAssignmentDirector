@@ -24,13 +24,13 @@ class SimConnectManager:
         try:
             self.connection = SimConnect()
             self.aircraft_requests = AircraftRequests(
-                self.connection, _time=self.config.aircraft_request_interval
+                self.connection, _time=int(self.config.aircraft_request_interval * 1000)
             )
             try:
                 self.ground_check_request = Request(
                     (AircraftVariable.ON_GROUND.value, b"Bool"),
                     self.connection,
-                    _time=self.config.ground_check_interval,
+                    _time=int(self.config.ground_check_interval * 1000),
                 )
             except Exception as e:
                 logger.error(f"Failed to create ground check request with enum: {e}")
