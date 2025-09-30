@@ -126,21 +126,21 @@ class GateManagementWindow:
         # Gate number row
         gate_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
         gate_row.pack(fill="x", padx=10, pady=2)
-        _label(gate_row, text="Gate:", size=10, padx=(0, 5)).pack(side="left")
+        _label(gate_row, text="Gate:", size=10, padx=(0, 5), side="left")
         self.gate_entry = ctk.CTkEntry(gate_row, placeholder_text="71", width=80)
         self.gate_entry.pack(side="left", fill="x", expand=True)
 
         # From terminal row
         from_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
         from_row.pack(fill="x", padx=10, pady=2)
-        _label(from_row, text="From:", size=10, padx=(0, 5)).pack(side="left")
+        _label(from_row, text="From:", size=10, padx=(0, 5), side="left")
         self.from_terminal_entry = ctk.CTkEntry(from_row, placeholder_text="7", width=80)
         self.from_terminal_entry.pack(side="left", fill="x", expand=True)
 
         # To terminal row
         to_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
         to_row.pack(fill="x", padx=10, pady=2)
-        _label(to_row, text="To:", size=10, padx=(0, 5)).pack(side="left")
+        _label(to_row, text="To:", size=10, padx=(0, 5), side="left")
         self.to_terminal_entry = ctk.CTkEntry(to_row, placeholder_text="8", width=80)
         self.to_terminal_entry.pack(side="left", fill="x", expand=True)
 
@@ -164,14 +164,14 @@ class GateManagementWindow:
         # Gate number row
         rename_gate_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
         rename_gate_row.pack(fill="x", padx=10, pady=2)
-        _label(rename_gate_row, text="Gate:", size=10, padx=(0, 5)).pack(side="left")
+        _label(rename_gate_row, text="Gate:", size=10, padx=(0, 5), side="left")
         self.rename_gate_entry = ctk.CTkEntry(rename_gate_row, placeholder_text="71", width=80)
         self.rename_gate_entry.pack(side="left", fill="x", expand=True)
 
         # Terminal row
         rename_terminal_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
         rename_terminal_row.pack(fill="x", padx=10, pady=2)
-        _label(rename_terminal_row, text="Terminal:", size=10, padx=(0, 5)).pack(side="left")
+        _label(rename_terminal_row, text="Terminal:", size=10, padx=(0, 5), side="left")
         self.rename_terminal_entry = ctk.CTkEntry(rename_terminal_row, placeholder_text="3", width=80)
         self.rename_terminal_entry.pack(side="left", fill="x", expand=True)
 
