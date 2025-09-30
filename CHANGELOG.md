@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.6] - 2024-09-30
+
+### Added
+- Complete type hints for all director.py methods and parameters
+- Type annotations for instance variables (`monitor`, `monitor_thread`, `current_airport`)
+
+### Fixed
+- Bug in `__main__` block accessing `GsxConfig.flight_json_path` as class attribute instead of instance attribute
+- Parameter spacing inconsistency in `assign_gate_when_ready()` call (`terminal =` and `terminal_number =`)
+- Changed `except queue.Empty: continue` to `except queue.Empty: pass` for clarity
+
+### Changed
+- Removed duplicate `logging.basicConfig` call from `__init__` (already configured in config module)
+- Added typing imports (`Dict`, `Any`, `Optional`)
+
+### Improved
+- Type safety with proper type hints throughout
+- Code consistency with proper parameter spacing
+
 ## [0.7.5] - 2024-09-30
 
 ### Added

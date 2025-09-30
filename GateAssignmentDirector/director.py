@@ -2,6 +2,7 @@
 import threading
 import queue
 import logging
+from typing import Dict, Any, Optional
 
 from GateAssignmentDirector.si_api_hook import JSONMonitor
 from GateAssignmentDirector.gsx_hook import GsxHook
@@ -10,21 +11,16 @@ from GateAssignmentDirector.config import GsxConfig
 logger = logging.getLogger(__name__)
 
 class GateAssignmentDirector:
-    def __init__(self):
+    def __init__(self) -> None:
         self.gate_queue = queue.Queue()
         self.config = GsxConfig()
         self.gsx = None
-        self.monitor = None
-        self.monitor_thread = None
+        self.monitor: Optional[JSONMonitor] = None
+        self.monitor_thread: Optional[threading.Thread] = None
         self.running = False
-        self.current_airport = None
-        logging.basicConfig(
-            level=self.config.logging_level,
-            format=self.config.logging_format,
-            datefmt=self.config.logging_datefmt,
-        )
+        self.current_airport: Optional[str] = None
 
-    def start_monitoring(self, json_file_path: str):
+    def start_monitoring(self, json_file_path: str) -> None:
         """Start the JSON monitor in a separate thread"""
         self.monitor = JSONMonitor(
             json_file_path,
@@ -37,7 +33,7 @@ class GateAssignmentDirector:
         self.monitor_thread.start()
         logger.info("Monitoring started")
 
-    def _queue_gate_assignment(self, gate_info):
+    def _queue_gate_assignment(self, gate_info: Dict[str, Any]) -> None:
         """Callback when gate is detected"""
         # Store current airport
         if 'airport' in gate_info:
@@ -45,7 +41,7 @@ class GateAssignmentDirector:
         self.gate_queue.put(gate_info)
         logger.info(f"Gate detected: {gate_info}")
 
-    def process_gate_assignments(self):
+    def process_gate_assignments(self) -> None:
         """Main loop to process gate assignments"""
         logger.info("Director ready - waiting for gate assignments")
 
@@ -66,8 +62,8 @@ class GateAssignmentDirector:
                     airport=gate_info.get('airport', 'EDDS'),
                     gate_letter=gate_info.get('gate_letter', ""),
                     gate_number=gate_info.get('gate_number', ""),
-                    terminal = gate_info.get('terminal', ""),
-                    terminal_number = gate_info.get('terminal_number', ""),
+                    terminal=gate_info.get('terminal', ""),
+                    terminal_number=gate_info.get('terminal_number', ""),
                     airline=gate_info.get('airline', 'GSX'),
                     wait_for_ground=True,
                 )
@@ -75,12 +71,12 @@ class GateAssignmentDirector:
                 logger.info(f"Gate assignment {'completed' if success else 'failed'}")
 
             except queue.Empty:
-                continue
+                pass
             except KeyboardInterrupt:
                 self.stop()
                 break
 
-    def stop(self):
+    def stop(self) -> None:
         """Clean shutdown"""
         logger.info("Stopping director")
         self.running = False
@@ -90,7 +86,7 @@ class GateAssignmentDirector:
 if __name__ == "__main__":
     director = GateAssignmentDirector()
     try:
-        director.start_monitoring(GsxConfig.flight_json_path)
+        director.start_monitoring(director.config.flight_json_path)
         director.process_gate_assignments()
     except KeyboardInterrupt:
         director.stop()
