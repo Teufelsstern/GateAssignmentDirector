@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4] - 2024-09-30
+
+### Added
+- Complete return type hints for all simconnect_manager.py methods
+- Unit test suite for simconnect_manager.py with 9 comprehensive test cases
+- Defensive try-except in connect() for ground check request with helpful error message
+- `bool()` cast and exception handling in is_on_ground() for safe None/invalid value handling
+
+### Fixed
+- Broad exception handling in simconnect_manager.py now catches specific exceptions `(OSError, ConnectionError, RuntimeError)` instead of generic `Exception`
+- AttributeError/TypeError handling in is_on_ground() to safely return False on invalid values
+
+### Changed
+- Updated simconnect_manager.py to use `AircraftVariable.ON_GROUND.value` from enums instead of hardcoded byte string
+- Removed `ground_timeout` parameter from gate_assignment.assign_gate()
+- Changed `_wait_for_ground()` to poll indefinitely without timeout (infinite loop until touchdown)
+- Removed `ground_timeout_default` field from GsxConfig dataclass and all related methods
+- Removed `--ground-timeout` argument from CLI parser
+- Updated all ground waiting tests to reflect indefinite polling behavior
+- Removed `test_assign_gate_timeout_waiting_for_ground()` test (no longer applicable)
+
+### Improved
+- Error handling specificity in simconnect_manager.py with targeted exception types
+- Ground polling reliability - script now continuously monitors and recovers after landing
+- Type safety in SimConnect variable access
+
 ## [0.7.3] - 2024-09-30
 
 ### Added

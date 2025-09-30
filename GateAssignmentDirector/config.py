@@ -17,7 +17,6 @@ class GsxConfig:
     sleep_long: float = None
     ground_check_interval: int = None
     aircraft_request_interval: int = None
-    ground_timeout_default: int = None
     max_menu_check_attempts: int = None
     logging_level: str = 'DEBUG'
     logging_format: str = '%(asctime)s - %(levelname)s - %(message)s'
@@ -50,7 +49,6 @@ class GsxConfig:
             'sleep_long': 0.3,
             'ground_check_interval': 1000,
             'aircraft_request_interval': 2000,
-            'ground_timeout_default': 300,
             'max_menu_check_attempts': 4,
             'logging_level': 'DEBUG',
             'logging_format': '%(asctime)s - %(levelname)s - %(message)s',
@@ -88,7 +86,6 @@ class GsxConfig:
             'sleep_long': self.sleep_long,
             'ground_check_interval': self.ground_check_interval,
             'aircraft_request_interval': self.aircraft_request_interval,
-            'ground_timeout_default': self.ground_timeout_default,
             'max_menu_check_attempts': self.max_menu_check_attempts,
             'logging_level': self.logging_level,
             'logging_format': self.logging_format,

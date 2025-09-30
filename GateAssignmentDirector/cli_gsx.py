@@ -37,12 +37,6 @@ def main():
         help="Don't wait for aircraft to be on ground",
     )
     parser.add_argument(
-        "--ground-timeout",
-        type=int,
-        default=300,
-        help="Timeout in seconds when waiting for ground (default: 300)",
-    )
-    parser.add_argument(
         "--no-menu-logging", action="store_true", help="Disable menu state logging"
     )
     parser.add_argument(
@@ -77,7 +71,6 @@ def main():
             gate_number=args.gate_number,
             airline=args.airline,
             wait_for_ground=not args.no_wait_ground,
-            ground_timeout=args.ground_timeout,
         )
 
         gsx.close()

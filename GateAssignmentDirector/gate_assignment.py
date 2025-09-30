@@ -110,7 +110,6 @@ class GateAssignment:
         gate_number: str = "",
         airline: str = "GSX",
         wait_for_ground: bool = True,
-        ground_timeout: int = None,
     ) -> bool:
         """
         Complete gate assignment workflow with logging
@@ -123,13 +122,10 @@ class GateAssignment:
             gate_number: Gate number (e.g., 102)
             airline: Airline code (e.g., "United_2000")
             wait_for_ground: Wait for aircraft on ground
-            ground_timeout: Timeout in seconds
 
         Returns:
             bool: Success status
         """
-        ground_timeout = ground_timeout or self.config.ground_timeout_default
-
         airport_data = self.map_available_spots(airport)
         matching_gsx_gate, direct_match = self.find_gate(airport_data, terminal + terminal_number, gate_number + gate_letter)
         if direct_match is False:
@@ -141,10 +137,7 @@ class GateAssignment:
                 logger.info("Requested matching gate, assuming it has been set for now.")
         try:
             if wait_for_ground:
-                if not self._wait_for_ground(ground_timeout):
-                    if self.menu_logger:
-                        self.menu_logger.save_session()
-                    return False
+                self._wait_for_ground()
             elif not self.sim_manager.is_on_ground():
                 logger.warning("Aircraft not on ground - GSX may fail")
 
@@ -163,20 +156,16 @@ class GateAssignment:
             logger.error(f"Gate assignment failed: {e}")
             return False
 
-    def _wait_for_ground(self, timeout: int) -> bool:
-        """Wait for aircraft to be on ground"""
+    def _wait_for_ground(self) -> None:
+        """Wait indefinitely for aircraft to be on ground"""
         logger.info("Waiting for aircraft on ground...")
-        start_time = time.time()
 
-        while time.time() - start_time < timeout:
+        while True:
             on_ground = self.sim_manager.is_on_ground()
             if on_ground:
                 logger.info("Aircraft on ground - proceeding")
-                return True
+                return
             time.sleep(1)
-
-        logger.warning(f"Timeout after {timeout}s waiting for ground")
-        return False
 
     def _open_menu(self) -> None:
         """Open GSX menu"""

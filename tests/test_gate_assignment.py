@@ -12,7 +12,6 @@ class TestGateAssignment(unittest.TestCase):
         self.mock_config.logging_level = "INFO"
         self.mock_config.logging_format = "%(message)s"
         self.mock_config.logging_datefmt = "%Y-%m-%d"
-        self.mock_config.ground_timeout_default = 60
         self.mock_config.SI_API_KEY = "test_key"
 
         self.mock_menu_logger = Mock()
@@ -32,27 +31,28 @@ class TestGateAssignment(unittest.TestCase):
         """Test waiting for aircraft on ground succeeds"""
         self.mock_sim_manager.is_on_ground.return_value = True
 
-        result = self.gate_assignment._wait_for_ground(timeout=5)
+        self.gate_assignment._wait_for_ground()
 
-        self.assertTrue(result)
         self.mock_sim_manager.is_on_ground.assert_called()
 
-    def test_wait_for_ground_timeout(self):
-        """Test waiting for aircraft on ground times out"""
-        self.mock_sim_manager.is_on_ground.return_value = False
+    def test_wait_for_ground_infinite_loop(self):
+        """Test waiting for aircraft handles infinite waiting"""
+        # Simulate a few False checks before landing
+        self.mock_sim_manager.is_on_ground.side_effect = [False, False, False, True]
 
-        result = self.gate_assignment._wait_for_ground(timeout=1)
+        self.gate_assignment._wait_for_ground()
 
-        self.assertFalse(result)
+        # Should have called multiple times
+        self.assertGreater(self.mock_sim_manager.is_on_ground.call_count, 3)
 
     def test_wait_for_ground_eventually_lands(self):
         """Test aircraft lands during wait period"""
         # First 2 calls return False, 3rd returns True
         self.mock_sim_manager.is_on_ground.side_effect = [False, False, True]
 
-        result = self.gate_assignment._wait_for_ground(timeout=5)
+        self.gate_assignment._wait_for_ground()
 
-        self.assertTrue(result)
+        self.assertEqual(self.mock_sim_manager.is_on_ground.call_count, 3)
 
     def test_find_gate_exact_match(self):
         """Test finding gate with exact terminal and gate match"""
@@ -195,30 +195,6 @@ class TestGateAssignment(unittest.TestCase):
         # Should have waited for ground
         self.assertGreater(self.mock_sim_manager.is_on_ground.call_count, 1)
 
-    @patch('os.path.exists')
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('json.load')
-    def test_assign_gate_timeout_waiting_for_ground(self, mock_json_load, mock_file, mock_exists):
-        """Test gate assignment fails if ground timeout"""
-        mock_exists.side_effect = lambda path: "_interpreted.json" in path
-        mock_json_load.return_value = {
-            "terminals": {
-                "1": {"5": {"position_id": "Gate 1-5", "gate": "5"}}
-            }
-        }
-
-        # Never on ground
-        self.mock_sim_manager.is_on_ground.return_value = False
-        self.mock_config.ground_timeout_default = 1
-
-        result = self.gate_assignment.assign_gate(
-            airport="KLAX",
-            gate_number="5",
-            wait_for_ground=True,
-            ground_timeout=1
-        )
-
-        self.assertFalse(result)
 
     def test_open_menu(self):
         """Test opening GSX menu sets correct variables"""

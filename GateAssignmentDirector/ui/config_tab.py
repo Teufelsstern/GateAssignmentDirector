@@ -55,7 +55,6 @@ def setup_config_tab(parent_ui, tab):
     interval_fields = [
         ("ground_check_interval", "Ground Check Interval (ms)"),
         ("aircraft_request_interval", "Aircraft Request Interval (ms)"),
-        ("ground_timeout_default", "Ground Timeout Default (s)"),
     ]
 
     for field, label in interval_fields:
