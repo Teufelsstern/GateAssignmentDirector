@@ -43,6 +43,8 @@ class DirectorUI:
         self.stop_btn = None
         self.assign_gate_btn = None
         self.activity_text = None
+        self.values_word_label = None
+        self.values_words = []
 
         # Setup main window
         ctk.set_appearance_mode("dark")
@@ -76,11 +78,93 @@ class DirectorUI:
         setup_logs_tab(self, self.tabview.tab("Logs"))
         setup_config_tab(self, self.tabview.tab("Config"))
 
+        # Values statement at bottom with rotating word
+        self._setup_values_statement()
+
         # Redirect logging to text widget
         self._setup_logging()
 
         # Start periodic UI updates
         self._update_ui_state()
+
+    def _setup_values_statement(self):
+        """Create values statement at bottom with rotating word"""
+        import random
+
+        values_frame = ctk.CTkFrame(self.root, fg_color="transparent")
+        values_frame.pack(side="bottom", fill="x", pady=(0, 10))
+
+        # Container to center the text
+        center_frame = ctk.CTkFrame(values_frame, fg_color="transparent")
+        center_frame.pack(anchor="center")
+
+        rainbow_colors = [
+            "#d96b6b",  # soft red
+            "#d9a96b",  # soft orange
+            "#c9d96b",  # soft yellow
+            "#8bd96b",  # soft green
+            "#6ba9d9",  # soft blue
+            "#9b6bd9",  # soft purple
+        ]
+
+        # Static text
+        words = ["This", "software", "stands"]
+        for i, word in enumerate(words):
+            color = rainbow_colors[i % len(rainbow_colors)]
+            label = ctk.CTkLabel(
+                center_frame,
+                text=word,
+                font=("Arial", 11),
+                text_color=color
+            )
+            label.pack(side="left", padx=2)
+
+        # Bold "against"
+        against_label = ctk.CTkLabel(
+            center_frame,
+            text="against",
+            font=("Arial", 11, "bold"),
+            text_color=rainbow_colors[3]
+        )
+        against_label.pack(side="left", padx=2)
+
+        # Rotating word label
+        self.values_word_label = ctk.CTkLabel(
+            center_frame,
+            text="",
+            font=("Arial", 11),
+            text_color=rainbow_colors[4]  # soft blue
+        )
+        self.values_word_label.pack(side="left", padx=2)
+
+        # List of terms to rotate
+        self.values_words = [
+            "fascism.",
+            "racism.",
+            "discrimination.",
+            "transphobia.",
+            "homophobia.",
+            "ableism.",
+            "sexism.",
+            "xenophobia.",
+            "antisemitism.",
+            "islamophobia.",
+            "bigotry.",
+            "hate."
+        ]
+
+        # Start rotation
+        self._update_values_word()
+
+    def _update_values_word(self):
+        """Update the rotating word in values statement"""
+        import random
+
+        if self.values_word_label:
+            word = random.choice(self.values_words)
+            self.values_word_label.configure(text=word)
+            # Update every 3 seconds
+            self.root.after(3000, self._update_values_word)
 
     def _create_tray_icon(self):
         """Create a simple icon for system tray"""
