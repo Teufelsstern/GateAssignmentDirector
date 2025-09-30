@@ -10,6 +10,7 @@ from GateAssignmentDirector.menu_navigator import MenuNavigator
 from GateAssignmentDirector.gate_assignment import GateAssignment
 from GateAssignmentDirector.menu_logger import MenuLogger
 from GateAssignmentDirector.gsx_enums import GsxVariable
+from GateAssignmentDirector.exceptions import GsxConnectionError, GsxFileNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +20,12 @@ class GsxHook:
 
     def __init__(
         self, config: Optional[GsxConfig] = None, enable_menu_logging: bool = True
-    ):
+    ) -> None:
         """Initialize GSX Hook with optional configuration and menu logging"""
         self.config = config or GsxConfig()
         self.is_initialized = None
         self.enable_menu_logging = enable_menu_logging
 
-        # Initialize components
         self.sim_manager = SimConnectManager(self.config.from_yaml())
         self.menu_reader = None
         self.menu_logger = None
@@ -33,15 +33,11 @@ class GsxHook:
         self.gate_assignment = None
 
         logging.basicConfig(
-            level=config.logging_level,
-            format=config.logging_format,
-            datefmt=config.logging_datefmt,
+            level=self.config.logging_level,
+            format=self.config.logging_format,
+            datefmt=self.config.logging_datefmt,
         )
 
-        # Setup logging
-        self._setup_logging()
-
-        # Connect to SimConnect
         try:
             self.sim_manager.connect()
 
@@ -49,12 +45,10 @@ class GsxHook:
             self.menu_reader = MenuReader(
                 self.config.from_yaml(), self.menu_logger, self.menu_navigator, self.sim_manager
             )
-            # Initialize navigator with menu logger
             self.menu_navigator = MenuNavigator(
                 self.config.from_yaml(), self.menu_logger, self.menu_reader, self.sim_manager
             )
 
-            # Initialize gate assignment
             self.gate_assignment = GateAssignment(
                 self.config.from_yaml(),
                 self.menu_logger,
@@ -66,20 +60,22 @@ class GsxHook:
             self.is_initialized = True
             logger.info("GSX Hook initialized successfully")
 
-        except Exception as e:
+        except (GsxConnectionError, GsxFileNotFoundError, OSError, IOError) as e:
             logger.error(f"Failed to initialize GSX Hook: {e}")
             self.is_initialized = False
+            self._cleanup_partial_init()
 
-    def _setup_logging(self):
-        """Configure logging if not already set up"""
-        if not logger.handlers:
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter(
-                "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
-            )
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-            logger.setLevel(logging.DEBUG)
+    def _cleanup_partial_init(self) -> None:
+        """Clean up any partially initialized components"""
+        if self.sim_manager:
+            try:
+                self.sim_manager.disconnect()
+            except Exception:
+                pass
+        self.menu_logger = None
+        self.menu_reader = None
+        self.menu_navigator = None
+        self.gate_assignment = None
 
     def assign_gate_when_ready(self, airport: str, **kwargs) -> bool:
         """
@@ -96,15 +92,13 @@ class GsxHook:
 
     def is_on_ground(self) -> bool:
         """Check if aircraft is on ground"""
-        initialized = self.is_initialized
-        on_ground = self.sim_manager.is_on_ground()
-        if not initialized:
+        if not self.is_initialized:
             return False
-        return on_ground
+        return self.sim_manager.is_on_ground()
 
-    def close(self):
+    def close(self) -> None:
         """Clean up connections"""
-        self.sim_manager.set_variable(GsxVariable.MENU_OPEN.value, 0)
         if self.sim_manager:
+            self.sim_manager.set_variable(GsxVariable.MENU_OPEN.value, 0)
             self.sim_manager.disconnect()
         self.is_initialized = False

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2024-09-30
+
+### Fixed
+- Critical bug in gsx_hook.py logging configuration (config vs self.config)
+- Logic error in is_on_ground() that called sim_manager before checking initialization
+- Redundant check in close() method
+- Broad exception handling now catches specific exceptions (GsxConnectionError, GsxFileNotFoundError, OSError, IOError)
+
+### Added
+- Partial initialization cleanup (_cleanup_partial_init) for proper rollback on errors
+- Complete type hints for all methods in gsx_hook.py
+
+### Improved
+- Code quality and maintainability in gsx_hook.py
+- Consistent logging approach across codebase
+- Exception handling specificity
+
 ## [0.6.1] - 2024-09-30
 
 ### Added
