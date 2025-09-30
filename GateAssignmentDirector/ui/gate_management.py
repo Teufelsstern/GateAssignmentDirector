@@ -3,6 +3,8 @@
 import customtkinter as ctk
 import json
 import logging
+import os
+import re
 from tkinter import ttk
 
 from GateAssignmentDirector.ui.ui_helpers import _label, _button
@@ -39,7 +41,30 @@ class GateManagementWindow:
         tree_container = ctk.CTkFrame(left_frame, fg_color="#1a1a1a")
         tree_container.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
-        self.tree = ttk.Treeview(tree_container, selectmode="browse")
+        # Configure tree with columns
+        self.tree = ttk.Treeview(
+            tree_container,
+            selectmode="browse",
+            columns=('size', 'jetways', 'terminal', 'type'),
+            show='tree headings'
+        )
+
+        # Configure column headings and widths
+        self.tree.heading('#0', text='Gate')
+        self.tree.column('#0', width=150, minwidth=100)
+
+        self.tree.heading('size', text='Size')
+        self.tree.column('size', width=80, minwidth=60)
+
+        self.tree.heading('jetways', text='Jetways')
+        self.tree.column('jetways', width=70, minwidth=50)
+
+        self.tree.heading('terminal', text='Terminal')
+        self.tree.column('terminal', width=100, minwidth=80)
+
+        self.tree.heading('type', text='Type')
+        self.tree.column('type', width=80, minwidth=60)
+
         self.tree.pack(side="left", fill="both", expand=True)
 
         scrollbar = ttk.Scrollbar(
@@ -48,10 +73,10 @@ class GateManagementWindow:
         scrollbar.pack(side="right", fill="y")
         self.tree.configure(yscrollcommand=scrollbar.set)
 
-        # Load button
+        # Reload button
         _button(
             frame=left_frame,
-            text="Load Current Data",
+            text="Reload Data",
             command=self.load_data,
             fg_color="#4a4a4a",
             hover_color="#5a5a5a",
@@ -146,8 +171,34 @@ class GateManagementWindow:
             pady=(0, 10)
         )
 
+        # Auto-load data if airport is provided
+        if airport:
+            self.load_data()
+        else:
+            self.log_status("No airport detected. Start monitoring or manually specify airport in main window.")
+
+    def _parse_gate_size(self, full_text: str) -> str:
+        """Extract aircraft size from gate full_text with defensive parsing."""
+        if not full_text:
+            return "Unknown"
+        match = re.search(r'(Small|Medium|Heavy|Ramp GA \w+)', full_text)
+        return match.group(1) if match else "Unknown"
+
+    def _parse_jetway_count(self, full_text: str) -> str:
+        """Extract jetway configuration from gate full_text with defensive parsing."""
+        if not full_text:
+            return "-"
+        match = re.search(r'(\d+x\s*/J|None)', full_text)
+        return match.group(1).strip() if match else "-"
+
     def load_data(self):
         """Load JSON data and populate tree"""
+        # Check if file exists
+        if not os.path.exists(self.json_path):
+            self.log_status(f"Airport data not found at {self.json_path}")
+            self.log_status("Start monitoring to generate data or manually specify airport.")
+            return
+
         try:
             with open(self.json_path, "r") as f:
                 self.data = json.load(f)
@@ -159,14 +210,28 @@ class GateManagementWindow:
             # Populate tree
             terminals = self.data.get("terminals", {})
             for terminal_name, gates in terminals.items():
+                # Terminal parent node - populate terminal column only
                 terminal_node = self.tree.insert(
-                    "", "end", text=f"Terminal: {terminal_name}", open=True
+                    "", "end",
+                    text=f"Terminal: {terminal_name}",
+                    values=('', '', terminal_name, ''),
+                    open=True
                 )
 
                 for gate_num, gate_info in gates.items():
-                    gate_type = gate_info.get("type", "unknown")
+                    # Extract gate information with defensive parsing
+                    full_text = gate_info.get("raw_info", {}).get("full_text", "")
+                    gate_type = gate_info.get("type", "Unknown")
+
+                    # Parse size and jetway info
+                    size = self._parse_gate_size(full_text)
+                    jetways = self._parse_jetway_count(full_text)
+
+                    # Insert gate with column data
                     self.tree.insert(
-                        terminal_node, "end", text=f"Gate {gate_num} ({gate_type})"
+                        terminal_node, "end",
+                        text=f"Gate {gate_num}",
+                        values=(size, jetways, terminal_name, gate_type)
                     )
 
             self.log_status("Data loaded successfully")

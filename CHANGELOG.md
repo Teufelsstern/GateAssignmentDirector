@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2025-09-30
+
+### Added
+- Rich column display in gate management UI tree view
+- Aircraft size column (Small/Medium/Heavy) parsed from GSX menu data
+- Jetway configuration column (1x /J, None, etc.)
+- Terminal and type columns for better data visibility
+- Defensive parsing functions (`_parse_gate_size()`, `_parse_jetway_count()`)
+- Auto-load feature - gate data loads automatically when window opens
+- Unit tests for parsing functions (6 tests in test_gate_management_parsing.py)
+- Graceful handling for missing airport data files
+
+### Changed
+- Gate management tree view now uses structured columns instead of single text line
+- Tree displays "Gate {number}" instead of "Gate {number} (type)" for cleaner layout
+- "Load Current Data" button renamed to "Reload Data" (data auto-loads on open)
+
+### Improved
+- Gate data visibility - users can see size and jetway info at a glance
+- Data parsing with graceful fallbacks (Unknown/- for missing data)
+- UI readability with organized column structure
+- User experience - no extra click needed to load data
+
 ## [0.7.9] - 2025-09-30
 
 ### Added
