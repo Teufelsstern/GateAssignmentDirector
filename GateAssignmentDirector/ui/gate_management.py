@@ -45,7 +45,7 @@ class GateManagementWindow:
         self.tree = ttk.Treeview(
             tree_container,
             selectmode="browse",
-            columns=('size', 'jetways', 'terminal', 'type'),
+            columns=('size', 'jetways', 'terminal', 'fulltext'),
             show='tree headings'
         )
 
@@ -62,8 +62,8 @@ class GateManagementWindow:
         self.tree.heading('terminal', text='Terminal')
         self.tree.column('terminal', width=100, minwidth=80)
 
-        self.tree.heading('type', text='Type')
-        self.tree.column('type', width=80, minwidth=60)
+        self.tree.heading('fulltext', text='Full Text')
+        self.tree.column('fulltext', width=200, minwidth=150)
 
         self.tree.pack(side="left", fill="both", expand=True)
 
@@ -122,26 +122,69 @@ class GateManagementWindow:
         gate_frame.pack(fill="x", padx=10, pady=10)
 
         _label(gate_frame, text="Move Gate", pady=(10, 5))
-        _label(gate_frame, text="Gate number:", size=10, pady=(5, 0), padx=(10, 0))
 
-        self.gate_entry = ctk.CTkEntry(gate_frame, placeholder_text="e.g., 71")
-        self.gate_entry.pack(fill="x", padx=10, pady=5)
+        # Gate number row
+        gate_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
+        gate_row.pack(fill="x", padx=10, pady=2)
+        _label(gate_row, text="Gate:", size=10, padx=(0, 5)).pack(side="left")
+        self.gate_entry = ctk.CTkEntry(gate_row, placeholder_text="71", width=80)
+        self.gate_entry.pack(side="left", fill="x", expand=True)
 
-        _label(gate_frame, text="From terminal:", size=10, pady=(5, 0), padx=(10, 0))
+        # From terminal row
+        from_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
+        from_row.pack(fill="x", padx=10, pady=2)
+        _label(from_row, text="From:", size=10, padx=(0, 5)).pack(side="left")
+        self.from_terminal_entry = ctk.CTkEntry(from_row, placeholder_text="7", width=80)
+        self.from_terminal_entry.pack(side="left", fill="x", expand=True)
 
-        self.from_terminal_entry = ctk.CTkEntry(gate_frame, placeholder_text="e.g., 7")
-        self.from_terminal_entry.pack(fill="x", padx=10, pady=5)
-
-        _label(gate_frame, text="To terminal:", size=10, pady=(5, 0), padx=(10, 0))
-
-        self.to_terminal_entry = ctk.CTkEntry(gate_frame, placeholder_text="e.g., 8")
-        self.to_terminal_entry.pack(fill="x", padx=10, pady=5)
+        # To terminal row
+        to_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
+        to_row.pack(fill="x", padx=10, pady=2)
+        _label(to_row, text="To:", size=10, padx=(0, 5)).pack(side="left")
+        self.to_terminal_entry = ctk.CTkEntry(to_row, placeholder_text="8", width=80)
+        self.to_terminal_entry.pack(side="left", fill="x", expand=True)
 
         _button(
             gate_frame,
             self.move_gate,
             text="Move Gate",
-            height=32,
+            height=28,
+            fg_color="#2d5016",
+            hover_color="#3d6622",
+            padx=(10, 10),
+            pady=(5, 10)
+        )
+
+        # Gate Rename Section
+        rename_frame = ctk.CTkFrame(right_frame)
+        rename_frame.pack(fill="x", padx=10, pady=10)
+
+        _label(rename_frame, text="Rename Gate", pady=(10, 5))
+
+        # Gate number row
+        rename_gate_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
+        rename_gate_row.pack(fill="x", padx=10, pady=2)
+        _label(rename_gate_row, text="Gate:", size=10, padx=(0, 5)).pack(side="left")
+        self.rename_gate_entry = ctk.CTkEntry(rename_gate_row, placeholder_text="71", width=80)
+        self.rename_gate_entry.pack(side="left", fill="x", expand=True)
+
+        # Terminal row
+        rename_terminal_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
+        rename_terminal_row.pack(fill="x", padx=10, pady=2)
+        _label(rename_terminal_row, text="Terminal:", size=10, padx=(0, 5)).pack(side="left")
+        self.rename_terminal_entry = ctk.CTkEntry(rename_terminal_row, placeholder_text="3", width=80)
+        self.rename_terminal_entry.pack(side="left", fill="x", expand=True)
+
+        # Full text row
+        _label(rename_frame, text="New full text:", size=10, pady=(5, 0), padx=(10, 0))
+        self.new_fulltext_entry = ctk.CTkEntry(rename_frame, placeholder_text="Gate 71 - Medium - 2x  /J")
+        self.new_fulltext_entry.pack(fill="x", padx=10, pady=5)
+
+        _button(
+            rename_frame,
+            self.rename_gate,
+            text="Rename Gate",
+            height=28,
             fg_color="#2d5016",
             hover_color="#3d6622",
             padx=(10, 10),
@@ -221,7 +264,6 @@ class GateManagementWindow:
                 for gate_num, gate_info in gates.items():
                     # Extract gate information with defensive parsing
                     full_text = gate_info.get("raw_info", {}).get("full_text", "")
-                    gate_type = gate_info.get("type", "Unknown")
 
                     # Parse size and jetway info
                     size = self._parse_gate_size(full_text)
@@ -231,7 +273,7 @@ class GateManagementWindow:
                     self.tree.insert(
                         terminal_node, "end",
                         text=f"Gate {gate_num}",
-                        values=(size, jetways, terminal_name, gate_type)
+                        values=(size, jetways, terminal_name, full_text or "-")
                     )
 
             self.log_status("Data loaded successfully")
@@ -335,6 +377,50 @@ class GateManagementWindow:
         except Exception as e:
             self.log_status(f"ERROR: {str(e)}")
             logging.error(f"Move gate error: {e}", exc_info=True)
+
+    def rename_gate(self):
+        """Rename a gate's full_text information"""
+        try:
+            logging.debug("Starting gate rename...")
+
+            if not self.data:
+                self.log_status("ERROR: Please load data first")
+                return
+
+            gate_num = self.rename_gate_entry.get().strip()
+            terminal = self.rename_terminal_entry.get().strip()
+            new_full_text = self.new_fulltext_entry.get().strip()
+
+            if not all([gate_num, terminal, new_full_text]):
+                self.log_status("ERROR: Please fill all fields")
+                return
+
+            terminals = self.data.get("terminals", {})
+
+            # Check if terminal exists
+            if terminal not in terminals:
+                self.log_status(f"ERROR: Terminal {terminal} not found")
+                return
+
+            # Check if gate exists in terminal
+            if gate_num not in terminals[terminal]:
+                self.log_status(
+                    f"ERROR: Gate {gate_num} not found in Terminal {terminal}"
+                )
+                return
+
+            # Update the full_text
+            terminals[terminal][gate_num]["raw_info"]["full_text"] = new_full_text
+
+            self.log_status(
+                f"SUCCESS: Renamed Gate {gate_num} in Terminal {terminal}"
+            )
+            self.save_data()
+            self.load_data()  # Refresh tree view
+
+        except Exception as e:
+            self.log_status(f"ERROR: {str(e)}")
+            logging.error(f"Rename gate error: {e}", exc_info=True)
 
     def save_data(self):
         """Save modified data back to JSON"""

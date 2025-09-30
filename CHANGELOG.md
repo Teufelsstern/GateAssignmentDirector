@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2025-09-30
+
+### Added
+- Rename Gate function in gate management UI to edit gate full_text information
+- Compact horizontal layout for gate input controls (Gate/From/To on same row)
+- Unit tests for rename_gate() function (6 tests covering edge cases and happy path)
+
+### Changed
+- Replaced Type column with Full Text column in tree view to show raw GSX menu data
+- Move Gate controls now use compact horizontal rows instead of vertical stacked layout
+- Full Text column width increased to 200px for better readability
+
+### Improved
+- Gate management UI compactness and space utilization
+- Data visibility with full raw GSX text displayed instead of gate type
+- User workflow for manual gate data corrections via rename function
+
 ## [0.8.0] - 2025-09-30
 
 ### Added

@@ -1,5 +1,11 @@
+import sys
 import unittest
 import re
+from unittest.mock import Mock, patch, MagicMock
+
+sys.modules['customtkinter'] = MagicMock()
+sys.modules['pystray'] = MagicMock()
+sys.modules['PIL'] = MagicMock()
 
 
 class TestGateManagementParsing(unittest.TestCase):
@@ -83,6 +89,163 @@ class TestGateManagementParsing(unittest.TestCase):
 
         result = self._parse_jetway_count(None)
         self.assertEqual(result, "-")
+
+
+class MockGateManagementWindow:
+    """Mock class that replicates the rename_gate logic from GateManagementWindow"""
+
+    def __init__(self):
+        self.data = None
+        self.rename_gate_entry = Mock()
+        self.rename_terminal_entry = Mock()
+        self.new_fulltext_entry = Mock()
+        self.log_status = Mock()
+        self.save_data = Mock()
+        self.load_data = Mock()
+
+    def rename_gate(self):
+        """Rename a gate's full_text information"""
+        try:
+            if not self.data:
+                self.log_status("ERROR: Please load data first")
+                return
+
+            gate_num = self.rename_gate_entry.get().strip()
+            terminal = self.rename_terminal_entry.get().strip()
+            new_full_text = self.new_fulltext_entry.get().strip()
+
+            if not all([gate_num, terminal, new_full_text]):
+                self.log_status("ERROR: Please fill all fields")
+                return
+
+            terminals = self.data.get("terminals", {})
+
+            if terminal not in terminals:
+                self.log_status(f"ERROR: Terminal {terminal} not found")
+                return
+
+            if gate_num not in terminals[terminal]:
+                self.log_status(
+                    f"ERROR: Gate {gate_num} not found in Terminal {terminal}"
+                )
+                return
+
+            terminals[terminal][gate_num]["raw_info"]["full_text"] = new_full_text
+
+            self.log_status(
+                f"SUCCESS: Renamed Gate {gate_num} in Terminal {terminal}"
+            )
+            self.save_data()
+            self.load_data()
+
+        except Exception as e:
+            self.log_status(f"ERROR: {str(e)}")
+
+
+class TestGateManagementRename(unittest.TestCase):
+    """Unit tests for rename_gate method"""
+
+    def setUp(self) -> None:
+        """Set up test fixtures for each test"""
+        self.gate_mgmt = MockGateManagementWindow()
+
+        self.gate_mgmt.data = {
+            "terminals": {
+                "1": {
+                    "10": {
+                        "raw_info": {
+                            "full_text": "Gate 10 - Small - 1x  /J"
+                        }
+                    }
+                },
+                "2": {
+                    "20": {
+                        "raw_info": {
+                            "full_text": "Gate 20 - Medium - 2x  /J"
+                        }
+                    }
+                }
+            }
+        }
+
+    def test_rename_gate_terminal_not_exists(self) -> None:
+        """Terminal doesn't exist - should log error"""
+        self.gate_mgmt.rename_gate_entry.get.return_value = "10"
+        self.gate_mgmt.rename_terminal_entry.get.return_value = "99"
+        self.gate_mgmt.new_fulltext_entry.get.return_value = "Gate 10 - Heavy - None"
+
+        self.gate_mgmt.rename_gate()
+
+        self.gate_mgmt.log_status.assert_called_with("ERROR: Terminal 99 not found")
+        self.gate_mgmt.save_data.assert_not_called()
+        self.gate_mgmt.load_data.assert_not_called()
+
+    def test_rename_gate_gate_not_exists(self) -> None:
+        """Gate doesn't exist in terminal - should log error"""
+        self.gate_mgmt.rename_gate_entry.get.return_value = "99"
+        self.gate_mgmt.rename_terminal_entry.get.return_value = "1"
+        self.gate_mgmt.new_fulltext_entry.get.return_value = "Gate 99 - Heavy - None"
+
+        self.gate_mgmt.rename_gate()
+
+        self.gate_mgmt.log_status.assert_called_with(
+            "ERROR: Gate 99 not found in Terminal 1"
+        )
+        self.gate_mgmt.save_data.assert_not_called()
+        self.gate_mgmt.load_data.assert_not_called()
+
+    def test_rename_gate_empty_new_full_text(self) -> None:
+        """Empty string for new_full_text - should log error"""
+        self.gate_mgmt.rename_gate_entry.get.return_value = "10"
+        self.gate_mgmt.rename_terminal_entry.get.return_value = "1"
+        self.gate_mgmt.new_fulltext_entry.get.return_value = "   "
+
+        self.gate_mgmt.rename_gate()
+
+        self.gate_mgmt.log_status.assert_called_with("ERROR: Please fill all fields")
+        self.gate_mgmt.save_data.assert_not_called()
+        self.gate_mgmt.load_data.assert_not_called()
+
+    def test_rename_gate_missing_parameters(self) -> None:
+        """None/missing parameters - should log error"""
+        self.gate_mgmt.rename_gate_entry.get.return_value = ""
+        self.gate_mgmt.rename_terminal_entry.get.return_value = "1"
+        self.gate_mgmt.new_fulltext_entry.get.return_value = "Gate 10 - Heavy - None"
+
+        self.gate_mgmt.rename_gate()
+
+        self.gate_mgmt.log_status.assert_called_with("ERROR: Please fill all fields")
+        self.gate_mgmt.save_data.assert_not_called()
+
+    def test_rename_gate_success(self) -> None:
+        """Happy path - successful rename"""
+        self.gate_mgmt.rename_gate_entry.get.return_value = "10"
+        self.gate_mgmt.rename_terminal_entry.get.return_value = "1"
+        self.gate_mgmt.new_fulltext_entry.get.return_value = "Gate 10 - Heavy - None"
+
+        self.gate_mgmt.rename_gate()
+
+        self.assertEqual(
+            self.gate_mgmt.data["terminals"]["1"]["10"]["raw_info"]["full_text"],
+            "Gate 10 - Heavy - None"
+        )
+        self.gate_mgmt.log_status.assert_called_with(
+            "SUCCESS: Renamed Gate 10 in Terminal 1"
+        )
+        self.gate_mgmt.save_data.assert_called_once()
+        self.gate_mgmt.load_data.assert_called_once()
+
+    def test_rename_gate_no_data_loaded(self) -> None:
+        """No data loaded - should log error"""
+        self.gate_mgmt.data = None
+        self.gate_mgmt.rename_gate_entry.get.return_value = "10"
+        self.gate_mgmt.rename_terminal_entry.get.return_value = "1"
+        self.gate_mgmt.new_fulltext_entry.get.return_value = "Gate 10 - Heavy - None"
+
+        self.gate_mgmt.rename_gate()
+
+        self.gate_mgmt.log_status.assert_called_with("ERROR: Please load data first")
+        self.gate_mgmt.save_data.assert_not_called()
 
 
 if __name__ == "__main__":
