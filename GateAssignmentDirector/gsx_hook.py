@@ -23,7 +23,7 @@ class GsxHook:
         self, config: Optional[GsxConfig] = None, enable_menu_logging: bool = True
     ) -> None:
         """Initialize GSX Hook with optional configuration and menu logging"""
-        self.config = GsxConfig.from_yaml()
+        self.config = config if config is not None else GsxConfig.from_yaml()
         self.is_initialized = None
         self.enable_menu_logging = enable_menu_logging
 

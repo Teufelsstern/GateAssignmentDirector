@@ -102,10 +102,10 @@ class TestGsxHookInitialization(unittest.TestCase):
 
         # MenuReader should be called with config, logger, navigator (None at this point), and sim_manager
         call_args = mock_reader.call_args[0]
-        self.assertEqual(call_args[0], mock_config)  # config
-        self.assertEqual(call_args[1], mock_logger_instance)  # menu_logger
+        self.assertIs(call_args[0], mock_config)  # config
+        self.assertIs(call_args[1], mock_logger_instance)  # menu_logger
         self.assertIsNone(call_args[2])  # menu_navigator (not created yet)
-        self.assertEqual(call_args[3], mock_sim_instance)  # sim_manager
+        self.assertIs(call_args[3], mock_sim_instance)  # sim_manager
 
     @patch('GateAssignmentDirector.gsx_hook.GateAssignment')
     @patch('GateAssignmentDirector.gsx_hook.MenuNavigator')
@@ -128,10 +128,10 @@ class TestGsxHookInitialization(unittest.TestCase):
 
         # MenuNavigator should be called with config, logger, reader, sim_manager
         call_args = mock_nav.call_args[0]
-        self.assertEqual(call_args[0], mock_config)
-        self.assertEqual(call_args[1], mock_logger_instance)
-        self.assertEqual(call_args[2], mock_reader_instance)
-        self.assertEqual(call_args[3], mock_sim_instance)
+        self.assertIs(call_args[0], mock_config)
+        self.assertIs(call_args[1], mock_logger_instance)
+        self.assertIs(call_args[2], mock_reader_instance)
+        self.assertIs(call_args[3], mock_sim_instance)
 
     @patch('GateAssignmentDirector.gsx_hook.GateAssignment')
     @patch('GateAssignmentDirector.gsx_hook.MenuNavigator')
@@ -157,11 +157,11 @@ class TestGsxHookInitialization(unittest.TestCase):
         # GateAssignment should be called with all 5 components
         call_args = mock_gate.call_args[0]
         self.assertEqual(len(call_args), 5)
-        self.assertEqual(call_args[0], mock_config)
-        self.assertEqual(call_args[1], mock_logger_instance)
-        self.assertEqual(call_args[2], mock_reader_instance)
-        self.assertEqual(call_args[3], mock_nav_instance)
-        self.assertEqual(call_args[4], mock_sim_instance)
+        self.assertIs(call_args[0], mock_config)
+        self.assertIs(call_args[1], mock_logger_instance)
+        self.assertIs(call_args[2], mock_reader_instance)
+        self.assertIs(call_args[3], mock_nav_instance)
+        self.assertIs(call_args[4], mock_sim_instance)
 
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_initialization_with_default_config(self, mock_sim):

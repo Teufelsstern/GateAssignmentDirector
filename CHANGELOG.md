@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.6] - 2025-09-30
+
+### Fixed
+- GsxHook now properly uses provided config parameter instead of always loading from YAML
+- Gate assignment handles None values in terminal/gate parameters with proper null coalescing
+- Fuzzy gate matching now returns best match even with 0% score (changed threshold from 10 to 0)
+- Test mocks updated with required logging configuration attributes
+- Menu navigator tests properly mock MenuState for navigation operations
+- Gate assignment test now mocks API requests to prevent real HTTP calls
+- Gate parser test updated to check module-level GATE_PATTERN instead of instance attribute
+
+### Changed
+- Improved fuzzy matching score comparison from `>` to `>=` for edge cases with identical scores
+
 ## [0.8.5] - 2025-09-30
 
 ### Added

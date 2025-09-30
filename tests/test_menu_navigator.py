@@ -13,6 +13,9 @@ class TestMenuNavigator(unittest.TestCase):
         self.mock_config.sleep_short = 0.01
         self.mock_config.sleep_long = 0.01
         self.mock_config.max_menu_check_attempts = 5
+        self.mock_config.logging_level = "INFO"
+        self.mock_config.logging_format = "%(message)s"
+        self.mock_config.logging_datefmt = "%Y-%m-%d"
 
         self.mock_menu_logger = Mock()
         self.mock_menu_reader = Mock()
@@ -95,8 +98,16 @@ class TestMenuNavigator(unittest.TestCase):
             }
         }
 
-        self.mock_menu_reader.current_state = Mock()
+        menu_state = MenuState(
+            title="Test Menu",
+            options=["Option 1", "Next", "Option 3"],
+            options_enum=[(0, "Option 1"), (1, "Next"), (2, "Option 3")],
+            raw_lines=[]
+        )
+        self.mock_menu_reader.read_menu.return_value = menu_state
+        self.mock_menu_reader.current_state = menu_state
         self.mock_menu_reader.previous_state = Mock()
+        self.mock_menu_reader.previous_state.options = ["Option 1", "Option 2"]
         self.mock_menu_reader.has_changed.return_value = True
 
         result = self.navigator.click_planned(gate_info)
@@ -133,6 +144,8 @@ class TestMenuNavigator(unittest.TestCase):
             raw_lines=[]
         )
         self.mock_menu_reader.read_menu.return_value = menu_state
+        self.mock_menu_reader.previous_state = Mock()
+        self.mock_menu_reader.previous_state.options = ["Option 1", "Option 2"]
         self.mock_menu_reader.has_changed.return_value = False
 
         with self.assertRaises(GsxMenuError):

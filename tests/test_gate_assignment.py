@@ -169,10 +169,11 @@ class TestGateAssignment(unittest.TestCase):
         # API should be called for fuzzy match
         mock_requests.assert_called_once()
 
+    @patch('GateAssignmentDirector.gate_assignment.requests.get')
     @patch('os.path.exists')
     @patch('builtins.open', new_callable=mock_open)
     @patch('json.load')
-    def test_assign_gate_not_on_ground_with_wait(self, mock_json_load, mock_file, mock_exists):
+    def test_assign_gate_not_on_ground_with_wait(self, mock_json_load, mock_file, mock_exists, mock_requests_get):
         """Test gate assignment waits for ground"""
         mock_exists.side_effect = lambda path: "_interpreted.json" in path
         mock_json_load.return_value = {
@@ -182,6 +183,11 @@ class TestGateAssignment(unittest.TestCase):
                 }
             }
         }
+
+        # Mock the API response
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_requests_get.return_value = mock_response
 
         # First call False (not on ground), second True (on ground)
         self.mock_sim_manager.is_on_ground.side_effect = [False, True]

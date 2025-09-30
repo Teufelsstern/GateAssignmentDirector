@@ -127,7 +127,11 @@ class GateAssignment:
             bool: Success status
         """
         airport_data = self.map_available_spots(airport)
-        matching_gsx_gate, direct_match = self.find_gate(airport_data, terminal + terminal_number, gate_number + gate_letter)
+        matching_gsx_gate, direct_match = self.find_gate(
+            airport_data,
+            (terminal or "") + (terminal_number or ""),
+            (gate_number or "") + (gate_letter or "")
+        )
         if direct_match is False:
             response = requests.get("https://apipri.sayintentions.ai/sapi/assignGate",
                                     params={"api_key": self.config.SI_API_KEY, "gate": matching_gsx_gate["gate"], "airport": airport})
@@ -178,13 +182,13 @@ class GateAssignment:
                     return dict_gate, True
 
         best_match = None
-        best_score = 10
+        best_score = 0
 
         for key_terminal, dict_terminal in airport_data["terminals"].items():
             for key_gate, dict_gate in dict_terminal.items():
                 score = fuzz.ratio(key_terminal + key_gate, terminal + gate)
                 logger.debug("Looking for Terminal %s Gate %s. Terminal %s and Gate %s reached score of %s", terminal, gate, key_terminal, key_gate, score)
-                if score > best_score:
+                if score >= best_score:
                     best_score = score
                     best_match = dict_gate
 

@@ -1,5 +1,5 @@
 import unittest
-from GateAssignmentDirector.si_api_hook import GateParser, GateInfo
+from GateAssignmentDirector.si_api_hook import GateParser, GateInfo, GATE_PATTERN
 
 
 class TestGateParserExtended(unittest.TestCase):
@@ -182,9 +182,9 @@ class TestGateParserExtended(unittest.TestCase):
         self.assertIn("Unknown Gate Format", result)
 
     def test_parser_pattern_is_compiled(self):
-        """Test that parser has compiled regex pattern"""
-        self.assertIsNotNone(self.parser.pattern)
-        self.assertTrue(hasattr(self.parser.pattern, 'search'))
+        """Test that module has compiled regex pattern"""
+        self.assertIsNotNone(GATE_PATTERN)
+        self.assertTrue(hasattr(GATE_PATTERN, 'search'))
 
 
 if __name__ == "__main__":
