@@ -1,0 +1,96 @@
+"""Example usage with threaded monitoring"""
+import threading
+import queue
+import logging
+
+from GateAssignmentDirector.si_api_hook import JSONMonitor
+from GateAssignmentDirector.gsx_hook import GsxHook
+from GateAssignmentDirector.config import GsxConfig
+
+logger = logging.getLogger(__name__)
+
+class GateAssignmentDirector:
+    def __init__(self):
+        self.gate_queue = queue.Queue()
+        self.config = GsxConfig()
+        self.gsx = None
+        self.monitor = None
+        self.monitor_thread = None
+        self.running = False
+        self.current_airport = None
+        logging.basicConfig(
+            level=self.config.logging_level,
+            format=self.config.logging_format,
+            datefmt=self.config.logging_datefmt,
+        )
+
+    def start_monitoring(self, json_file_path: str):
+        """Start the JSON monitor in a separate thread"""
+        self.monitor = JSONMonitor(
+            json_file_path,
+            enable_gsx_integration=False,
+            gate_callback=self._queue_gate_assignment
+        )
+
+        self.running = True
+        self.monitor_thread = threading.Thread(target=self.monitor.monitor, daemon=True)
+        self.monitor_thread.start()
+        logger.info("Monitoring started")
+
+    def _queue_gate_assignment(self, gate_info):
+        """Callback when gate is detected"""
+        # Store current airport
+        if 'airport' in gate_info:
+            self.current_airport = gate_info['airport']
+        self.gate_queue.put(gate_info)
+        logger.info(f"Gate detected: {gate_info}")
+
+    def process_gate_assignments(self):
+        """Main loop to process gate assignments"""
+        logger.info("Director ready - waiting for gate assignments")
+
+        while self.running:
+            try:
+                gate_info = self.gate_queue.get(timeout=1.0)
+                logger.info(f"Processing gate assignment: {gate_info}")
+
+                # Initialize GSX if needed
+                if not self.gsx or not self.gsx.is_initialized:
+                    self.gsx = GsxHook(self.config, enable_menu_logging=True)
+                    if not self.gsx.is_initialized:
+                        logger.error("Failed to initialize GSX Hook")
+                        continue
+
+                # Process assignment
+                success = self.gsx.assign_gate_when_ready(
+                    airport=gate_info.get('airport', 'EDDS'),
+                    gate_letter=gate_info.get('gate_letter', ""),
+                    gate_number=gate_info.get('gate_number', ""),
+                    terminal = gate_info.get('terminal', ""),
+                    terminal_number = gate_info.get('terminal_number', ""),
+                    airline=gate_info.get('airline', 'GSX'),
+                    wait_for_ground=True,
+                )
+
+                logger.info(f"Gate assignment {'completed' if success else 'failed'}")
+
+            except queue.Empty:
+                continue
+            except KeyboardInterrupt:
+                self.stop()
+                break
+
+    def stop(self):
+        """Clean shutdown"""
+        logger.info("Stopping director")
+        self.running = False
+        if self.gsx:
+            self.gsx.close()
+
+if __name__ == "__main__":
+    director = GateAssignmentDirector()
+    try:
+        director.start_monitoring(GsxConfig.flight_json_path)
+        director.process_gate_assignments()
+    except KeyboardInterrupt:
+        director.stop()

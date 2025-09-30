@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Project specific
+gsx_menu_logs/
+*.log
+*.json
+!*_interpreted.json
+config.yaml
+monitor_config.ini
+
+# Secrets
+.env
+credentials.*
+*_key.txt
+*.key
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Flight Sim / GSX specific
+*.bgl
+*.simconnect
