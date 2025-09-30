@@ -4,7 +4,7 @@ import os
 import time
 import logging
 import json
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple
 from rapidfuzz import fuzz
 import requests
 
@@ -18,13 +18,12 @@ logger = logging.getLogger(__name__)
 class GateAssignment:
     """Handles automated gate assignment process with logging"""
 
-    def __init__(self, config, menu_logger, menu_reader, menu_navigator, sim_manager):
+    def __init__(self, config, menu_logger, menu_reader, menu_navigator, sim_manager) -> None:
         self.menu_navigator = menu_navigator
         self.sim_manager = sim_manager
         self.config = config
         self.menu_logger = menu_logger
         self.menu_reader = menu_reader
-        self.all_gates = []
 
         logging.basicConfig(
             level=config.logging_level,
@@ -32,14 +31,14 @@ class GateAssignment:
             datefmt=config.logging_datefmt,
         )
 
-    def map_available_spots(self, airport: str):
+    def map_available_spots(self, airport: str) -> Dict[str, Any]:
         """We map every available parking spot for the airport"""
         file1 = f".\\gsx_menu_logs\\{airport}.json"
         file2 = f".\\gsx_menu_logs\\{airport}_interpreted.json"
-        print(f"Aktuelles Verzeichnis: {os.getcwd()}")
-        print(f"Suche Datei: {file1}")
-        print(f"Absoluter Pfad: {os.path.abspath(file1)}")
-        print(f"Datei existiert: {os.path.exists(file1)}")
+        logger.debug(f"Current directory: {os.getcwd()}")
+        logger.debug(f"Looking for file: {file1}")
+        logger.debug(f"Absolute path: {os.path.abspath(file1)}")
+        logger.debug(f"File exists: {os.path.exists(file1)}")
         if not os.path.exists(file1) and not os.path.exists(file2):
             self.menu_logger.start_session(gate_info=GateInfo(airport=airport))
             level_0_index = 0
@@ -48,12 +47,11 @@ class GateAssignment:
             max_index = len(current_menu_state.options) + 1
             logger.debug("Found %s options at current menu and setting maximum to %s", max_index - 1, max_index)
             while level_0_index <= max_index:
-                next_clicks = 0  # Reset Next clicks counter for each level 0 option
+                next_clicks = 0
 
                 self._open_menu()
                 current_menu_state = self.menu_reader.read_menu()
 
-                # Log level 0 menu with navigation info
                 navigation_info = {
                     "level_0_index": level_0_index,
                     "next_clicks": next_clicks,
@@ -66,14 +64,11 @@ class GateAssignment:
                     navigation_info=navigation_info,
                 )
 
-                # Click the level 0 option
                 self.menu_navigator.click_by_index(level_0_index)
 
-                # Navigate through all pages with Next button
                 while True:
                     current_menu_state = self.menu_reader.read_menu()
 
-                    # Update navigation info for this submenu
                     navigation_info = {
                         "level_0_index": level_0_index,
                         "next_clicks": next_clicks,
@@ -86,13 +81,12 @@ class GateAssignment:
                         navigation_info=navigation_info,
                     )
 
-                    # Check if Next button is available
                     if any("Next" in opt for opt in current_menu_state.options):
                         logger.debug(
                             f"Clicking Next button (click #{next_clicks + 1}) for level_0_index {level_0_index}"
                         )
                         self.menu_navigator.click_next()
-                        next_clicks += 1  # Increment Next clicks counter
+                        next_clicks += 1
                     else:
                         logger.debug(
                             f"No more Next button found for level_0_index {level_0_index}. Total Next clicks: {next_clicks}"
@@ -146,7 +140,6 @@ class GateAssignment:
             else:
                 logger.info("Requested matching gate, assuming it has been set for now.")
         try:
-            # Wait for ground if needed
             if wait_for_ground:
                 if not self._wait_for_ground(ground_timeout):
                     if self.menu_logger:
@@ -155,19 +148,18 @@ class GateAssignment:
             elif not self.sim_manager.is_on_ground():
                 logger.warning("Aircraft not on ground - GSX may fail")
 
-            # Open GSX menu
             self._open_menu()
 
             self.menu_navigator.click_planned(matching_gsx_gate)
             self.menu_navigator.find_and_click(["activate"], SearchType.KEYWORD)
             try:
-                self.menu_navigator.find_and_click(["(UA_2000)"], SearchType.AIRLINE)
+                self.menu_navigator.find_and_click([self.config.default_airline or "(UA_2000)"], SearchType.AIRLINE)
             except GsxMenuError as e:
                 logger.debug("GSX didn't want to show operators today: %s", e)
             logger.info("Gate assignment completed successfully")
             return True
 
-        except Exception as e:
+        except (GsxMenuError, GsxTimeoutError, OSError, IOError) as e:
             logger.error(f"Gate assignment failed: {e}")
             return False
 
@@ -186,29 +178,33 @@ class GateAssignment:
         logger.warning(f"Timeout after {timeout}s waiting for ground")
         return False
 
-    def _open_menu(self):
+    def _open_menu(self) -> None:
         """Open GSX menu"""
         self.sim_manager.set_variable(GsxVariable.MENU_OPEN.value, 1)
         time.sleep(0.1)
         self.sim_manager.set_variable(GsxVariable.MENU_CHOICE.value, -2)
         time.sleep(0.1)
 
-    def find_gate(self, airport_data, terminal, gate):
+    def find_gate(self, airport_data: Dict[str, Any], terminal: str, gate: str) -> Tuple[Optional[Dict[str, Any]], bool]:
         for key_terminal, dict_terminal in airport_data["terminals"].items():
             for key_gate, dict_gate in dict_terminal.items():
                 if key_terminal == terminal and key_gate == gate:
                     return dict_gate, True
 
-        # 2. Fuzzy Suche
         best_match = None
-        best_score = 33
+        best_score = 10
 
         for key_terminal, dict_terminal in airport_data["terminals"].items():
             for key_gate, dict_gate in dict_terminal.items():
                 score = fuzz.ratio(key_terminal + key_gate, terminal + gate)
                 logger.debug("Looking for Terminal %s Gate %s. Terminal %s and Gate %s reached score of %s", terminal, gate, key_terminal, key_gate, score)
-                if score > best_score:  # Mindest-Ähnlichkeit
+                if score > best_score:
                     best_score = score
                     best_match = dict_gate
-        logger.debug("Chose best match %s with Score %s", best_match['position_id'], best_score)
+
+        if best_match:
+            logger.debug("Chose best match %s with Score %s", best_match['position_id'], best_score)
+        else:
+            logger.warning("No gate match found for Terminal %s Gate %s", terminal, gate)
+
         return best_match, False

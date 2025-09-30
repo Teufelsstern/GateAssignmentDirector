@@ -23,6 +23,7 @@ class GsxConfig:
     logging_format: str = '%(asctime)s - %(levelname)s - %(message)s'
     logging_datefmt: str = '%H:%M:%S'
     SI_API_KEY: str = None
+    default_airline: str = None
 
     logging.basicConfig(
         level=logging_level,
@@ -55,6 +56,7 @@ class GsxConfig:
             'logging_format': '%(asctime)s - %(levelname)s - %(message)s',
             'logging_datefmt': '%H:%M:%S',
             'SI_API_KEY': 'YOUR_API_KEY_HERE',
+            'default_airline': 'GSX',
         }
 
     @classmethod

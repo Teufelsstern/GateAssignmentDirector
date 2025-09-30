@@ -1,0 +1,1 @@
+- During code improvement you can always expect greenlight for: removing unnecessary self explanatory comments, adding missing type hints and necessary imports, fixing broad exceptions by making out actually valid exceptions for specific case

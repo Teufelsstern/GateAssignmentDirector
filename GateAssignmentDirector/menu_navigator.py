@@ -126,12 +126,12 @@ def _search_options(keywords: List[str], search_type: SearchType, menu) -> int:
     """Search for keywords in menu options"""
     index = 0
     for index, option in menu.options_enum:
-        words = option.split()
         if search_type == SearchType.KEYWORD:
+            words = option.split()
             if any(word == keyword for word in words for keyword in keywords):
                 break
         else:
             keyword = keywords[0]
-            if any(word == keyword for word in words):
+            if keyword in option:
                 break
     return index

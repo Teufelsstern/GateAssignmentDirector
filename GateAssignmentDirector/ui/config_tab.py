@@ -25,6 +25,12 @@ def setup_config_tab(parent_ui, tab):
         parent_ui, scroll_frame, field_name="SI_API_KEY", label_text="Say Intentions API Key"
     )
 
+    # GSX Settings
+    _label(frame=scroll_frame, text="GSX Settings", size=14, pady=(15, 5))
+    create_config_field(
+        parent_ui, scroll_frame, field_name="default_airline", label_text="Default Airline"
+    )
+
     _label(
         frame=scroll_frame,
         text="Everything below shouldn't be touched unless you know what you're doing.",

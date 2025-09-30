@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2024-09-30
+
+### Added
+- Configurable default airline setting (default_airline in config.yaml)
+- UI field for default airline configuration in Config tab under GSX Settings
+- Complete type hints for all methods in gate_assignment.py
+
+### Fixed
+- Print statements replaced with proper logger.debug calls in map_available_spots()
+- Broad exception handling in assign_gate() now catches specific exceptions (GsxMenuError, GsxTimeoutError, OSError, IOError)
+- Potential KeyError in find_gate() when best_match is None
+- Airline search in menu_navigator.py now uses substring matching instead of word-by-word exact matching
+
+### Changed
+- Default airline changed from "(UA_2000)" to "GSX" for universal compatibility
+- Fuzzy matching threshold reduced from 33 to 10 for better gate matching with low-quality data
+- Removed all unnecessary comments from gate_assignment.py
+
+### Improved
+- Code quality and maintainability in gate_assignment.py
+- Gate matching accuracy with lower fuzzy threshold
+- Airline selection flexibility through configuration
+
 ## [0.7.0] - 2024-09-30
 
 ### Fixed
