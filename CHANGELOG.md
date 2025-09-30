@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.8] - 2025-09-30
+
+### Added
+- AGENT_KNOWLEDGE.md with comprehensive codebase documentation for AI agents
+- Complete unit test suite for config.py (test_config.py) with 27 tests
+- Test coverage for YAML loading, saving, default values, and computed fields
+- Round-trip configuration testing for save/load operations
+
+### Changed
+- Added AGENT_KNOWLEDGE.md to .gitignore to keep it out of version control
+
+### Improved
+- Testing coverage with comprehensive config module validation
+- Documentation for AI agents working on the codebase
+
 ## [0.7.7] - 2024-09-30
 
 ### Fixed

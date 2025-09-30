@@ -49,6 +49,7 @@ gsx_menu_logs/
 !*_interpreted.json
 config.yaml
 monitor_config.ini
+AGENT_KNOWLEDGE.md
 
 # Secrets
 .env
