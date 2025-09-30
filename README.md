@@ -37,6 +37,22 @@ Run the test suite:
 python -m unittest discover tests
 ```
 
+## Dependencies
+
+For licensing compliance and transparency, below are the open-source libraries used in this project:
+
+| Library | License | Repository/Documentation |
+|---------|---------|--------------------------|
+| PyYAML | MIT | https://pyyaml.org/ |
+| rapidfuzz | MIT | https://github.com/maxbachmann/RapidFuzz |
+| requests | Apache 2.0 | https://requests.readthedocs.io/ |
+| Python-SimConnect | AGPL-3.0 | https://github.com/odwdinc/Python-SimConnect |
+| CustomTkinter | MIT | https://github.com/TomSchimansky/CustomTkinter |
+| Pillow | HPND | https://pillow.readthedocs.io/ |
+| pystray | GPL-3.0 | https://github.com/moses-palmer/pystray |
+
+All dependencies are compatible with GPL-3.0.
+
 ## Project Status
 
 This is a foundation project meant to be built upon and extended by the community. It's provided as-is with no commitment to ongoing maintenance, support, or pull request reviews. Feel free to fork and adapt it to your needs, adhering to the principles of free software under GPL-3.0.
