@@ -12,12 +12,13 @@ def _label(
     pady: tuple[int, int] = (15, 5),
     color: str = "#ffffff",
     width: Optional[int] = None,
-    side: Optional[str] = None
+    side: Optional[str] = None,
+    bold: bool = True
 ) -> None:
     """Create a text label for the current frame"""
     label_kwargs = {
         "text": text,
-        "font": ("Arial", size, "bold"),
+        "font": ("Arial", size, "bold" if bold else "normal"),
         "text_color": color,
         "anchor": "w"
     }
@@ -44,6 +45,7 @@ def _button(
     padx: tuple[int, int] = (0, 0),
     pady: tuple[int, int] = (0, 0),
     state: str = "normal",
+    size: int = 16
 ) -> ctk.CTkButton:
     """Create a button and return it"""
     btn = ctk.CTkButton(
@@ -54,7 +56,7 @@ def _button(
         fg_color=fg_color,
         hover_color=hover_color,
         state=state,
-        font=("Arial", 16, "bold")
+        font=("Arial", size, "bold")
     )
     btn.pack(side=side, expand=expand, fill=fill, padx=padx, pady=pady)
     return btn

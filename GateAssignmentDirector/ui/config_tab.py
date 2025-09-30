@@ -12,71 +12,63 @@ def setup_config_tab(parent_ui, tab):
         parent_ui: The DirectorUI instance
         tab: The tab widget to setup
     """
-    # Scrollable frame
     scroll_frame = ctk.CTkScrollableFrame(tab)
-    scroll_frame.pack(fill="both", expand=True, padx=20, pady=(20, 10))
+    scroll_frame.pack(fill="both", expand=True, padx=5, pady=(5, 10))
 
-    # Store references to entry widgets
     parent_ui.config_entries = {}
 
-    # API Settings
-    _label(frame=scroll_frame, text="API Settings", size=14, pady=(15, 5))
+    _label(frame=scroll_frame, text="API Settings", size=16, pady=(0, 0), padx=(5,0))
     create_config_field(
-        parent_ui, scroll_frame, field_name="SI_API_KEY", label_text="Say Intentions API Key"
+        parent_ui, scroll_frame, field_name="SI_API_KEY", label_text="SI API Key", padx=(5,0), entry_width=100
     )
 
-    # GSX Settings
-    _label(frame=scroll_frame, text="GSX Settings", size=14, pady=(15, 5))
+    _label(frame=scroll_frame, text="GSX Settings", size=16, pady=(10, 0), padx=(5,0))
     create_config_field(
-        parent_ui, scroll_frame, field_name="default_airline", label_text="Default Airline"
+        parent_ui, scroll_frame, field_name="default_airline", label_text="Default Airline", padx=(5,0), entry_width=100
     )
 
     _label(
         frame=scroll_frame,
-        text="Everything below shouldn't be touched unless you know what you're doing.",
+        text="_________ Advanced Settings ___________",
         size=14,
         color="#d97440",
-        pady=(30, 5),
+        pady=(20, 10)
     )
 
-    # Timing Settings
-    _label(frame=scroll_frame, text="Timing Settings", size=14, pady=(10, 5))
+    _label(frame=scroll_frame, text="Timing Settings", size=16, pady=(10, 0), padx=(5,0))
 
     timing_fields = [
-        ("sleep_short", "Sleep Short (seconds)"),
-        ("sleep_long", "Sleep Long (seconds)"),
+        ("sleep_short", "Short delay (s). Never shorter than 0.1"),
+        ("sleep_long", "Longer delay (s). Never shorter than 0.2"),
     ]
 
     for field, label in timing_fields:
-        create_config_field(parent_ui, scroll_frame, field, label)
+        create_config_field(parent_ui, scroll_frame, field, label, padx=(5,0), entry_width=30)
 
-    # Interval Settings
-    _label(frame=scroll_frame, text="Interval Settings", size=14, pady=(15, 5))
+    _label(frame=scroll_frame, text="Interval Settings", size=16, pady=(10, 0), padx=(5,0))
     interval_fields = [
-        ("ground_check_interval", "Ground Check Interval (ms)"),
-        ("aircraft_request_interval", "Aircraft Request Interval (ms)"),
+        ("ground_check_interval", "Delay (ms) between ground checks. Never lower than 500"),
+        ("aircraft_request_interval", "Delay (ms) between aircraft requests. Never lower than 500"),
     ]
 
     for field, label in interval_fields:
-        create_config_field(parent_ui, scroll_frame, field, label)
+        create_config_field(parent_ui, scroll_frame, field, label, padx=(5,0), entry_width=50)
 
-    # Menu Settings
-    _label(frame=scroll_frame, text="Menu Settings", size=14, pady=(15, 5))
+    _label(frame=scroll_frame, text="Menu Settings", size=16, pady=(10, 0), padx=(5,0))
     create_config_field(
-        parent_ui, scroll_frame, "max_menu_check_attempts", "Max Menu Check Attempts"
+        parent_ui, scroll_frame, "max_menu_check_attempts", "Max Menu Check Attempts", padx=(5,0), entry_width=30
     )
 
-    # Logging Settings
-    _label(frame=scroll_frame, text="Logging Settings", size=14, pady=(15, 5))
+    _label(frame=scroll_frame, text="Logging Settings", size=16, pady=(10, 0), padx=(5,0))
 
     logging_fields = [
-        ("logging_level", "Logging Level"),
-        ("logging_format", "Logging Format"),
-        ("logging_datefmt", "Logging Date Format"),
+        ("logging_level", "Logging Level", 60),
+        ("logging_format", "Logging Format", 300),
+        ("logging_datefmt", "Logging Date Format", 90),
     ]
 
-    for field, label in logging_fields:
-        create_config_field(parent_ui, scroll_frame, field, label)
+    for field, label, width in logging_fields:
+        create_config_field(parent_ui, scroll_frame, field, label, padx=(5,0), entry_width=width)
 
     # Info about computed fields
     _label(
@@ -87,11 +79,9 @@ def setup_config_tab(parent_ui, tab):
         color="#808080",
     )
 
-    # Button frame
     btn_frame = ctk.CTkFrame(tab, fg_color="transparent")
     btn_frame.pack(fill="x", padx=20, pady=(0, 20))
 
-    # Load button
     _button(
         btn_frame,
         parent_ui.load_config_values,
@@ -100,7 +90,6 @@ def setup_config_tab(parent_ui, tab):
         padx=(0, 5)
     )
 
-    # Save button
     _button(
         btn_frame,
         parent_ui.save_config_values,
@@ -111,21 +100,15 @@ def setup_config_tab(parent_ui, tab):
         padx=(5, 0),
     )
 
-    # Load current values
     parent_ui.load_config_values()
 
 
-def create_config_field(parent_ui, parent, field_name, label_text):
+def create_config_field(parent_ui, parent, field_name:str, label_text:str, label_width:int = 60, entry_width:int = 60, padx:tuple[int,int]=(0,10), size:int = 14, side:str = "left"):
     """Create a labeled entry field for configuration"""
     frame = ctk.CTkFrame(parent, fg_color="transparent")
-    frame.pack(fill="x", pady=3)
-
-    # Keep inline labels as direct CTkLabel (needs side="left")
-    ctk.CTkLabel(
-        frame, text=label_text + ":", font=("Arial", 14), width=250, anchor="w"
-    ).pack(side="left", padx=(0, 10))
-
-    entry = ctk.CTkEntry(frame)
-    entry.pack(side="left", fill="x", expand=True)
+    frame.pack(fill="x", expand=False)
+    _label(frame, text=label_text + ":", size=size, padx=(10,10), pady=(0,5), side=side, width=label_width, bold=False)
+    entry = ctk.CTkEntry(frame, width=entry_width, height=5)
+    entry.pack(expand=False, side=side)
 
     parent_ui.config_entries[field_name] = entry

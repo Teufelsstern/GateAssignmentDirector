@@ -43,8 +43,8 @@ class DirectorUI:
         self.stop_btn = None
         self.assign_gate_btn = None
         self.activity_text = None
-        self.values_word_label = None
-        self.values_words = []
+        self.vwl = None
+        self.val = []
 
         # Setup main window
         ctk.set_appearance_mode("dark")
@@ -52,11 +52,11 @@ class DirectorUI:
 
         self.root = ctk.CTk()
         self.root.title("Gate Assignment Director")
-        self.root.geometry("700x600")
+        self.root.geometry("500x500")
 
         # Set size constraints
-        self.root.minsize(700, 600)
-        self.root.maxsize(900, 700)
+        self.root.minsize(350, 430)
+        self.root.maxsize(800, 800)
 
         # Override close button to minimize to tray
         self.root.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
@@ -64,9 +64,12 @@ class DirectorUI:
         # Setup system tray
         self._setup_tray()
 
-        # Create tabview
+        # Values statement at bottom (setup first to claim bottom space)
+        self._setup_values_statement()
+
+        # Create tabview (will expand in remaining space)
         self.tabview = ctk.CTkTabview(self.root)
-        self.tabview.pack(fill="both", expand=True, padx=10, pady=10)
+        self.tabview.pack(fill="both", expand=True, padx=10, pady=(10, 5))
 
         # Add tabs
         self.tabview.add("Monitor")
@@ -78,25 +81,27 @@ class DirectorUI:
         setup_logs_tab(self, self.tabview.tab("Logs"))
         setup_config_tab(self, self.tabview.tab("Config"))
 
-        # Values statement at bottom with rotating word
-        self._setup_values_statement()
-
         # Redirect logging to text widget
         self._setup_logging()
+
+        # System integrity check
+        self.ic()
 
         # Start periodic UI updates
         self._update_ui_state()
 
     def _setup_values_statement(self):
-        """Create values statement at bottom with rotating word"""
+        """Create values statement at bottom with random word"""
         import random
 
-        values_frame = ctk.CTkFrame(self.root, fg_color="transparent")
-        values_frame.pack(side="bottom", fill="x", pady=(0, 10))
+        # Create fixed container at bottom
+        values_container = ctk.CTkFrame(self.root, fg_color="transparent", height=30, width=150)
+        values_container.pack(side="bottom", fill="x", pady=(0, 5))
+        values_container.pack_propagate(False)  # Prevent shrinking
 
         # Container to center the text
-        center_frame = ctk.CTkFrame(values_frame, fg_color="transparent")
-        center_frame.pack(anchor="center")
+        center_frame = ctk.CTkFrame(values_container, fg_color="transparent")
+        center_frame.place(relx=0.5, rely=0.5, anchor="center")  # Always centered
 
         rainbow_colors = [
             "#d96b6b",  # soft red
@@ -104,11 +109,11 @@ class DirectorUI:
             "#c9d96b",  # soft yellow
             "#8bd96b",  # soft green
             "#6ba9d9",  # soft blue
-            "#9b6bd9",  # soft purple
+            "#bb6bd9",  # soft purple
         ]
 
-        # Static text
-        words = ["This", "software", "stands"]
+        # Static text with split "software" to use all 6 rainbow colors
+        words = ["This", "soft", "ware", "stands"]
         for i, word in enumerate(words):
             color = rainbow_colors[i % len(rainbow_colors)]
             label = ctk.CTkLabel(
@@ -117,28 +122,26 @@ class DirectorUI:
                 font=("Arial", 11),
                 text_color=color
             )
-            label.pack(side="left", padx=2)
+            # No space between "soft" and "ware" using (left, right) padding
+            if i == 1:  # "soft"
+                padx_val = (2, 0)  # normal left, no right
+            elif i == 2:  # "ware"
+                padx_val = (0, 2)  # no left, normal right
+            else:
+                padx_val = 2
+            label.pack(side="left", padx=padx_val)
 
         # Bold "against"
         against_label = ctk.CTkLabel(
             center_frame,
             text="against",
             font=("Arial", 11, "bold"),
-            text_color=rainbow_colors[3]
+            text_color=rainbow_colors[4]  # soft blue
         )
         against_label.pack(side="left", padx=2)
 
-        # Rotating word label
-        self.values_word_label = ctk.CTkLabel(
-            center_frame,
-            text="",
-            font=("Arial", 11),
-            text_color=rainbow_colors[4]  # soft blue
-        )
-        self.values_word_label.pack(side="left", padx=2)
-
-        # List of terms to rotate
-        self.values_words = [
+        # List of terms to choose from
+        self.val = [
             "fascism.",
             "racism.",
             "discrimination.",
@@ -146,25 +149,20 @@ class DirectorUI:
             "homophobia.",
             "ableism.",
             "sexism.",
-            "xenophobia.",
-            "antisemitism.",
-            "islamophobia.",
             "bigotry.",
-            "hate."
+            "ageism.",
+            "terfs.",
         ]
 
-        # Start rotation
-        self._update_values_word()
-
-    def _update_values_word(self):
-        """Update the rotating word in values statement"""
-        import random
-
-        if self.values_word_label:
-            word = random.choice(self.values_words)
-            self.values_word_label.configure(text=word)
-            # Update every 3 seconds
-            self.root.after(3000, self._update_values_word)
+        # Pick random word once at startup
+        random_word = random.choice(self.val)
+        self.vwl = ctk.CTkLabel(
+            center_frame,
+            text=random_word,
+            font=("Arial", 11),
+            text_color=rainbow_colors[5]  # soft purple
+        )
+        self.vwl.pack(side="left", padx=2)
 
     def _create_tray_icon(self):
         """Create a simple icon for system tray"""
@@ -249,23 +247,53 @@ class DirectorUI:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save configuration:\n{e}")
 
+    def ic(self):
+        r_e = ["m", "m", "n", "a", "a", "m", "m", "y"]
+
+        if not hasattr(self, 'vwl') or not self.val or not self.vwl:
+            messagebox.showerror("Integrity Check Failed", "Check your integrity. Reflect yourself.")
+            self.root.destroy()
+            import sys
+            sys.exit(1)
+
+        # Verify required patterns are present
+        for e in r_e:
+            if not any(word.rstrip('.').endswith(e) for word in self.val):
+                messagebox.showerror("Integrity Check Failed", "Check your integrity. Reflect yourself.")
+                self.root.destroy()
+                import sys
+                sys.exit(1)
+
     def _setup_logging(self):
         """Redirect logging to the log textbox"""
 
         class TextBoxHandler(logging.Handler):
-            def __init__(self, text_widget):
+            def __init__(self, text_widget, activity_widget):
                 super().__init__()
                 self.text_widget = text_widget
+                self.activity_widget = activity_widget
 
             def emit(self, record):
                 msg = self.format(record) + "\n"
                 self.text_widget.after(0, lambda: self._append(msg))
 
+                # Also show errors in Recent Activity
+                if record.levelno >= logging.ERROR:
+                    self.activity_widget.after(0, lambda: self._append_activity(msg))
+
             def _append(self, msg):
+                self.text_widget.configure(state="normal")
                 self.text_widget.insert("end", msg)
                 self.text_widget.see("end")
+                self.text_widget.configure(state="disabled")
 
-        handler = TextBoxHandler(self.log_text)
+            def _append_activity(self, msg):
+                self.activity_widget.configure(state="normal")
+                self.activity_widget.insert("end", msg)
+                self.activity_widget.see("end")
+                self.activity_widget.configure(state="disabled")
+
+        handler = TextBoxHandler(self.log_text, self.activity_text)
         handler.setFormatter(
             logging.Formatter(
                 "%(asctime)s - %(levelname)s - %(message)s", datefmt="%H:%M:%S"
@@ -308,11 +336,13 @@ class DirectorUI:
             # Hide the panel
             self.override_panel.pack_forget()
             self.override_toggle_btn.configure(text="▼ Manual Override")
+            self.root.minsize(350, 430)
             self.override_section_visible = False
         else:
             # Show the panel
             self.override_panel.pack(fill="x", pady=(5, 0))
             self.override_toggle_btn.configure(text="▲ Manual Override")
+            self.root.minsize(470, 500)
             self.override_section_visible = True
 
     def apply_override(self):

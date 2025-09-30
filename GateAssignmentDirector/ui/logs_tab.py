@@ -12,11 +12,9 @@ def setup_logs_tab(parent_ui, tab):
         parent_ui: The DirectorUI instance
         tab: The tab widget to setup
     """
-    # Log display
     parent_ui.log_text = ctk.CTkTextbox(tab, font=("Consolas", 12), fg_color="#1a1a1a")
     parent_ui.log_text.pack(fill="both", expand=True, padx=20, pady=(20, 10))
 
-    # Clear button
     _button(
         tab,
         command=lambda: parent_ui.log_text.delete("1.0", "end"),

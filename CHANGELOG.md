@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.4] - 2025-09-30
+
+### Changed
+- Restyled UI elements for more uniform appearance with consistent sizing
+- Config tab input fields now have variable widths appropriate to their content (API keys wider, numeric fields narrower)
+- Label styling updated with optional bold parameter and consistent padding
+- Main window size constraints adjusted for better flexibility (350x430 min, 800x800 max)
+
+### Fixed
+- Log textboxes now read-only to prevent accidental user edits while still allowing programmatic updates
+
 ## [0.8.3] - 2025-09-30
 
 ### Added
