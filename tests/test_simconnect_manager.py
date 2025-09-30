@@ -131,6 +131,36 @@ class TestSimConnectManager(unittest.TestCase):
 
         self.assertFalse(result)
 
+    @patch('GateAssignmentDirector.simconnect_manager.logger')
+    def test_set_variable_no_connection_returns_false(self, mock_logger):
+        """Test set_variable returns False when connection is None"""
+        manager = SimConnectManager(self.mock_config)
+
+        result = manager.set_variable(b"L:TEST_VAR", 42.0)
+
+        self.assertFalse(result)
+
+    @patch('GateAssignmentDirector.simconnect_manager.logger')
+    def test_set_variable_no_connection_no_exception(self, mock_logger):
+        """Test set_variable does not raise exception when connection is None"""
+        manager = SimConnectManager(self.mock_config)
+
+        try:
+            manager.set_variable(b"L:TEST_VAR", 42.0)
+        except Exception as e:
+            self.fail(f"set_variable raised unexpected exception: {e}")
+
+    @patch('GateAssignmentDirector.simconnect_manager.logger')
+    def test_set_variable_no_connection_logs_debug(self, mock_logger):
+        """Test set_variable logs debug message when connection is None"""
+        manager = SimConnectManager(self.mock_config)
+
+        manager.set_variable(b"L:TEST_VAR", 42.0)
+
+        mock_logger.debug.assert_called_once_with(
+            "Cannot set variable b'L:TEST_VAR': No SimConnect connection"
+        )
+
     def test_initialization(self):
         """Test manager initializes with correct defaults"""
         manager = SimConnectManager(self.mock_config)

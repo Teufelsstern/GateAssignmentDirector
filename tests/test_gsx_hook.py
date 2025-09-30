@@ -4,6 +4,16 @@ from GateAssignmentDirector.gsx_hook import GsxHook
 from GateAssignmentDirector.config import GsxConfig
 
 
+def create_mock_config():
+    """Helper to create properly configured mock config"""
+    mock_config = Mock(spec=GsxConfig)
+    mock_config.logging_level = "INFO"
+    mock_config.logging_format = "%(message)s"
+    mock_config.logging_datefmt = "%Y-%m-%d"
+    mock_config.menu_file_paths = ["/path/to/menu"]
+    return mock_config
+
+
 class TestGsxHookInitialization(unittest.TestCase):
     """
     Critical tests for GsxHook initialization chain.
@@ -17,10 +27,7 @@ class TestGsxHookInitialization(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_initialization_order(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test that components are initialized in correct order"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         # Mock SimConnect to succeed
@@ -46,10 +53,7 @@ class TestGsxHookInitialization(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_initialization_simconnect_failure(self, mock_sim):
         """Test initialization handles SimConnect connection failure"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         # SimConnect fails to connect
@@ -69,10 +73,7 @@ class TestGsxHookInitialization(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_initialization_success_sets_flag(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test successful initialization sets is_initialized to True"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -89,10 +90,7 @@ class TestGsxHookInitialization(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_menu_reader_receives_correct_dependencies(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test MenuReader is initialized with correct dependencies"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -116,10 +114,7 @@ class TestGsxHookInitialization(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_menu_navigator_receives_correct_dependencies(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test MenuNavigator is initialized with correct dependencies"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -145,10 +140,7 @@ class TestGsxHookInitialization(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_gate_assignment_receives_all_dependencies(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test GateAssignment receives all 5 dependencies in correct order"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -189,10 +181,7 @@ class TestGsxHookInitialization(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_enable_menu_logging_flag(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test enable_menu_logging flag is stored"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -213,10 +202,7 @@ class TestGsxHookMethods(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_assign_gate_when_ready_delegates_to_gate_assignment(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test assign_gate_when_ready calls GateAssignment.assign_gate"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -243,10 +229,7 @@ class TestGsxHookMethods(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_assign_gate_when_ready_not_initialized(self, mock_sim):
         """Test assign_gate_when_ready returns False when not initialized"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         # Fail initialization
@@ -266,10 +249,7 @@ class TestGsxHookMethods(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_is_on_ground_delegates_to_sim_manager(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test is_on_ground calls SimConnectManager.is_on_ground"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -285,10 +265,7 @@ class TestGsxHookMethods(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_is_on_ground_not_initialized(self, mock_sim):
         """Test is_on_ground returns False when not initialized"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         # Fail initialization
@@ -308,10 +285,7 @@ class TestGsxHookMethods(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_close_disconnects_sim_manager(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test close method disconnects SimConnect"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -329,10 +303,7 @@ class TestGsxHookMethods(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_close_sets_initialized_false(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test close sets is_initialized to False"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -352,10 +323,7 @@ class TestGsxHookMethods(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_close_sets_menu_open_to_zero(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test close sets GSX menu to closed state"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -377,10 +345,7 @@ class TestGsxHookMethods(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_close_menu_sets_menu_open_to_zero(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test _close_menu() sets MENU_OPEN variable to 0"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -402,10 +367,7 @@ class TestGsxHookMethods(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_assign_gate_when_ready_retries_once_on_failure(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate, mock_sleep):
         """Test assign_gate_when_ready retries once after first failure"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -434,10 +396,7 @@ class TestGsxHookMethods(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_assign_gate_when_ready_fails_after_retry(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate, mock_sleep):
         """Test assign_gate_when_ready fails when both attempts fail"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()
@@ -465,10 +424,7 @@ class TestGsxHookMethods(unittest.TestCase):
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_assign_gate_when_ready_no_retry_on_first_success(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate):
         """Test assign_gate_when_ready doesn't retry when first attempt succeeds"""
-        mock_config = Mock(spec=GsxConfig)
-        mock_config.logging_level = "INFO"
-        mock_config.logging_format = "%(message)s"
-        mock_config.logging_datefmt = "%Y-%m-%d"
+        mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
         mock_sim_instance = Mock()

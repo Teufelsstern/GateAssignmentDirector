@@ -67,6 +67,9 @@ class SimConnectManager:
 
     def set_variable(self, name: bytes, value: float) -> bool:
         """Set a SimConnect variable"""
+        if not self.connection:
+            logger.debug(f"Cannot set variable {name}: No SimConnect connection")
+            return False
         try:
             request = self.create_request(name, settable=True)
             request.value = value

@@ -43,8 +43,8 @@ class TestGsxConfigDefaults(unittest.TestCase):
 
         self.assertEqual(defaults['sleep_short'], 0.1)
         self.assertEqual(defaults['sleep_long'], 0.3)
-        self.assertEqual(defaults['ground_check_interval'], 1000)
-        self.assertEqual(defaults['aircraft_request_interval'], 2000)
+        self.assertEqual(defaults['ground_check_interval'], 1.0)
+        self.assertEqual(defaults['aircraft_request_interval'], 2.0)
 
     def test_get_defaults_logging_values(self):
         """Test _get_defaults returns correct logging configuration"""

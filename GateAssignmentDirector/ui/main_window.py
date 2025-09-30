@@ -14,6 +14,7 @@ from GateAssignmentDirector.ui.gate_management import GateManagementWindow
 from GateAssignmentDirector.ui.monitor_tab import setup_monitor_tab
 from GateAssignmentDirector.ui.logs_tab import setup_logs_tab
 from GateAssignmentDirector.ui.config_tab import setup_config_tab
+from GateAssignmentDirector.ui.ui_helpers import c
 
 
 class DirectorUI:
@@ -68,7 +69,16 @@ class DirectorUI:
         self._setup_values_statement()
 
         # Create tabview (will expand in remaining space)
-        self.tabview = ctk.CTkTabview(self.root)
+        self.tabview = ctk.CTkTabview(
+            self.root,
+            corner_radius=6,
+            segmented_button_fg_color=c('periwinkle', hover=True),
+            segmented_button_selected_color=c('sage'),
+            segmented_button_selected_hover_color=c('sage'),
+            segmented_button_unselected_color=c('periwinkle',hover=True),
+            segmented_button_unselected_hover_color=c('periwinkle'),
+            text_color=c('purple_gray')
+        )
         self.tabview.pack(fill="both", expand=True, padx=10, pady=(10, 5))
 
         # Add tabs
@@ -304,8 +314,8 @@ class DirectorUI:
     def start_monitoring(self):
         """Start the monitoring process"""
         self.start_btn.configure(state="disabled")
-        self.stop_btn.configure(state="normal")
-        self.status_label.configure(text="Monitoring", text_color="#4a9d2a")
+        self.stop_btn.configure(state="normal", text_color="#4a4050")
+        self.status_label.configure(text="Monitoring", text_color="#6B9E78")
 
         self.activity_text.insert("end", "Starting monitoring...\n")
 
@@ -325,8 +335,8 @@ class DirectorUI:
         """Stop the monitoring process"""
         self.director.stop()
         self.start_btn.configure(state="normal")
-        self.stop_btn.configure(state="disabled")
-        self.status_label.configure(text="Stopped", text_color="#a83232")
+        self.stop_btn.configure(state="disabled", text_color="#e8d9d6")
+        self.status_label.configure(text="Stopped", text_color="#C67B7B")
 
         self.activity_text.insert("end", "Monitoring stopped.\n")
 
@@ -364,7 +374,7 @@ class DirectorUI:
         # Update airport display
         self.airport_label.configure(
             text=f"{airport} (MANUAL)",
-            text_color="#ff8c00"  # Orange
+            text_color="#D4A574"  # Muted mustard
         )
 
         self.activity_text.insert("end", f"Manual override applied: {airport} Terminal {terminal} Gate {gate}\n")
@@ -474,12 +484,12 @@ class DirectorUI:
             self.override_active or self.director.current_airport
         )
         if has_data and self.override_active and self.override_gate:
-            self.assign_gate_btn.configure(state="normal")
+            self.assign_gate_btn.configure(state="normal", text_color="#30384a")
         elif has_data and not self.override_active:
             # Only enable if we have gate data from monitoring (future: track this in director)
-            self.assign_gate_btn.configure(state="disabled")
+            self.assign_gate_btn.configure(state="disabled", text_color="#cbd4e6")
         else:
-            self.assign_gate_btn.configure(state="disabled")
+            self.assign_gate_btn.configure(state="disabled", text_color="#cbd4e6")
 
         # Schedule next update (every 500ms)
         self.root.after(500, self._update_ui_state)

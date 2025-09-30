@@ -108,7 +108,7 @@ def create_config_field(parent_ui, parent, field_name:str, label_text:str, label
     frame = ctk.CTkFrame(parent, fg_color="transparent")
     frame.pack(fill="x", expand=False)
     _label(frame, text=label_text + ":", size=size, padx=(10,10), pady=(0,5), side=side, width=label_width, bold=False)
-    entry = ctk.CTkEntry(frame, width=entry_width, height=5)
+    entry = ctk.CTkEntry(frame, width=entry_width, height=5, corner_radius=6, border_width=3, border_color="#3a3a3a")
     entry.pack(expand=False, side=side)
 
     parent_ui.config_entries[field_name] = entry

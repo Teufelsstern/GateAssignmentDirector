@@ -1,7 +1,7 @@
 """Monitor tab UI setup for the Gate Assignment Director"""
 
 import customtkinter as ctk
-from GateAssignmentDirector.ui.ui_helpers import _label, _button
+from GateAssignmentDirector.ui.ui_helpers import _label, _button, c
 
 
 def setup_monitor_tab(parent_ui, tab):
@@ -66,21 +66,21 @@ def setup_monitor_tab(parent_ui, tab):
         expand=False
     )
 
-    parent_ui.override_panel = ctk.CTkFrame(status_frame, fg_color="#2a2a2a")
+    parent_ui.override_panel = ctk.CTkFrame(status_frame, fg_color=c('charcoal_light'), corner_radius=6)
 
     override_content = ctk.CTkFrame(parent_ui.override_panel, fg_color="transparent")
     override_content.pack(fill="x", padx=10, pady=(0,10))
 
-    _label(override_content, text="Airport:", size=12, pady=(0, 5), width=40, side="left")
-    parent_ui.override_airport_entry = ctk.CTkEntry(override_content, placeholder_text="ICAO", width=45)
-    parent_ui.override_airport_entry.pack(side="left", padx=(5, 5))
+    _label(override_content, text="Airport:", size=12, pady=(0, 5), width=40, side="left", padx=(0, 5))
+    parent_ui.override_airport_entry = ctk.CTkEntry(override_content, placeholder_text="ICAO", width=45, corner_radius=6, border_width=1, border_color=c('charcoal_lighter'))
+    parent_ui.override_airport_entry.pack(side="left", padx=(0, 5))
 
     _label(override_content, text="Terminal:", size=12, pady=(0, 5), width=50, side="left")
-    parent_ui.override_terminal_entry = ctk.CTkEntry(override_content, placeholder_text="e.g., 2", width=80)
+    parent_ui.override_terminal_entry = ctk.CTkEntry(override_content, placeholder_text="e.g., 2", width=80, corner_radius=6, border_width=1, border_color=c('charcoal_lighter'))
     parent_ui.override_terminal_entry.pack(side="left", padx=(5, 10))
 
     _label(override_content, text="Gate:", size=12, pady=(0, 5), width=30, side="left")
-    parent_ui.override_gate_entry = ctk.CTkEntry(override_content, placeholder_text="e.g., 24A", width=60)
+    parent_ui.override_gate_entry = ctk.CTkEntry(override_content, placeholder_text="e.g., 24A", width=60, corner_radius=6, border_width=1, border_color=c('charcoal_lighter'))
     parent_ui.override_gate_entry.pack(side="left", padx=(5, 0))
 
     override_btn_frame = ctk.CTkFrame(parent_ui.override_panel, fg_color="transparent")
@@ -90,38 +90,43 @@ def setup_monitor_tab(parent_ui, tab):
         override_btn_frame,
         parent_ui.apply_override,
         text="Apply Override",
-        fg_color="#2d5016",
-        hover_color="#3d6622",
+        fg_color=c('lilac'),
+        hover_color=c('lilac', hover=True),
         height=14,
         size=12,
         side="left",
         expand=False,
         fill="none",
-        padx=(0, 5)
+        padx=(0, 5),
+        width=175,
+        text_color=c('purple_gray')
     )
 
     _button(
         override_btn_frame,
         parent_ui.clear_override,
         text="Clear Override",
-        fg_color="#5a1a1a",
-        hover_color="#6e2828",
+        fg_color=c('salmon'),
+        hover_color=c('salmon', hover=True),
         height=14,
         size=12,
         side="left",
         expand=False,
-        fill="none"
+        fill="none",
+        width=175,
+        text_color=c('purple_gray')
     )
 
     start_stop_btn_frame = ctk.CTkFrame(tab, fg_color="transparent")
-    start_stop_btn_frame.pack(fill="x", padx=20, pady=0)
+    start_stop_btn_frame.pack(fill="x", padx=(20, 40), pady=0)
 
     parent_ui.start_btn = _button(
         start_stop_btn_frame,
         parent_ui.start_monitoring,
         text="Start Monitoring",
-        fg_color="#2d5016",
-        hover_color="#3d6622",
+        fg_color=c('sage'),
+        hover_color=c('sage', hover=True),
+        text_color=c('sage_dark'),
         pady=(0, 5),
         padx=(0, 10),
         side="left"
@@ -131,8 +136,9 @@ def setup_monitor_tab(parent_ui, tab):
         start_stop_btn_frame,
         parent_ui.stop_monitoring,
         text="Stop Monitoring",
-        fg_color="#5a1a1a",
-        hover_color="#6e2828",
+        fg_color=c('salmon'),
+        hover_color=c('salmon', hover=True),
+        text_color=c('salmon_light'),
         pady=(0, 5),
         state="disabled",
         side="right"
@@ -143,8 +149,9 @@ def setup_monitor_tab(parent_ui, tab):
         btn_frame,
         parent_ui.assign_gate_manual,
         text="Assign Gate",
-        fg_color="#1a4a1a",
-        hover_color="#2a5a2a",
+        fg_color=c('periwinkle'),
+        hover_color=c('periwinkle', hover=True),
+        text_color=c('periwinkle_light'),
         pady=(5, 5),
         state="disabled"
     )
@@ -152,14 +159,14 @@ def setup_monitor_tab(parent_ui, tab):
         btn_frame,
         parent_ui.edit_gates,
         text="Edit gates at current airport",
-        fg_color="#4a4a4a",
-        hover_color="#5a5a5a",
+        fg_color=c('gray'),
+        hover_color=c('gray_light'),
         height=14,
         pady=(5, 5)
     )
     btn_frame.pack(fill="x", padx=20, pady=(0,10))
 
-    activity_frame = ctk.CTkFrame(tab)
+    activity_frame = ctk.CTkFrame(tab, corner_radius=6)
     activity_frame.pack(fill="both", expand=True, padx=10, pady=0)
 
     _label(
