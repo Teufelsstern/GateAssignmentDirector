@@ -3,11 +3,10 @@ import time
 import logging
 import configparser
 import re
-import unittest
 
 from pathlib import Path
-from typing import Dict, Any, Optional
-from dataclasses import dataclass
+from typing import Dict, Any, Optional, Callable
+from dataclasses import dataclass, asdict
 
 from GateAssignmentDirector import config
 from GateAssignmentDirector.gsx_enums import GateGroups
@@ -15,10 +14,19 @@ from GateAssignmentDirector.gsx_hook import GsxHook
 
 logger = logging.getLogger(__name__)
 
-logging.basicConfig(
-    level=config.GsxConfig.logging_level,
-    format=config.GsxConfig.logging_format,
-    datefmt=config.GsxConfig.logging_datefmt,
+# Compile regex pattern at module level for performance
+GATE_PATTERN = re.compile(
+    r"""
+        (?:terminal\s+)?
+        (?:(terminal|international|parking|domestic|main|central|pier|concourse|level)\s+)?
+        (?:terminal\s+)?
+        (?:([A-Z)]|\d+)\s+)?
+        (?:(gate)\s+)?
+        (?:([A-Z])\s*)?
+        (?:(\d+)(?:\s*|$))?
+        (?:([A-Z])(?:\s*|$))?
+        """,
+    re.IGNORECASE | re.VERBOSE,
 )
 
 
@@ -32,7 +40,7 @@ class GateInfo:
     gate_letter: Optional[str] = None
     raw_value: str = ""
 
-    def __str__(self):
+    def __str__(self) -> str:
         parts = []
         if self.terminal_name:
             parts.append(f"Terminal: {self.terminal_name} ")
@@ -49,29 +57,11 @@ class GateInfo:
 class GateParser:
     """Intelligent gate information parser"""
 
-    def __init__(self, match: Optional[re.Match[str]] = None):
-        self.match: Optional[re.Match[str]] = match
-        self.pattern = re.compile(
-            r"""
-                (?:terminal\s+)?
-                (?:(terminal|international|parking|domestic|main|central|pier|concourse|level)\s+)?
-                (?:terminal\s+)?
-                (?:([A-Z)]|\d+)\s+)?
-                (?:(gate)\s+)?
-                (?:([A-Z])\s*)?
-                (?:(\d+)(?:\s*|$))?
-                (?:([A-Z])(?:\s*|$))?
-                """,
-            re.IGNORECASE | re.VERBOSE,
-        )
-
-    def parse_gate(
-        self, gate_string: str
-    ) -> GateInfo:
+    def parse_gate(self, gate_string: str) -> GateInfo:
         """
         Parse gate string into components using intelligent pattern matching
         """
-        if not gate_string or gate_string.strip() == "":
+        if not gate_string or not gate_string.strip():
             return GateInfo()
 
         gate_string = gate_string.strip()
@@ -83,29 +73,19 @@ class GateParser:
             terminal_number="",
         )
 
-        # Try patterns in order of specificity
-        self.match = self.pattern.search(gate_string)
-        if self.match:
-            gate_info.terminal_name = (
-                self.match.group(GateGroups.T_NAME).capitalize()
-                if self.match.group(GateGroups.T_NAME) is not None
-                else "Terminal"
-            )
-            gate_info.terminal_number = (
-                self.match.group(GateGroups.T_NUMBER).capitalize()
-                if self.match.group(GateGroups.T_NUMBER) is not None
-                else ""
-            )
-            gate_info.gate_number = (
-                self.match.group(GateGroups.G_NUMBER)
-                if self.match.group(GateGroups.G_NUMBER) is not None
-                else ""
-            )
-            gate_info.gate_letter = (
-                self.match.group(GateGroups.G_LETTER).capitalize()
-                if self.match.group(GateGroups.G_LETTER) is not None
-                else ""
-            )
+        match = GATE_PATTERN.search(gate_string)
+        if match:
+            t_name = match.group(GateGroups.T_NAME)
+            gate_info.terminal_name = t_name.capitalize() if t_name else "Terminal"
+
+            t_number = match.group(GateGroups.T_NUMBER)
+            gate_info.terminal_number = t_number.capitalize() if t_number else ""
+
+            g_number = match.group(GateGroups.G_NUMBER)
+            gate_info.gate_number = g_number or ""
+
+            g_letter = match.group(GateGroups.G_LETTER)
+            gate_info.gate_letter = g_letter.capitalize() if g_letter else ""
         return gate_info
 
 
@@ -117,8 +97,8 @@ class JSONMonitor:
         poll_interval: int = 5,
         default_log_level: str = "INFO",
         enable_gsx_integration: bool = False,
-        gate_callback: bool = None,
-    ):
+        gate_callback: Optional[Callable] = None,
+    ) -> None:
         self.file_path = Path(file_path)
         self.config_path = Path(config_path)
         self.poll_interval = poll_interval
@@ -129,14 +109,6 @@ class JSONMonitor:
         self.enable_gsx_integration = enable_gsx_integration
         self.gsx_hook = None
         self.gate_callback = gate_callback
-
-        logging.basicConfig(
-            level=config.GsxConfig.logging_level,
-            format=config.GsxConfig.logging_format,
-            datefmt=config.GsxConfig.logging_datefmt,
-        )
-
-        # Load field-specific log levels
         self.field_log_levels = self.load_config()
 
     def load_config(self) -> Dict[str, str]:
@@ -147,7 +119,7 @@ class JSONMonitor:
         _config = configparser.ConfigParser()
         _config.read(self.config_path)
 
-        if "LOG_LEVELS" not in config:
+        if "LOG_LEVELS" not in _config:
             logger.warning("No LOG_LEVELS section in config, using defaults")
             return {"default": self.default_log_level}
 
@@ -155,9 +127,7 @@ class JSONMonitor:
 
     def get_log_level_for_field(self, field_path: str) -> str:
         """Get log level for specific field, fall back to default"""
-        return self.field_log_levels.get(
-            field_path, self.field_log_levels.get("default", self.default_log_level)
-        )
+        return self.field_log_levels.get(field_path) or self.field_log_levels.get("default", self.default_log_level)
 
     def check_gate_assignment(self, data: Dict[str, Any]) -> None:
         """Check for gate assignment and parse it if found"""
@@ -182,11 +152,10 @@ class JSONMonitor:
                     or self.current_gate_info.raw_value != gate_info.raw_value
                 ):
                     logger.info(f"GATE ASSIGNED: {gate_info}")
-                    # Use callback if provided, otherwise use GSX integration
                     if self.gate_callback:
-                        gate_data = gate_info.__dict__.copy()
-                        gate_data['airport'] = airport  # Add airport to the dict
-                        self.gate_callback(gate_data)  # Send to director
+                        gate_data = asdict(gate_info)
+                        gate_data['airport'] = airport
+                        self.gate_callback(gate_data)
                     elif self.enable_gsx_integration:
                         self.call_gsx_gate_finder(gate_info)
 
@@ -196,7 +165,7 @@ class JSONMonitor:
                     logger.info("GATE CLEARED")
                     self.current_gate_info = None
 
-        except Exception as e:
+        except (KeyError, AttributeError, TypeError) as e:
             logger.error(f"Error checking gate assignment: {e}")
 
     def call_gsx_gate_finder(self, gate_info: GateInfo, airline: str = "GSX") -> bool:
@@ -214,15 +183,14 @@ class JSONMonitor:
                 except ImportError as e:
                     logger.error(f"Failed to import GSX module: {e}")
                     return False
-                except Exception as e:
+                except (OSError, RuntimeError) as e:
                     logger.error(f"Failed to initialize GSX Hook: {e}")
                     return False
 
-            # Convert gate_info to parameters for GSX gate_finder
             gsx_params = {
                 "terminal_name": gate_info.terminal_name,
-                "gate_number": (gate_info.gate_number if gate_info.gate_number else -1),
-                "gate_letter": gate_info.gate_letter if gate_info.gate_letter else None,
+                "gate_number": gate_info.gate_number or -1,
+                "gate_letter": gate_info.gate_letter or None,
                 "airline": airline,
             }
 
@@ -242,7 +210,7 @@ class JSONMonitor:
             logger.info("GSX gate_finder completed successfully")
             return True
 
-        except Exception as e:
+        except (OSError, RuntimeError, AttributeError) as e:
             logger.error(f"Error calling GSX gate_finder: {e}")
             return False
 
@@ -264,7 +232,7 @@ class JSONMonitor:
 
     def read_json(self) -> Optional[Dict[str, Any]]:
         try:
-            with open(self.file_path, "r") as f:
+            with open(self.file_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except FileNotFoundError:
             logger.error(f"File not found: {self.file_path}")
@@ -272,11 +240,11 @@ class JSONMonitor:
         except json.JSONDecodeError as e:
             logger.error(f"JSON decode error: {e}")
             return None
-        except Exception as e:
-            logger.error(f"Unexpected error reading file: {e}")
+        except (OSError, IOError) as e:
+            logger.error(f"Error reading file: {e}")
             return None
 
-    def log_change(self, message: str, field_path: str):
+    def log_change(self, message: str, field_path: str) -> None:
         """Log change with field-specific log level"""
         log_level = self.get_log_level_for_field(field_path)
         numeric_level = getattr(logging, log_level.upper(), logging.INFO)
@@ -307,7 +275,7 @@ class JSONMonitor:
                     f"REMOVED: {current_path} = {old_data[key]}", current_path
                 )
 
-    def monitor(self):
+    def monitor(self) -> None:
         logger.info(f"Starting monitor for {self.file_path}")
         logger.info(f"Config loaded from {self.config_path}")
         logger.info("=" * 50)
@@ -327,7 +295,6 @@ class JSONMonitor:
                         self.find_changes(self.previous_data, current_data)
                         logger.info("--- END CHANGES ---")
 
-                    # Always check gate assignment
                     self.check_gate_assignment(current_data)
 
                     self.previous_data = current_data
@@ -337,21 +304,6 @@ class JSONMonitor:
             except KeyboardInterrupt:
                 logger.info("Monitor stopped by user")
                 break
-            except Exception as e:
+            except (OSError, RuntimeError) as e:
                 logger.error(f"Monitor error: {e}")
                 time.sleep(self.poll_interval)
-
-
-if __name__ == "__main__":
-    # Configuration
-    unittest.main()
-    FILE_PATH = "C:\\Users\\mariu\\AppData\\Local\\SayIntentionsAI\\flight.json"
-    CONFIG_PATH = "monitor_config.ini"
-    POLL_INTERVAL = 1  # seconds
-    DEFAULT_LOG_LEVEL = "INFO"
-    ENABLE_GSX_INTEGRATION = True  # Set to False to disable GSX integration
-
-    monitor = JSONMonitor(
-        FILE_PATH, CONFIG_PATH, POLL_INTERVAL, DEFAULT_LOG_LEVEL, ENABLE_GSX_INTEGRATION
-    )
-    monitor.monitor()

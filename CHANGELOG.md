@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.5] - 2024-09-30
+
+### Added
+- Module-level `GATE_PATTERN` compiled regex for improved performance
+- `Callable` and `asdict` imports from typing and dataclasses
+
+### Fixed
+- Critical bug in `load_config()` checking wrong variable (`config` module instead of `_config` ConfigParser instance)
+- Type hint for `gate_callback` parameter changed from `Optional[callable]` to `Optional[Callable]`
+- Return type hints added for `__str__()`, `__init__()`, `log_change()`, and `monitor()`
+
+### Changed
+- Removed `unittest` import and entire `if __name__ == "__main__"` block (lines 6, 345-357)
+- Removed unused `self.match` instance variable from `GateParser.__init__`
+- Moved regex pattern compilation from instance-level to module-level for performance
+- Simplified empty string check from `gate_string.strip() == ""` to `not gate_string.strip()`
+- Replaced `gate_info.__dict__` with `asdict(gate_info)` for dataclass conversion
+- Simplified ternary expressions using `or` operator in `parse_gate()`
+- Simplified ternary expressions in `gsx_params` dictionary construction
+- Removed duplicate `logging.basicConfig` call from `JSONMonitor.__init__`
+- Simplified nested `.get()` calls with `or` operator in `get_log_level_for_field()`
+- Added UTF-8 encoding to file open in `read_json()`
+- Removed `ground_timeout_default` from config.yaml
+
+### Improved
+- Exception handling specificity with targeted exception types:
+  - `check_gate_assignment()`: `Exception` → `(KeyError, AttributeError, TypeError)`
+  - `call_gsx_gate_finder()` initialization: `Exception` → `(OSError, RuntimeError)`
+  - `call_gsx_gate_finder()` execution: `Exception` → `(OSError, RuntimeError, AttributeError)`
+  - `read_json()`: `Exception` → `(OSError, IOError)`
+  - `monitor()`: `Exception` → `(OSError, RuntimeError)`
+- Code readability with cleaner conditional expressions
+- Type safety with proper type hints throughout
+
 ## [0.7.4] - 2024-09-30
 
 ### Added
