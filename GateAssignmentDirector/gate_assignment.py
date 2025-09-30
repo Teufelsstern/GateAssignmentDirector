@@ -145,10 +145,7 @@ class GateAssignment:
 
             self.menu_navigator.click_planned(matching_gsx_gate)
             self.menu_navigator.find_and_click(["activate"], SearchType.KEYWORD)
-            try:
-                self.menu_navigator.find_and_click([self.config.default_airline or "(UA_2000)"], SearchType.AIRLINE)
-            except GsxMenuError as e:
-                logger.debug("GSX didn't want to show operators today: %s", e)
+            self.menu_navigator.find_and_click([self.config.default_airline or "(UA_2000)"], SearchType.AIRLINE)
             logger.info("Gate assignment completed successfully")
             return True
 

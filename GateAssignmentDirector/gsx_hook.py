@@ -1,6 +1,7 @@
 """Main GSX Hook class with menu logging"""
 
 import logging
+import time
 from typing import Optional
 
 from GateAssignmentDirector.config import GsxConfig
@@ -22,7 +23,7 @@ class GsxHook:
         self, config: Optional[GsxConfig] = None, enable_menu_logging: bool = True
     ) -> None:
         """Initialize GSX Hook with optional configuration and menu logging"""
-        self.config = config or GsxConfig()
+        self.config = GsxConfig.from_yaml()
         self.is_initialized = None
         self.enable_menu_logging = enable_menu_logging
 
@@ -71,6 +72,11 @@ class GsxHook:
         self.menu_navigator = None
         self.gate_assignment = None
 
+    def _close_menu(self) -> None:
+        """Close GSX menu"""
+        self.sim_manager.set_variable(GsxVariable.MENU_OPEN.value, 0)
+        time.sleep(0.1)
+
     def assign_gate_when_ready(self, airport: str, **kwargs) -> bool:
         """
         Public interface for gate assignment with airport logging
@@ -82,7 +88,22 @@ class GsxHook:
         if not self.is_initialized:
             logger.error("GSX Hook not initialized")
             return False
-        return self.gate_assignment.assign_gate(airport=airport, **kwargs)
+
+        # First attempt
+        result = self.gate_assignment.assign_gate(airport=airport, **kwargs)
+
+        # Retry once if failed (GSX can be unreliable)
+        if not result:
+            logger.warning("Gate assignment failed, closing menu and retrying...")
+            self._close_menu()
+            time.sleep(0.5)
+            result = self.gate_assignment.assign_gate(airport=airport, **kwargs)
+            if result:
+                logger.info("Gate assignment succeeded on retry")
+            else:
+                logger.error("Gate assignment failed after retry")
+
+        return result
 
     def is_on_ground(self) -> bool:
         """Check if aircraft is on ground"""

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.9] - 2025-09-30
+
+### Added
+- Retry logic for gate assignment at GsxHook boundary level
+- `_close_menu()` helper method for proper menu cleanup before retry
+
+### Fixed
+- Removed exception swallowing in gate_assignment.py that hid airline selection failures
+- Gate assignment now properly reports failures instead of silently continuing
+
+### Changed
+- Airline click errors now bubble up to outer exception handler
+- Failed gate assignments trigger automatic retry after closing and reopening menu
+
+### Improved
+- Gate assignment reliability with automatic retry on failure
+- Error visibility for debugging GSX menu issues
+
 ## [0.7.8] - 2025-09-30
 
 ### Added
