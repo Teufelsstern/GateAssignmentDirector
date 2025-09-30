@@ -37,7 +37,7 @@ class TestMenuLogger(unittest.TestCase):
 
         result = self.logger._interpret_position("5A", position_info, "gate")
 
-        self.assertEqual(result["terminal"], "Terminal")  # Single digit defaults
+        self.assertEqual(result["terminal"], "1")  # Single digit defaults to "1"
         self.assertEqual(result["gate"], "5A")
         self.assertEqual(result["type"], "gate")
 
@@ -181,8 +181,21 @@ class TestMenuLogger(unittest.TestCase):
 
         self.logger._extract_gates_and_spots(options, menu_title, navigation_info)
 
-        # Check spots were added
-        self.assertIn("101", self.logger.menu_map["available_spots"])
+        # Check spots were added (stored with full text as key)
+        self.assertIn("Parking 101", self.logger.menu_map["available_spots"])
+
+    def test_parking_menu_does_not_extract_gates(self):
+        """Test that parking menu doesn't extract items as gates"""
+        options = ["Parking 101", "Gate 5A", "Stand A"]
+        menu_title = "Select Parking"
+        navigation_info = {"level_0_index": 2, "next_clicks": 1}
+
+        self.logger._extract_gates_and_spots(options, menu_title, navigation_info)
+
+        # Parking menu should not add to available_gates
+        self.assertEqual(len(self.logger.menu_map["available_gates"]), 0)
+        # But should add to available_spots
+        self.assertGreater(len(self.logger.menu_map["available_spots"]), 0)
 
     def test_log_menu_state_skips_airport_select(self):
         """Test that airport selection menu is skipped"""

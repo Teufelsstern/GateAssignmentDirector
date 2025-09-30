@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] - 2024-09-30
+
+### Added
+- Module-level constants for navigation options using GsxMenuKeywords
+- Compiled regex patterns for gate/parking extraction (performance improvement)
+- Return type hints for all menu_logger.py methods
+- Test case for parking menu not extracting gate patterns
+- Explicit UTF-8 encoding for all file operations
+
+### Fixed
+- Removed unused menu_data dict and hash calculation overhead
+- Removed commented-out code (menu_structure, all_menus_by_depth fields)
+- Removed commented-out gate pattern from parking_patterns
+- Typo in GateInfo docstring (extra quote)
+- Empty line in middle of variable assignments
+- Specific exception handling (OSError, IOError, json.JSONDecodeError) in load_airport_map()
+
+### Changed
+- Simplified menu deduplication using tuple comparison instead of MD5 hash
+- Replaced ternary expressions with cleaner `or` operator for regex group handling
+- Used dict.setdefault() for cleaner terminal initialization
+- Removed hashlib import (no longer needed)
+
+### Improved
+- Code readability and maintainability in menu_logger.py
+- Performance by compiling regex patterns once at module level
+- Type safety with complete type hints
+- Modern Python best practices throughout
+
 ## [0.7.2] - 2024-09-30
 
 ### Added
