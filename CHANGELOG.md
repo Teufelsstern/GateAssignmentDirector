@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2025-09-30
+
+### Fixed
+- _label() helper function chaining - now uses side parameter instead of .pack() return
+- Label width issue causing excessive spacing between labels and inputs
+- Import path for GateAssignmentDirector in main_window.py
+- Missing UI widget initializations in DirectorUI.__init__
+
+### Changed
+- _label() width parameter now optional (None by default) for auto-sizing labels
+- Gate management UI fonts increased for better readability (titles 16-20px, status 14px)
+- Input field spacing optimized - 2px gap to label, 15px between pairs
+- Status section moved below tree view with buttons stacked on right
+- Reload Data and Save Changes button height reduced to 28px
+
+### Improved
+- Gate management window minimum size set to 1000x700
+- Label-to-input visual grouping with proper spacing
+- UI widget type hints and IDE compatibility
+
 ## [0.8.1] - 2025-09-30
 
 ### Added

@@ -7,7 +7,7 @@ from tkinter import messagebox
 from pystray import Icon, Menu, MenuItem
 from PIL import Image, ImageDraw
 
-from director import GateAssignmentDirector
+from GateAssignmentDirector.director import GateAssignmentDirector
 from GateAssignmentDirector.config import GsxConfig
 from GateAssignmentDirector.gsx_hook import GsxHook
 from GateAssignmentDirector.ui.gate_management import GateManagementWindow
@@ -29,16 +29,31 @@ class DirectorUI:
         self.override_gate = None
         self.override_section_visible = False
 
+        # UI widgets (will be populated by setup functions)
+        self.config_entries = {}
+        self.log_text = None
+        self.status_label = None
+        self.airport_label = None
+        self.override_toggle_btn = None
+        self.override_panel = None
+        self.override_airport_entry = None
+        self.override_terminal_entry = None
+        self.override_gate_entry = None
+        self.start_btn = None
+        self.stop_btn = None
+        self.assign_gate_btn = None
+        self.activity_text = None
+
         # Setup main window
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
         self.root = ctk.CTk()
         self.root.title("Gate Assignment Director")
-        self.root.geometry("700x500")
+        self.root.geometry("700x600")
 
         # Set size constraints
-        self.root.minsize(600, 450)
+        self.root.minsize(700, 600)
         self.root.maxsize(900, 700)
 
         # Override close button to minimize to tray

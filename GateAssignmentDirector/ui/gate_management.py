@@ -14,8 +14,8 @@ class GateManagementWindow:
     def __init__(self, parent, airport=None):
         self.window = ctk.CTkToplevel(parent)
         self.window.title("Gate Management")
-        self.window.geometry("900x600")
-        self.window.minsize(800, 500)
+        self.window.geometry("1000x700")
+        self.window.minsize(1000, 700)
 
         # Use provided airport or default to EDDS
         airport = airport or "EDDS"
@@ -33,7 +33,7 @@ class GateManagementWindow:
         _label(
             frame=left_frame,
             text="Current Gate Structure",
-            size=13,
+            size=20,
             pady=(10, 5),
         )
 
@@ -73,14 +73,43 @@ class GateManagementWindow:
         scrollbar.pack(side="right", fill="y")
         self.tree.configure(yscrollcommand=scrollbar.set)
 
-        # Reload button
+        # Bottom controls frame (below tree)
+        bottom_frame = ctk.CTkFrame(left_frame)
+        bottom_frame.pack(fill="x", padx=10, pady=(5, 10))
+
+        # Status log (takes most of the width)
+        status_frame = ctk.CTkFrame(bottom_frame)
+        status_frame.pack(side="left", fill="both", expand=True, padx=(0, 5))
+
+        _label(status_frame, text="Status", size=14, pady=(5, 0))
+
+        self.status_text = ctk.CTkTextbox(
+            status_frame, font=("Consolas", 12), fg_color="#1a1a1a", height=80
+        )
+        self.status_text.pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Buttons stacked vertically on the right
+        buttons_frame = ctk.CTkFrame(bottom_frame, fg_color="transparent")
+        buttons_frame.pack(side="right", fill="x")
+
         _button(
-            frame=left_frame,
+            buttons_frame,
+            self.load_data,
             text="Reload Data",
-            command=self.load_data,
+            height=14,
             fg_color="#4a4a4a",
             hover_color="#5a5a5a",
-            pady=(0, 10)
+            pady=(15, 5),
+        )
+
+        _button(
+            buttons_frame,
+            self.save_data,
+            text="Save Changes",
+            height=14,
+            fg_color="#5a1a1a",
+            hover_color="#6e2828",
+            pady=(0, 0),
         )
 
         # Right side - Controls
@@ -92,17 +121,17 @@ class GateManagementWindow:
         terminal_frame = ctk.CTkFrame(right_frame)
         terminal_frame.pack(fill="x", padx=10, pady=10)
 
-        _label(terminal_frame, text="Terminal Management", pady=(10, 5))
+        _label(terminal_frame, text="Terminal Management", size=16, pady=(10, 5))
         _label(
             terminal_frame,
             text="Active terminals (comma-separated):",
-            size=10,
+            size=16,
             pady=(5, 0),
             padx=(10, 0)
         )
 
         self.active_terminals_entry = ctk.CTkEntry(
-            terminal_frame, placeholder_text="e.g., 1, 2, 3"
+            terminal_frame, placeholder_text="e.g., 1, 2, 3", placeholder_text_color="#5a5a5a"
         )
         self.active_terminals_entry.pack(fill="x", padx=10, pady=5)
 
@@ -121,28 +150,24 @@ class GateManagementWindow:
         gate_frame = ctk.CTkFrame(right_frame)
         gate_frame.pack(fill="x", padx=10, pady=10)
 
-        _label(gate_frame, text="Move Gate", pady=(10, 5))
+        _label(gate_frame, text="Move Gate", size=16, pady=(10, 5))
 
         # Gate number row
         gate_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
-        gate_row.pack(fill="x", padx=10, pady=2)
-        _label(gate_row, text="Gate:", size=10, padx=(0, 5), side="left")
-        self.gate_entry = ctk.CTkEntry(gate_row, placeholder_text="71", width=80)
-        self.gate_entry.pack(side="left", fill="x", expand=True)
+        gate_row.pack(fill="x", padx=10, pady=0)
+        _label(gate_row, text="Gate:", size=16, padx=(0, 2), side="left")
+        self.gate_entry = ctk.CTkEntry(gate_row, placeholder_text="71", width=50)
+        self.gate_entry.pack(side="left", padx=(0, 15))
 
-        # From terminal row
-        from_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
-        from_row.pack(fill="x", padx=10, pady=2)
-        _label(from_row, text="From:", size=10, padx=(0, 5), side="left")
-        self.from_terminal_entry = ctk.CTkEntry(from_row, placeholder_text="7", width=80)
-        self.from_terminal_entry.pack(side="left", fill="x", expand=True)
-
-        # To terminal row
-        to_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
-        to_row.pack(fill="x", padx=10, pady=2)
-        _label(to_row, text="To:", size=10, padx=(0, 5), side="left")
-        self.to_terminal_entry = ctk.CTkEntry(to_row, placeholder_text="8", width=80)
-        self.to_terminal_entry.pack(side="left", fill="x", expand=True)
+        # From and To on same row
+        from_to_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
+        from_to_row.pack(fill="x", padx=10, pady=0)
+        _label(from_to_row, text="From:", size=16, padx=(0, 2), side="left")
+        self.from_terminal_entry = ctk.CTkEntry(from_to_row, placeholder_text="7", placeholder_text_color="#5a5a5a", width=50)
+        self.from_terminal_entry.pack(side="left", padx=(0, 15))
+        _label(from_to_row, text="To:", size=16, padx=(0, 2), side="left")
+        self.to_terminal_entry = ctk.CTkEntry(from_to_row, placeholder_text="8", placeholder_text_color="#5a5a5a", width=50)
+        self.to_terminal_entry.pack(side="left")
 
         _button(
             gate_frame,
@@ -159,26 +184,22 @@ class GateManagementWindow:
         rename_frame = ctk.CTkFrame(right_frame)
         rename_frame.pack(fill="x", padx=10, pady=10)
 
-        _label(rename_frame, text="Rename Gate", pady=(10, 5))
+        _label(rename_frame, text="Rename Gate", size=16, pady=(10, 5))
 
-        # Gate number row
-        rename_gate_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
-        rename_gate_row.pack(fill="x", padx=10, pady=2)
-        _label(rename_gate_row, text="Gate:", size=10, padx=(0, 5), side="left")
-        self.rename_gate_entry = ctk.CTkEntry(rename_gate_row, placeholder_text="71", width=80)
-        self.rename_gate_entry.pack(side="left", fill="x", expand=True)
-
-        # Terminal row
-        rename_terminal_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
-        rename_terminal_row.pack(fill="x", padx=10, pady=2)
-        _label(rename_terminal_row, text="Terminal:", size=10, padx=(0, 5), side="left")
-        self.rename_terminal_entry = ctk.CTkEntry(rename_terminal_row, placeholder_text="3", width=80)
-        self.rename_terminal_entry.pack(side="left", fill="x", expand=True)
+        # Gate and Terminal on same row
+        gate_terminal_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
+        gate_terminal_row.pack(fill="x", padx=10, pady=0)
+        _label(gate_terminal_row, text="Gate:", size=16, padx=(0, 2), side="left")
+        self.rename_gate_entry = ctk.CTkEntry(gate_terminal_row, placeholder_text="71", placeholder_text_color="#5a5a5a", width=50)
+        self.rename_gate_entry.pack(side="left", padx=(0, 15))
+        _label(gate_terminal_row, text="Terminal:", size=16, padx=(0, 2), side="left")
+        self.rename_terminal_entry = ctk.CTkEntry(gate_terminal_row, placeholder_text="3", placeholder_text_color="#5a5a5a", width=50)
+        self.rename_terminal_entry.pack(side="left")
 
         # Full text row
-        _label(rename_frame, text="New full text:", size=10, pady=(5, 0), padx=(10, 0))
-        self.new_fulltext_entry = ctk.CTkEntry(rename_frame, placeholder_text="Gate 71 - Medium - 2x  /J")
-        self.new_fulltext_entry.pack(fill="x", padx=10, pady=5)
+        _label(rename_frame, text="New full text:", size=16, pady=(5, 0), padx=(10, 0))
+        self.new_fulltext_entry = ctk.CTkEntry(rename_frame, placeholder_text="Gate 71 - Medium - 2x  /J", placeholder_text_color="#5a5a5a")
+        self.new_fulltext_entry.pack(fill="x", padx=10, pady=(0, 5))
 
         _button(
             rename_frame,
@@ -187,29 +208,6 @@ class GateManagementWindow:
             height=28,
             fg_color="#2d5016",
             hover_color="#3d6622",
-            padx=(10, 10),
-            pady=(5, 10)
-        )
-
-        # Status log
-        log_frame = ctk.CTkFrame(right_frame)
-        log_frame.pack(fill="both", expand=True, padx=10, pady=10)
-
-        _label(log_frame, text="Status", size=10, pady=(5, 0))
-
-        self.status_text = ctk.CTkTextbox(
-            log_frame, font=("Consolas", 11), fg_color="#1a1a1a", height=100
-        )
-        self.status_text.pack(fill="both", expand=True, padx=5, pady=5)
-
-        # Save button
-        _button(
-            right_frame,
-            self.save_data,
-            text="Save Changes",
-            height=35,
-            fg_color="#5a1a1a",
-            hover_color="#6e2828",
             padx=(10, 10),
             pady=(0, 10)
         )

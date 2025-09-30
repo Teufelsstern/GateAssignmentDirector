@@ -11,18 +11,20 @@ def _label(
     padx: tuple[int, int] = (10, 0),
     pady: tuple[int, int] = (15, 5),
     color: str = "#ffffff",
-    width: Optional[int] = 100,
+    width: Optional[int] = None,
     side: Optional[str] = None
 ) -> None:
     """Create a text label for the current frame"""
-    label = ctk.CTkLabel(
-        frame,
-        text=text,
-        font=("Arial", size, "bold"),
-        text_color=color,
-        width=width,
-        anchor="w"
-    )
+    label_kwargs = {
+        "text": text,
+        "font": ("Arial", size, "bold"),
+        "text_color": color,
+        "anchor": "w"
+    }
+    if width is not None:
+        label_kwargs["width"] = width
+
+    label = ctk.CTkLabel(frame, **label_kwargs)
     if side:
         label.pack(side=side, padx=padx, pady=pady)
     else:
