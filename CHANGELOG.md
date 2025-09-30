@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2024-09-30
+
+### Added
+- Return type hints for menu_reader.py methods
+- GsxFileNotFoundError exception raised when GSX menu file not found
+- Test coverage for GsxFileNotFoundError exception handling
+- Test cases for short menu handling without IndexError
+
+### Fixed
+- IndexError in has_changed() when menu has fewer than 3 options
+- has_changed() now checks first non-menu-action option instead of hardcoded index
+- find_menu_file() now raises exception instead of silently returning None
+- Specific exception handling (OSError, IOError) in read_menu()
+
+### Changed
+- Magic number 100 replaced with config-based max retries (max_menu_check_attempts * 25)
+- Removed unused parameters menu_navigator and sim_manager from MenuReader.__init__
+
+### Improved
+- Menu change detection reliability by skipping menu action buttons
+- Error handling for missing GSX installation
+- Code quality and type safety in menu_reader.py
+
 ## [0.7.1] - 2024-09-30
 
 ### Added

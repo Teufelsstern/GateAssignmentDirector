@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import Mock, MagicMock, patch, mock_open
 import os
 from GateAssignmentDirector.menu_reader import MenuReader, MenuState
+from GateAssignmentDirector.exceptions import GsxFileNotFoundError
 
 
 class TestMenuReader(unittest.TestCase):
@@ -13,6 +14,7 @@ class TestMenuReader(unittest.TestCase):
         self.mock_config.logging_level = "INFO"
         self.mock_config.logging_format = "%(message)s"
         self.mock_config.logging_datefmt = "%Y-%m-%d"
+        self.mock_config.max_menu_check_attempts = 4
         self.mock_config.menu_file_paths = [
             "C:\\path\\to\\menu.txt",
             "C:\\alternate\\menu.txt"
@@ -52,17 +54,18 @@ class TestMenuReader(unittest.TestCase):
 
     @patch('os.path.exists')
     def test_find_menu_file_not_found(self, mock_exists):
-        """Test when menu file not found in any path"""
+        """Test when menu file not found in any path raises exception"""
         mock_exists.return_value = False
 
-        reader = MenuReader(
-            self.mock_config,
-            self.mock_menu_logger,
-            self.mock_menu_navigator,
-            self.mock_sim_manager
-        )
+        with self.assertRaises(GsxFileNotFoundError) as context:
+            reader = MenuReader(
+                self.mock_config,
+                self.mock_menu_logger,
+                self.mock_menu_navigator,
+                self.mock_sim_manager
+            )
 
-        self.assertIsNone(reader.menu_path)
+        self.assertIn("GSX may not be installed", str(context.exception))
 
     @patch('os.path.exists')
     @patch('os.path.getmtime')
@@ -127,7 +130,7 @@ class TestMenuReader(unittest.TestCase):
         result = reader.read_menu()
 
         self.assertEqual(result.title, "Menu")
-        self.assertEqual(len(result.options), 1)  # Empty line becomes empty string
+        self.assertEqual(len(result.options), 0)  # No options after title line
 
     @patch('os.path.exists')
     @patch('os.path.getmtime')
@@ -184,7 +187,7 @@ class TestMenuReader(unittest.TestCase):
 
     @patch('os.path.exists')
     def test_has_changed_same_option_count_different_content(self, mock_exists):
-        """Test has_changed detects same count but different options"""
+        """Test has_changed detects same count but different first non-menu-action option"""
         mock_exists.return_value = True
 
         reader = MenuReader(
@@ -196,14 +199,14 @@ class TestMenuReader(unittest.TestCase):
 
         reader.current_state = MenuState(
             title="Menu",
-            options=["Opt 1", "Opt 2", "New Option"],
-            options_enum=[(0, "Opt 1"), (1, "Opt 2"), (2, "New Option")],
+            options=["New First Option", "Opt 2", "Opt 3"],
+            options_enum=[(0, "New First Option"), (1, "Opt 2"), (2, "Opt 3")],
             raw_lines=[]
         )
         reader.previous_state = MenuState(
             title="Menu",
-            options=["Opt 1", "Opt 2", "Old Option"],
-            options_enum=[(0, "Opt 1"), (1, "Opt 2"), (2, "Old Option")],
+            options=["Old First Option", "Opt 2", "Opt 3"],
+            options_enum=[(0, "Old First Option"), (1, "Opt 2"), (2, "Opt 3")],
             raw_lines=[]
         )
 
@@ -295,6 +298,63 @@ class TestMenuReader(unittest.TestCase):
 
         # Previous state should now match current
         self.assertEqual(reader.previous_state, new_state)
+
+    @patch('os.path.exists')
+    def test_has_changed_short_menu_no_crash(self, mock_exists):
+        """Test has_changed doesn't crash with menus shorter than 3 options"""
+        mock_exists.return_value = True
+
+        reader = MenuReader(
+            self.mock_config,
+            self.mock_menu_logger,
+            self.mock_menu_navigator,
+            self.mock_sim_manager
+        )
+
+        reader.current_state = MenuState(
+            title="Short Menu",
+            options=["Option 1"],
+            options_enum=[(0, "Option 1")],
+            raw_lines=[]
+        )
+        reader.previous_state = MenuState(
+            title="Short Menu",
+            options=["Option 1"],
+            options_enum=[(0, "Option 1")],
+            raw_lines=[]
+        )
+
+        # Should not raise IndexError
+        result = reader.has_changed()
+        self.assertFalse(result)
+
+    @patch('os.path.exists')
+    def test_has_changed_detects_change_in_short_menu(self, mock_exists):
+        """Test has_changed detects change even with short menus"""
+        mock_exists.return_value = True
+
+        reader = MenuReader(
+            self.mock_config,
+            self.mock_menu_logger,
+            self.mock_menu_navigator,
+            self.mock_sim_manager
+        )
+
+        reader.current_state = MenuState(
+            title="Short Menu",
+            options=["New Option"],
+            options_enum=[(0, "New Option")],
+            raw_lines=[]
+        )
+        reader.previous_state = MenuState(
+            title="Short Menu",
+            options=["Old Option"],
+            options_enum=[(0, "Old Option")],
+            raw_lines=[]
+        )
+
+        result = reader.has_changed(check_option="Old Option")
+        self.assertTrue(result)
 
     @patch('os.path.exists')
     def test_initialization_creates_initial_state(self, mock_exists):
