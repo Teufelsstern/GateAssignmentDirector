@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.7] - 2024-09-30
+
+### Fixed
+- Removed repeated calls to `config.from_yaml()` - now uses `self.config` instance directly throughout
+- Changed broad `Exception` catch in `_cleanup_partial_init()` to specific exceptions `(OSError, RuntimeError, AttributeError)`
+
+### Changed
+- Removed duplicate `logging.basicConfig` call from `__init__` (already configured in config module)
+- Simplified initialization by passing `self.config` instead of `self.config.from_yaml()` to all components
+
+### Improved
+- Code efficiency by eliminating unnecessary config reloading
+- Exception handling specificity in cleanup method
+
 ## [0.7.6] - 2024-09-30
 
 ### Added

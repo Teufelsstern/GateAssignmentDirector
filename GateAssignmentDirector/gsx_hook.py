@@ -26,31 +26,25 @@ class GsxHook:
         self.is_initialized = None
         self.enable_menu_logging = enable_menu_logging
 
-        self.sim_manager = SimConnectManager(self.config.from_yaml())
+        self.sim_manager = SimConnectManager(self.config)
         self.menu_reader = None
         self.menu_logger = None
         self.menu_navigator = None
         self.gate_assignment = None
 
-        logging.basicConfig(
-            level=self.config.logging_level,
-            format=self.config.logging_format,
-            datefmt=self.config.logging_datefmt,
-        )
-
         try:
             self.sim_manager.connect()
 
-            self.menu_logger = MenuLogger(self.config.from_yaml())
+            self.menu_logger = MenuLogger(self.config)
             self.menu_reader = MenuReader(
-                self.config.from_yaml(), self.menu_logger, self.menu_navigator, self.sim_manager
+                self.config, self.menu_logger, self.menu_navigator, self.sim_manager
             )
             self.menu_navigator = MenuNavigator(
-                self.config.from_yaml(), self.menu_logger, self.menu_reader, self.sim_manager
+                self.config, self.menu_logger, self.menu_reader, self.sim_manager
             )
 
             self.gate_assignment = GateAssignment(
-                self.config.from_yaml(),
+                self.config,
                 self.menu_logger,
                 self.menu_reader,
                 self.menu_navigator,
@@ -60,7 +54,7 @@ class GsxHook:
             self.is_initialized = True
             logger.info("GSX Hook initialized successfully")
 
-        except (GsxConnectionError, GsxFileNotFoundError, OSError, IOError) as e:
+        except (GsxConnectionError, GsxFileNotFoundError, OSError, IOError, Exception) as e:
             logger.error(f"Failed to initialize GSX Hook: {e}")
             self.is_initialized = False
             self._cleanup_partial_init()
@@ -70,7 +64,7 @@ class GsxHook:
         if self.sim_manager:
             try:
                 self.sim_manager.disconnect()
-            except Exception:
+            except (OSError, RuntimeError, AttributeError):
                 pass
         self.menu_logger = None
         self.menu_reader = None
