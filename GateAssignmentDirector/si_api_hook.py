@@ -1,3 +1,8 @@
+"""A hook into SayIntentions API reading the flight.json"""
+
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 import json
 import time
 import logging
@@ -18,13 +23,13 @@ logger = logging.getLogger(__name__)
 GATE_PATTERN = re.compile(
     r"""
         (?:terminal\s+)?
-        (?:(terminal|international|parking|domestic|main|central|pier|concourse|level)\s+)?
+        (?:(terminal|international|parking|domestic|main|central|pier|concourse|level|apron)\s+)?
         (?:terminal\s+)?
         (?:([A-Z)]|\d+)\s+)?
+        (?:(overflow|gate)\s+)?
         (?:(gate)\s+)?
-        (?:([A-Z])\s*)?
         (?:(\d+)(?:\s*|$))?
-        (?:([A-Z])(?:\s*|$))?
+        (?:([A-Z])\b)?
         """,
     re.IGNORECASE | re.VERBOSE,
 )
@@ -98,6 +103,7 @@ class JSONMonitor:
         default_log_level: str = "INFO",
         enable_gsx_integration: bool = False,
         gate_callback: Optional[Callable] = None,
+        flight_data_callback: Optional[Callable] = None,
     ) -> None:
         self.file_path = Path(file_path)
         self.config_path = Path(config_path)
@@ -109,6 +115,7 @@ class JSONMonitor:
         self.enable_gsx_integration = enable_gsx_integration
         self.gsx_hook = None
         self.gate_callback = gate_callback
+        self.flight_data_callback = flight_data_callback
         self.field_log_levels = self.load_config()
 
     def load_config(self) -> Dict[str, str]:
@@ -128,6 +135,24 @@ class JSONMonitor:
     def get_log_level_for_field(self, field_path: str) -> str:
         """Get log level for specific field, fall back to default"""
         return self.field_log_levels.get(field_path) or self.field_log_levels.get("default", self.default_log_level)
+
+    def extract_flight_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract relevant flight data from JSON"""
+        try:
+            current_flight = data.get("flight_details", {}).get("current_flight", {})
+
+            flight_data = {
+                'airport': current_flight.get('flight_destination'),
+                'departure_airport': current_flight.get('flight_origin'),
+                'airline': current_flight.get('airline'),
+                'flight_number': current_flight.get('flight_number'),
+                'assigned_gate': current_flight.get('assigned_gate'),
+            }
+
+            return flight_data
+        except (KeyError, AttributeError, TypeError) as e:
+            logger.error(f"Error extracting flight data: {e}")
+            return {}
 
     def check_gate_assignment(self, data: Dict[str, Any]) -> None:
         """Check for gate assignment and parse it if found"""
@@ -294,6 +319,11 @@ class JSONMonitor:
                         logger.info("--- CHANGES DETECTED ---")
                         self.find_changes(self.previous_data, current_data)
                         logger.info("--- END CHANGES ---")
+
+                    # Send flight data on every poll
+                    if self.flight_data_callback:
+                        flight_data = self.extract_flight_data(current_data)
+                        self.flight_data_callback(flight_data)
 
                     self.check_gate_assignment(current_data)
 

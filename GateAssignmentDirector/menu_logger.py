@@ -1,5 +1,8 @@
 """Menu state logging and persistence for GSX Hook - Simplified Version"""
 
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 import json
 import re
 import logging
@@ -21,7 +24,7 @@ MENU_NAVIGATION_OPTIONS = [
 ]
 
 GATE_PATTERNS = [
-    re.compile(r"Gate\s+([A-Z]?\s*\d+\s*[A-Z]?)", re.IGNORECASE),
+    re.compile(r"Gate\s+([A-Z]?\s*\d+\s*[A-Z]?\b)", re.IGNORECASE),
     re.compile(r"^([A-Z]?\s*\d+\s*[A-Z]?)$", re.IGNORECASE),
     re.compile(r"^([A-Z]\s*\d+)$", re.IGNORECASE),
 ]
@@ -239,7 +242,7 @@ class MenuLogger:
                 (Gate|Parking)?
                 ([A-Z]+)?
                 (\d+)?
-                ([A-Z]+)?
+                ([A-Z]\b)?
             """,
             re.IGNORECASE | re.VERBOSE,
         )

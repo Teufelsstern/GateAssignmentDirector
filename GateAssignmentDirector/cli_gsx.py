@@ -1,5 +1,8 @@
 """Updated CLI with airport parameter"""
 
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 import argparse
 import logging
 from gsx_hook import GsxHook

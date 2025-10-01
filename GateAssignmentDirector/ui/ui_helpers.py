@@ -1,5 +1,8 @@
 """UI helper functions for creating consistent widgets"""
 
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 import customtkinter as ctk
 from typing import Optional, Callable
 from dataclasses import dataclass

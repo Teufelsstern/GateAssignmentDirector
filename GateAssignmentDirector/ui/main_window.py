@@ -1,5 +1,8 @@
 """Main window class for the Gate Assignment Director UI"""
 
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 import customtkinter as ctk
 import threading
 import logging
@@ -8,6 +11,7 @@ from pathlib import Path
 from tkinter import messagebox, filedialog
 from pystray import Icon, Menu, MenuItem
 from PIL import Image, ImageDraw
+from typing import Optional
 
 from GateAssignmentDirector.director import GateAssignmentDirector
 from GateAssignmentDirector.gad_config import GADConfig
@@ -334,7 +338,7 @@ class DirectorUI:
         """Start the monitoring process"""
         self.start_btn.configure(state="disabled")
         self.stop_btn.configure(state="normal", text_color="#4a4050")
-        self.status_label.configure(text="Monitoring", text_color="#6B9E78")
+        self.status_label.configure(text="Monitoring", text_color=c('sage'))
 
         self._append_activity("Starting monitoring...\n")
 
@@ -342,10 +346,12 @@ class DirectorUI:
         self.process_thread = threading.Thread(target=self._run_director, daemon=True)
         self.process_thread.start()
 
-        self.airport_label.configure(
-            text=f"{self.director.current_airport}",
-            text_color=c("sage")
+        airport_text = self._format_airport_display(
+            self.director.departure_airport,
+            self.director.current_airport
         )
+        color = c('sage') if self.director.current_airport else c('mustard')
+        self.airport_label.configure(text=airport_text, text_color=color)
 
     def _run_director(self):
         """Run the director (called in thread)"""
@@ -418,16 +424,12 @@ class DirectorUI:
 
         # Reset current_airport to director's value and update UI
         self.current_airport = self.director.current_airport
-        if self.current_airport:
-            self.airport_label.configure(
-                text=self.current_airport,
-                text_color=c('muted_sage')
-            )
-        else:
-            self.airport_label.configure(
-                text="None",
-                text_color="#808080"
-            )
+        airport_text = self._format_airport_display(
+            self.director.departure_airport,
+            self.director.current_airport
+        )
+        color = c('sage') if self.director.current_airport else c('mustard')
+        self.airport_label.configure(text=airport_text, text_color=color)
 
         self._append_activity("Manual override cleared.\n")
         logging.info("Manual override cleared")
@@ -524,6 +526,19 @@ class DirectorUI:
         self.log_text.delete("1.0", "end")
         self.log_text.configure(state="disabled")
 
+    def _format_airport_display(self, departure: Optional[str], destination: Optional[str]) -> str:
+        """Format airport display text based on departure and destination"""
+        if destination:
+            if departure:
+                return f"{departure} to {destination}"
+            else:
+                return f"to {destination}"
+        else:
+            if departure:
+                return f"{departure} to ..."
+            else:
+                return "to ..."
+
     def _append_activity(self, message: str):
         """Append message to activity text (handles read-only state)"""
         self.activity_text.configure(state="normal")
@@ -554,16 +569,12 @@ class DirectorUI:
         if not self.override_active:
             if self.director.current_airport != self.current_airport:
                 self.current_airport = self.director.current_airport
-                if self.current_airport:
-                    self.airport_label.configure(
-                        text=self.current_airport,
-                        text_color=c('muted_sage')
-                    )
-                else:
-                    self.airport_label.configure(
-                        text="None",
-                        text_color="#808080"
-                    )
+                airport_text = self._format_airport_display(
+                    self.director.departure_airport,
+                    self.director.current_airport
+                )
+                color = c('sage') if self.director.current_airport else c('mustard')
+                self.airport_label.configure(text=airport_text, text_color=color)
 
         # Enable/disable Assign Gate button based on available data
         has_data = self.current_airport is not None and (

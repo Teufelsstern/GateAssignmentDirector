@@ -1,5 +1,8 @@
 """GSX menu navigation with integrated logging"""
 
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 import time
 import re
 import logging

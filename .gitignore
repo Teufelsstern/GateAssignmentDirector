@@ -47,10 +47,10 @@ gsx_menu_logs/
 *.log
 *.json
 !*_interpreted.json
-config.yaml
-monitor_config.ini
 AGENT_KNOWLEDGE.md
 docs/agents/
+.claude/
+CLAUDE.md
 
 # Secrets
 .env
