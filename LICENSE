@@ -620,6 +620,30 @@ copy of the Program in return for a fee.
 
                      END OF TERMS AND CONDITIONS
 
+            ADDITIONAL TERMS UNDER SECTION 7
+
+Pursuant to Section 7(b) of the GNU General Public License version 3, the
+following additional terms apply to this software:
+
+1. PRESERVATION OF VALUES STATEMENT
+
+   The user interface of this software includes a values statement expressing
+   opposition to fascism, racism, discrimination, transphobia, homophobia,
+   ableism, sexism, bigotry, ageism, and related forms of oppression.
+
+   Any modified version of this software MUST preserve this values statement
+   in the user interface. The statement may be expanded to include additional
+   values in alignment with the original intent (opposition to oppression and
+   discrimination), but it may NOT be:
+
+   a) Removed entirely
+   b) Reduced or weakened in scope
+   c) Altered to contradict or undermine the original values
+   d) Modified to promote discrimination or oppression
+
+   Violation of this requirement terminates your rights under this license
+   as specified in Section 8 of the GNU General Public License.
+
             How to Apply These Terms to Your New Programs
 
   If you develop a new program, and you want it to be of the greatest
