@@ -56,7 +56,7 @@ def main():
 
     # Create and run GSX Hook
     try:
-        config = GsxConfig()
+        config = GADConfig()
         gsx = GsxHook(config, enable_menu_logging=not args.no_menu_logging)
 
         if not gsx.is_initialized:

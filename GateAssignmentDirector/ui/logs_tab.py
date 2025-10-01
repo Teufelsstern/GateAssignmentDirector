@@ -15,12 +15,26 @@ def setup_logs_tab(parent_ui, tab):
     parent_ui.log_text = ctk.CTkTextbox(tab, font=("Consolas", 12), fg_color="#1a1a1a")
     parent_ui.log_text.pack(fill="both", expand=True, padx=20, pady=(20, 10))
 
+    button_frame = ctk.CTkFrame(tab, fg_color="transparent")
+    button_frame.pack(fill="x", padx=20, pady=(0, 20))
+
     _button(
-        tab,
-        command=lambda: parent_ui.log_text.delete("1.0", "end"),
+        button_frame,
+        command=parent_ui.save_logs,
+        text="Save Logs",
+        height=30,
+        fg_color="#4a4a4a",
+        hover_color="#5a5a5a",
+        side="left",
+        padx=(0, 10)
+    )
+
+    _button(
+        button_frame,
+        command=parent_ui.clear_logs,
         text="Clear Logs",
         height=30,
         fg_color="#4a4a4a",
         hover_color="#5a5a5a",
-        pady=(0, 20)
+        side="left"
     )

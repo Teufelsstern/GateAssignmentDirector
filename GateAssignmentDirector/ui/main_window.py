@@ -3,7 +3,9 @@
 import customtkinter as ctk
 import threading
 import logging
-from tkinter import messagebox
+from datetime import datetime
+from pathlib import Path
+from tkinter import messagebox, filedialog
 from pystray import Icon, Menu, MenuItem
 from PIL import Image, ImageDraw
 
@@ -55,6 +57,19 @@ class DirectorUI:
         self.root.title("Gate Assignment Director")
         self.root.geometry("500x500")
 
+        # Set window icon
+        import sys
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller bundle
+            base_path = Path(sys._MEIPASS)
+            icon_path = base_path / "GateAssignmentDirector" / "icon.ico"
+        else:
+            # Running as normal Python script
+            icon_path = Path(__file__).parent.parent / "icon.ico"
+
+        if icon_path.exists():
+            self.root.iconbitmap(str(icon_path))
+
         # Set size constraints
         self.root.minsize(350, 430)
         self.root.maxsize(800, 800)
@@ -77,14 +92,15 @@ class DirectorUI:
             segmented_button_selected_hover_color=c('sage'),
             segmented_button_unselected_color=c('periwinkle',hover=True),
             segmented_button_unselected_hover_color=c('periwinkle'),
-            text_color=c('purple_gray')
+            text_color=c('purple_gray'),
+            command=self._on_tab_change
         )
         self.tabview.pack(fill="both", expand=True, padx=10, pady=(10, 5))
 
         # Add tabs
         self.tabview.add("Monitor")
-        self.tabview.add("Logs")
         self.tabview.add("Config")
+        self.tabview.add("Logs")
 
         # Setup each tab using dedicated modules
         setup_monitor_tab(self, self.tabview.tab("Monitor"))
@@ -152,23 +168,23 @@ class DirectorUI:
 
         # List of terms to choose from
         self.val = [
-            "fascism.",
-            "racism.",
-            "discrimination.",
-            "transphobia.",
-            "homophobia.",
-            "ableism.",
-            "sexism.",
-            "bigotry.",
-            "ageism.",
-            "terfs.",
+            "fascism",
+            "racism",
+            "discrimination",
+            "transphobia",
+            "homophobia",
+            "ableism",
+            "sexism",
+            "bigotry",
+            "ageism",
+            "terfs",
         ]
 
         # Pick random word once at startup
         random_word = random.choice(self.val)
         self.vwl = ctk.CTkLabel(
             center_frame,
-            text=random_word,
+            text=random_word + ".",
             font=("Arial", 11),
             text_color=rainbow_colors[5]  # soft purple
         )
@@ -240,12 +256,15 @@ class DirectorUI:
             for field_name, entry in self.config_entries.items():
                 value = entry.get().strip()
 
-                # Convert to appropriate type
+                # Convert to appropriate type based on config field type
                 current_value = getattr(self.config, field_name)
-                if isinstance(current_value, float):
-                    value = float(value)
+                if isinstance(current_value, bool):
+                    value = value.lower() in ('true', '1', 'yes')
                 elif isinstance(current_value, int):
-                    value = int(value)
+                    # For int fields, convert via float first to handle decimal inputs
+                    value = int(float(value))
+                elif isinstance(current_value, float):
+                    value = float(value)
 
                 setattr(self.config, field_name, value)
 
@@ -317,11 +336,16 @@ class DirectorUI:
         self.stop_btn.configure(state="normal", text_color="#4a4050")
         self.status_label.configure(text="Monitoring", text_color="#6B9E78")
 
-        self.activity_text.insert("end", "Starting monitoring...\n")
+        self._append_activity("Starting monitoring...\n")
 
         # Start director in separate thread
         self.process_thread = threading.Thread(target=self._run_director, daemon=True)
         self.process_thread.start()
+
+        self.airport_label.configure(
+            text=f"{self.director.current_airport}",
+            text_color=c("sage")
+        )
 
     def _run_director(self):
         """Run the director (called in thread)"""
@@ -338,7 +362,7 @@ class DirectorUI:
         self.stop_btn.configure(state="disabled", text_color="#e8d9d6")
         self.status_label.configure(text="Stopped", text_color="#C67B7B")
 
-        self.activity_text.insert("end", "Monitoring stopped.\n")
+        self._append_activity("Monitoring stopped.\n")
 
     def toggle_override_section(self):
         """Toggle the manual override section visibility"""
@@ -377,7 +401,7 @@ class DirectorUI:
             text_color="#D4A574"  # Muted mustard
         )
 
-        self.activity_text.insert("end", f"Manual override applied: {airport} Terminal {terminal} Gate {gate}\n")
+        self._append_activity(f"Manual override applied: {airport} Terminal {terminal} Gate {gate}\n")
         logging.info(f"Manual override: Airport={airport}, Terminal={terminal}, Gate={gate}")
 
     def clear_override(self):
@@ -392,10 +416,20 @@ class DirectorUI:
         self.override_terminal_entry.delete(0, "end")
         self.override_gate_entry.delete(0, "end")
 
-        # Reset current_airport to director's value
+        # Reset current_airport to director's value and update UI
         self.current_airport = self.director.current_airport
+        if self.current_airport:
+            self.airport_label.configure(
+                text=self.current_airport,
+                text_color=c('muted_sage')
+            )
+        else:
+            self.airport_label.configure(
+                text="None",
+                text_color="#808080"
+            )
 
-        self.activity_text.insert("end", "Manual override cleared.\n")
+        self._append_activity("Manual override cleared.\n")
         logging.info("Manual override cleared")
 
     def assign_gate_manual(self):
@@ -420,7 +454,7 @@ class DirectorUI:
             messagebox.showwarning("Missing Gate", "No gate information available. Please set manual override with gate details.")
             return
 
-        self.activity_text.insert("end", f"Assigning gate: {airport} Terminal {terminal} Gate {gate}\n")
+        self._append_activity(f"Assigning gate: {airport} Terminal {terminal} Gate {gate}\n")
 
         # Initialize GSX if needed and assign
         if not self.director.gsx or not self.director.gsx.is_initialized:
@@ -446,11 +480,12 @@ class DirectorUI:
                 wait_for_ground=True,
             )
             result = "completed" if success else "failed"
-            self.activity_text.after(0, lambda: self.activity_text.insert("end", f"Gate assignment {result}\n"))
+            self.activity_text.after(0, lambda: self._append_activity(f"Gate assignment {result}\n"))
             logging.info(f"Manual gate assignment {result}")
         except Exception as e:
-            logging.error(f"Gate assignment error: {e}")
-            self.activity_text.after(0, lambda: self.activity_text.insert("end", f"Gate assignment error: {e}\n"))
+            error_msg = f"Gate assignment error: {e}"
+            logging.error(error_msg)
+            self.activity_text.after(0, lambda msg=error_msg: self._append_activity(f"{msg}\n"))
 
     def edit_gates(self):
         """Open gate management window"""
@@ -462,6 +497,57 @@ class DirectorUI:
             )
         GateManagementWindow(self.root, self.current_airport)
 
+    def save_logs(self):
+        """Save logs to file with date-stamped default filename"""
+        current_date = datetime.now().strftime("%Y%m%d_%H%M%S")
+        default_filename = f"GAD_log_{current_date}.txt"
+
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            initialfile=default_filename,
+            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+        )
+
+        if file_path:
+            try:
+                log_content = self.log_text.get("1.0", "end-1c")
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(log_content)
+                logging.info(f"Logs saved to {file_path}")
+            except Exception as e:
+                logging.error(f"Failed to save logs: {e}")
+                messagebox.showerror("Save Error", f"Failed to save logs: {e}")
+
+    def clear_logs(self):
+        """Clear all logs from the log textbox"""
+        self.log_text.configure(state="normal")
+        self.log_text.delete("1.0", "end")
+        self.log_text.configure(state="disabled")
+
+    def _append_activity(self, message: str):
+        """Append message to activity text (handles read-only state)"""
+        self.activity_text.configure(state="normal")
+        self.activity_text.insert("end", message)
+        self.activity_text.see("end")
+        self.activity_text.configure(state="disabled")
+
+    def _on_tab_change(self):
+        """Handle tab change events to adjust window size"""
+        current_tab = self.tabview.get()
+
+        if current_tab == "Config":
+            # Config tab needs more vertical space for all settings
+            self.root.minsize(470, 500)
+        elif current_tab == "Monitor" and not self.override_active:
+            # Monitor tab without override can be smaller
+            self.root.minsize(350, 430)
+        elif current_tab == "Monitor" and self.override_active:
+            # Monitor tab with override needs more space
+            self.root.minsize(470, 500)
+        else:
+            # Logs and other tabs use default size
+            self.root.minsize(350, 430)
+
     def _update_ui_state(self):
         """Periodically update UI state from director"""
         # Don't update airport from director if override is active
@@ -471,7 +557,7 @@ class DirectorUI:
                 if self.current_airport:
                     self.airport_label.configure(
                         text=self.current_airport,
-                        text_color="#4a9d2a"
+                        text_color=c('muted_sage')
                     )
                 else:
                     self.airport_label.configure(

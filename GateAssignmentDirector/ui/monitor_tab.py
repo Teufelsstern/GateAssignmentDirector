@@ -15,26 +15,9 @@ def setup_monitor_tab(parent_ui, tab):
     status_frame = ctk.CTkFrame(tab, fg_color="transparent")
     status_frame.pack(fill="x", padx=20, pady=(20, 10))
 
-    status_row = ctk.CTkFrame(status_frame, fg_color="transparent")
-    status_row.pack(fill="x", pady=(0, 5), anchor="w")
-
-    _label(
-        status_row,
-        text="Status:",
-        width=70,
-        padx=(0, 5),
-        pady=(0, 0),
-        side="left"
-    )
-
-    parent_ui.status_label = ctk.CTkLabel(
-        status_row, text="Idle", font=("Arial", 14), text_color="#808080"
-    )
-    parent_ui.status_label.pack(side="left")
-
     # Airport row
     airport_row = ctk.CTkFrame(status_frame, fg_color="transparent")
-    airport_row.pack(fill="x", anchor="w")
+    airport_row.pack(fill="x", pady=(0, 5), anchor="w")
 
     _label(
         airport_row,
@@ -49,6 +32,23 @@ def setup_monitor_tab(parent_ui, tab):
         airport_row, text="None", font=("Arial", 14), text_color="#808080"
     )
     parent_ui.airport_label.pack(side="left")
+
+    status_row = ctk.CTkFrame(status_frame, fg_color="transparent")
+    status_row.pack(fill="x", anchor="w")
+
+    _label(
+        status_row,
+        text="Status:",
+        width=70,
+        padx=(0, 5),
+        pady=(0, 0),
+        side="left"
+    )
+
+    parent_ui.status_label = ctk.CTkLabel(
+        status_row, text="Idle", font=("Arial", 14), text_color="#808080"
+    )
+    parent_ui.status_label.pack(side="left")
 
     override_toggle_frame = ctk.CTkFrame(status_frame, fg_color="transparent")
     override_toggle_frame.pack(fill="x")
@@ -177,6 +177,6 @@ def setup_monitor_tab(parent_ui, tab):
     )
 
     parent_ui.activity_text = ctk.CTkTextbox(
-        activity_frame, font=("Consolas", 12), fg_color="#1a1a1a"
+        activity_frame, font=("Consolas", 12), fg_color="#1a1a1a", state="disabled"
     )
     parent_ui.activity_text.pack(fill="both", expand=True, padx=10, pady=(0, 5))

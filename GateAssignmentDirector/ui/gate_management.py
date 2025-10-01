@@ -5,9 +5,12 @@ import json
 import logging
 import os
 import re
+import sys
+from pathlib import Path
 from tkinter import ttk
+from PIL import Image, ImageTk
 
-from GateAssignmentDirector.ui.ui_helpers import _label, _button
+from GateAssignmentDirector.ui.ui_helpers import _label, _button, c
 
 
 class GateManagementWindow:
@@ -16,6 +19,27 @@ class GateManagementWindow:
         self.window.title("Gate Management")
         self.window.geometry("1000x700")
         self.window.minsize(1000, 700)
+
+        # Set window icon (CTkToplevel requires iconphoto with delay)
+        def set_icon():
+            if getattr(sys, 'frozen', False):
+                base_path = Path(sys._MEIPASS)
+                icon_path = base_path / "GateAssignmentDirector" / "icon.ico"
+            else:
+                icon_path = Path(__file__).parent.parent / "icon.ico"
+
+            if icon_path.exists():
+                try:
+                    # CTkToplevel needs iconphoto instead of iconbitmap
+                    icon_img = Image.open(str(icon_path))
+                    icon_photo = ImageTk.PhotoImage(icon_img)
+                    self.window.iconphoto(False, icon_photo)
+                    # Keep reference to prevent garbage collection
+                    self.window._icon_photo = icon_photo
+                except Exception as e:
+                    logging.debug(f"Failed to set icon: {e}")
+
+        self.window.after(200, set_icon)
 
         # Use provided airport or default to EDDS
         airport = airport or "EDDS"
@@ -96,9 +120,10 @@ class GateManagementWindow:
             buttons_frame,
             self.load_data,
             text="Reload Data",
-            height=14,
-            fg_color="#4a4a4a",
-            hover_color="#5a5a5a",
+            height=28,
+            fg_color=c('dusty_rose'),
+            hover_color=c('dusty_rose', hover=True),
+            text_color=c('sage_dark'),
             pady=(15, 5),
         )
 
@@ -106,9 +131,10 @@ class GateManagementWindow:
             buttons_frame,
             self.save_data,
             text="Save Changes",
-            height=14,
-            fg_color="#5a1a1a",
-            hover_color="#6e2828",
+            height=28,
+            fg_color=c('sage'),
+            hover_color=c('sage', hover=True),
+            text_color=c('sage_dark'),
             pady=(0, 0),
         )
 
@@ -131,7 +157,11 @@ class GateManagementWindow:
         )
 
         self.active_terminals_entry = ctk.CTkEntry(
-            terminal_frame, placeholder_text="e.g., 1, 2, 3", placeholder_text_color="#5a5a5a"
+            terminal_frame,
+            placeholder_text="e.g., 1, 2, 3",
+            corner_radius=6,
+            border_width=1,
+            border_color=c('charcoal_lighter')
         )
         self.active_terminals_entry.pack(fill="x", padx=10, pady=5)
 
@@ -140,8 +170,9 @@ class GateManagementWindow:
             self.convert_to_parking,
             text="Convert Others to Parking",
             height=32,
-            fg_color="#2d5016",
-            hover_color="#3d6622",
+            fg_color=c('sage'),
+            hover_color=c('sage', hover=True),
+            text_color=c('sage_dark'),
             padx=(10, 10),
             pady=(5, 10)
         )
@@ -156,26 +187,48 @@ class GateManagementWindow:
         gate_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
         gate_row.pack(fill="x", padx=10, pady=0)
         _label(gate_row, text="Gate:", size=16, padx=(0, 2), side="left")
-        self.gate_entry = ctk.CTkEntry(gate_row, placeholder_text="71", width=50)
+        self.gate_entry = ctk.CTkEntry(
+            gate_row,
+            placeholder_text="71",
+            corner_radius=6,
+            border_width=1,
+            border_color=c('charcoal_lighter'),
+            width=50
+        )
         self.gate_entry.pack(side="left", padx=(0, 15))
 
         # From and To on same row
         from_to_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
         from_to_row.pack(fill="x", padx=10, pady=0)
         _label(from_to_row, text="From:", size=16, padx=(0, 2), side="left")
-        self.from_terminal_entry = ctk.CTkEntry(from_to_row, placeholder_text="7", placeholder_text_color="#5a5a5a", width=50)
+        self.from_terminal_entry = ctk.CTkEntry(
+            from_to_row,
+            placeholder_text="7",
+            corner_radius=6,
+            border_width=1,
+            border_color=c('charcoal_lighter'),
+            width=50
+        )
         self.from_terminal_entry.pack(side="left", padx=(0, 15))
         _label(from_to_row, text="To:", size=16, padx=(0, 2), side="left")
-        self.to_terminal_entry = ctk.CTkEntry(from_to_row, placeholder_text="8", placeholder_text_color="#5a5a5a", width=50)
+        self.to_terminal_entry = ctk.CTkEntry(
+            from_to_row,
+            placeholder_text="8",
+            corner_radius=6,
+            border_width=1,
+            border_color=c('charcoal_lighter'),
+            width=50
+        )
         self.to_terminal_entry.pack(side="left")
 
         _button(
             gate_frame,
             self.move_gate,
             text="Move Gate",
-            height=28,
-            fg_color="#2d5016",
-            hover_color="#3d6622",
+            height=32,
+            fg_color=c('sage'),
+            hover_color=c('sage', hover=True),
+            text_color=c('sage_dark'),
             padx=(10, 10),
             pady=(5, 10)
         )
@@ -190,24 +243,45 @@ class GateManagementWindow:
         gate_terminal_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
         gate_terminal_row.pack(fill="x", padx=10, pady=0)
         _label(gate_terminal_row, text="Gate:", size=16, padx=(0, 2), side="left")
-        self.rename_gate_entry = ctk.CTkEntry(gate_terminal_row, placeholder_text="71", placeholder_text_color="#5a5a5a", width=50)
+        self.rename_gate_entry = ctk.CTkEntry(
+            gate_terminal_row,
+            placeholder_text="71",
+            corner_radius=6,
+            border_width=1,
+            border_color=c('charcoal_lighter'),
+            width=50
+        )
         self.rename_gate_entry.pack(side="left", padx=(0, 15))
         _label(gate_terminal_row, text="Terminal:", size=16, padx=(0, 2), side="left")
-        self.rename_terminal_entry = ctk.CTkEntry(gate_terminal_row, placeholder_text="3", placeholder_text_color="#5a5a5a", width=50)
+        self.rename_terminal_entry = ctk.CTkEntry(
+            gate_terminal_row,
+            placeholder_text="3",
+            corner_radius=6,
+            border_width=1,
+            border_color=c('charcoal_lighter'),
+            width=50
+        )
         self.rename_terminal_entry.pack(side="left")
 
         # Full text row
         _label(rename_frame, text="New full text:", size=16, pady=(5, 0), padx=(10, 0))
-        self.new_fulltext_entry = ctk.CTkEntry(rename_frame, placeholder_text="Gate 71 - Medium - 2x  /J", placeholder_text_color="#5a5a5a")
+        self.new_fulltext_entry = ctk.CTkEntry(
+            rename_frame,
+            placeholder_text="Gate 71 - Medium - 2x  /J",
+            corner_radius=6,
+            border_width=1,
+            border_color=c('charcoal_lighter')
+        )
         self.new_fulltext_entry.pack(fill="x", padx=10, pady=(0, 5))
 
         _button(
             rename_frame,
             self.rename_gate,
             text="Rename Gate",
-            height=28,
-            fg_color="#2d5016",
-            hover_color="#3d6622",
+            height=32,
+            fg_color=c('sage'),
+            hover_color=c('sage', hover=True),
+            text_color=c('sage_dark'),
             padx=(10, 10),
             pady=(0, 10)
         )

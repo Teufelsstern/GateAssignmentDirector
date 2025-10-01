@@ -38,6 +38,15 @@ args = [
     '--name=GateAssignmentDirector',
     '--add-data=LICENSE;.',
     '--add-data=README.md;.',
+    '--add-data=GateAssignmentDirector/config.yaml;GateAssignmentDirector',
+    '--add-data=GateAssignmentDirector/icon.ico;GateAssignmentDirector',
+    '--hidden-import=customtkinter',
+    '--hidden-import=PIL',
+    '--hidden-import=PIL._tkinter_finder',
+    '--hidden-import=pystray',
+    '--hidden-import=tkinter',
+    '--hidden-import=_tkinter',
+    '--collect-all=customtkinter',
     '--clean',
 ]
 

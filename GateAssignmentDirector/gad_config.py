@@ -2,6 +2,7 @@
 import getpass
 import yaml
 import logging
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -58,8 +59,18 @@ class GADConfig:
         }
 
     @classmethod
-    def from_yaml(cls, yaml_path: str = ".\\GateAssignmentDirector\\config.yaml"):
+    def from_yaml(cls, yaml_path: str = None):
         """Load configuration from YAML file"""
+        if yaml_path is None:
+            # Determine config path based on whether we're bundled or not
+            if getattr(sys, 'frozen', False):
+                # Running as PyInstaller bundle
+                base_path = Path(sys._MEIPASS)
+                yaml_path = base_path / "GateAssignmentDirector" / "config.yaml"
+            else:
+                # Running as normal Python script
+                yaml_path = Path(".") / "GateAssignmentDirector" / "config.yaml"
+
         config_file = Path(yaml_path)
 
         if not config_file.exists():
@@ -77,8 +88,15 @@ class GADConfig:
         # Create instance with YAML data
         return cls(**data)
 
-    def save_yaml(self, yaml_path: str = ".\\GateAssignmentDirector\\config.yaml"):
+    def save_yaml(self, yaml_path: str = None):
         """Save configuration to YAML file"""
+        if yaml_path is None:
+            # Use same logic as from_yaml for consistency
+            if getattr(sys, 'frozen', False):
+                base_path = Path(sys._MEIPASS)
+                yaml_path = base_path / "GateAssignmentDirector" / "config.yaml"
+            else:
+                yaml_path = Path(".") / "GateAssignmentDirector" / "config.yaml"
         # Only save the configurable fields (exclude computed ones)
         data = {
             'menu_file_paths': self.menu_file_paths,
