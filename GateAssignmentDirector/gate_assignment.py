@@ -1,5 +1,8 @@
 """Gate assignment automation with logging"""
 
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 import os
 import time
 import logging

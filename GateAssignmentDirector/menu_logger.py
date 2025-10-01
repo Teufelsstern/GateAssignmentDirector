@@ -1,5 +1,8 @@
 """Menu state logging and persistence for GSX Hook - Simplified Version"""
 
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 import json
 import re
 import logging

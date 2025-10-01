@@ -1,3 +1,7 @@
+
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 from setuptools import setup, find_packages
 
 with open("README.md", "r", encoding="utf-8") as fh:

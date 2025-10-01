@@ -6,6 +6,9 @@ the GSX Hook system, providing type-safe constants for SimConnect variables,
 search types, and GSX states.
 """
 
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 from enum import Enum, IntEnum
 
 

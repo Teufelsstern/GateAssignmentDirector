@@ -1,5 +1,8 @@
 """Main window class for the Gate Assignment Director UI"""
 
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 import customtkinter as ctk
 import threading
 import logging

@@ -1,5 +1,8 @@
 """Main GSX Hook class with menu logging"""
 
+# Licensed under GPL-3.0-or-later with additional terms
+# See LICENSE file for full text and additional requirements
+
 import logging
 import time
 from typing import Optional
