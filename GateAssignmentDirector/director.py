@@ -6,6 +6,7 @@
 import threading
 import queue
 import logging
+import time
 from typing import Dict, Any, Optional
 
 from GateAssignmentDirector.si_api_hook import JSONMonitor
@@ -25,6 +26,7 @@ class GateAssignmentDirector:
         self.current_airport: Optional[str] = None
         self.departure_airport: Optional[str] = None
         self.current_flight_data: Dict[str, Any] = {}
+        self.status_callback = None  # Callback for UI status updates
 
     def start_monitoring(self, json_file_path: str) -> None:
         """Start the JSON monitor in a separate thread"""
@@ -39,6 +41,11 @@ class GateAssignmentDirector:
         self.monitor_thread = threading.Thread(target=self.monitor.monitor, daemon=True)
         self.monitor_thread.start()
         logger.info("Monitoring started")
+
+        # Notify UI of progress
+        if self.status_callback:
+            self.status_callback("Connected to flight data source")
+        time.sleep(1.0)
 
     def _update_flight_data(self, flight_data: Dict[str, Any]) -> None:
         """Callback to update flight data on every poll"""
@@ -58,6 +65,11 @@ class GateAssignmentDirector:
         """Main loop to process gate assignments"""
         logger.info("Director ready - waiting for gate assignments")
 
+        # Notify UI of progress
+        if self.status_callback:
+            self.status_callback("Gate assignment system ready")
+        time.sleep(0.8)
+
         while self.running:
             try:
                 gate_info = self.gate_queue.get(timeout=1.0)
@@ -65,13 +77,25 @@ class GateAssignmentDirector:
 
                 # Initialize GSX if needed
                 if not self.gsx or not self.gsx.is_initialized:
+                    # Notify UI we're connecting to GSX
+                    if self.status_callback:
+                        self.status_callback("Connecting to GSX system...")
+                    time.sleep(0.5)
+
                     self.gsx = GsxHook(self.config, enable_menu_logging=True)
                     if not self.gsx.is_initialized:
                         logger.error("Failed to initialize GSX Hook")
+                        if self.status_callback:
+                            self.status_callback("GSX connection failed - check simulator")
                         continue
 
+                    # Notify UI of successful connection
+                    if self.status_callback:
+                        self.status_callback("GSX connection established")
+                    time.sleep(0.5)
+
                 # Process assignment
-                success = self.gsx.assign_gate_when_ready(
+                success, assigned_gate = self.gsx.assign_gate_when_ready(
                     airport=gate_info.get('airport', 'EDDS'),
                     gate_letter=gate_info.get('gate_letter', ""),
                     gate_number=gate_info.get('gate_number', ""),
@@ -79,9 +103,19 @@ class GateAssignmentDirector:
                     terminal_number=gate_info.get('terminal_number', ""),
                     airline=gate_info.get('airline', 'GSX'),
                     wait_for_ground=True,
+                    status_callback=self.status_callback,
                 )
 
-                logger.info(f"Gate assignment {'completed' if success else 'failed'}")
+                if success and assigned_gate:
+                    gate_name = assigned_gate.get('gate', 'Unknown')
+                    if assigned_gate.get('_uncertain'):
+                        logger.info(f"Gate assignment to {gate_name} might have succeeded - verify in GSX")
+                        if self.status_callback:
+                            self.status_callback(f"Assigned to {gate_name} (uncertain - verify in GSX)")
+                    else:
+                        logger.info(f"Successfully assigned to gate: {gate_name}")
+                else:
+                    logger.info("Gate assignment failed")
 
             except queue.Empty:
                 pass

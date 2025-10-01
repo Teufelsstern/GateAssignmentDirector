@@ -80,33 +80,37 @@ class GsxHook:
         self.sim_manager.set_variable(GsxVariable.MENU_OPEN.value, 0)
         time.sleep(0.1)
 
-    def assign_gate_when_ready(self, airport: str, **kwargs) -> bool:
+    def assign_gate_when_ready(self, airport: str, status_callback=None, **kwargs) -> tuple[bool, dict | None]:
         """
         Public interface for gate assignment with airport logging
 
         Args:
             airport: ICAO code of the airport (e.g., "KLAX")
+            status_callback: Optional callback for status updates
             **kwargs: Additional parameters for gate assignment
+
+        Returns:
+            Tuple[bool, Optional[Dict]]: (Success status, Gate info dict or None)
         """
         if not self.is_initialized:
             logger.error("GSX Hook not initialized")
-            return False
+            return False, None
 
         # First attempt
-        result = self.gate_assignment.assign_gate(airport=airport, **kwargs)
+        success, gate_info = self.gate_assignment.assign_gate(airport=airport, status_callback=status_callback, **kwargs)
 
         # Retry once if failed (GSX can be unreliable)
-        if not result:
+        if not success:
             logger.warning("Gate assignment failed, closing menu and retrying...")
             self._close_menu()
             time.sleep(0.5)
-            result = self.gate_assignment.assign_gate(airport=airport, **kwargs)
-            if result:
+            success, gate_info = self.gate_assignment.assign_gate(airport=airport, status_callback=status_callback, **kwargs)
+            if success:
                 logger.info("Gate assignment succeeded on retry")
             else:
                 logger.error("Gate assignment failed after retry")
 
-        return result
+        return success, gate_info
 
     def is_on_ground(self) -> bool:
         """Check if aircraft is on ground"""

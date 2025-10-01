@@ -11,7 +11,7 @@ from typing import Optional, Dict, Any, Tuple
 from rapidfuzz import fuzz
 import requests
 
-from GateAssignmentDirector.exceptions import GsxMenuError, GsxTimeoutError
+from GateAssignmentDirector.exceptions import GsxMenuError, GsxTimeoutError, GsxMenuNotChangedError
 from GateAssignmentDirector.gsx_enums import SearchType, GsxVariable
 from GateAssignmentDirector.menu_logger import GateInfo
 
@@ -47,6 +47,11 @@ class GateAssignment:
             level_0_index = 0
             self._open_menu()
             current_menu_state = self.menu_reader.read_menu()
+
+            if not current_menu_state.options:
+                logger.error(f"Menu is empty for {airport}, cannot map parking spots")
+                raise GsxMenuError(f"GSX menu returned no options for {airport}")
+
             max_index = len(current_menu_state.options) + 1
             logger.debug("Found %s options at current menu and setting maximum to %s", max_index - 1, max_index)
             while level_0_index <= max_index:
@@ -98,6 +103,7 @@ class GateAssignment:
 
                 level_0_index += 1
             self.menu_logger.save_session()
+            time.sleep(2)
         if not os.path.exists(file2):
             self.menu_logger.create_interpreted_airport_data(airport)
         with open(file2, 'r', encoding='utf-8') as file:
@@ -113,7 +119,8 @@ class GateAssignment:
         gate_number: str = "",
         airline: str = "GSX",
         wait_for_ground: bool = True,
-    ) -> bool:
+        status_callback=None,
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
         Complete gate assignment workflow with logging
 
@@ -125,10 +132,24 @@ class GateAssignment:
             gate_number: Gate number (e.g., 102)
             airline: Airline code (e.g., "United_2000")
             wait_for_ground: Wait for aircraft on ground
+            status_callback: Optional callback for status updates
 
         Returns:
-            bool: Success status
+            Tuple[bool, Optional[Dict]]: (Success status, Gate info dict or None)
         """
+        # Check if airport data needs to be mapped (first time)
+        file1 = f".\\gsx_menu_logs\\{airport}.json"
+        file2 = f".\\gsx_menu_logs\\{airport}_interpreted.json"
+
+        if not os.path.exists(file1) and not os.path.exists(file2):
+            if status_callback:
+                status_callback(f"Analyzing airport parking layout for {airport} - this may take a moment...")
+            time.sleep(0.5)
+        elif not os.path.exists(file2):
+            if status_callback:
+                status_callback(f"Loading airport parking data for {airport}")
+            time.sleep(0.5)
+
         airport_data = self.map_available_spots(airport)
         matching_gsx_gate, direct_match = self.find_gate(
             airport_data,
@@ -151,14 +172,20 @@ class GateAssignment:
             self._open_menu()
 
             self.menu_navigator.click_planned(matching_gsx_gate)
-            self.menu_navigator.find_and_click(["activate"], SearchType.KEYWORD)
+            self.menu_navigator.find_and_click(["activate"], SearchType.MENU_ACTION)
             self.menu_navigator.find_and_click([self.config.default_airline or "GSX"], SearchType.AIRLINE)
             logger.info("Gate assignment completed successfully")
-            return True
+            return True, matching_gsx_gate
+
+        except GsxMenuNotChangedError as e:
+            # Menu didn't change, but action might have succeeded anyway
+            logger.warning(f"Gate assignment uncertain: {e}")
+            # Return success with a flag that it's uncertain
+            return True, {**matching_gsx_gate, '_uncertain': True}
 
         except (GsxMenuError, GsxTimeoutError, OSError, IOError) as e:
             logger.error(f"Gate assignment failed: {e}")
-            return False
+            return False, None
 
     def _wait_for_ground(self) -> None:
         """Wait indefinitely for aircraft to be on ground"""
@@ -189,7 +216,11 @@ class GateAssignment:
 
         for key_terminal, dict_terminal in airport_data["terminals"].items():
             for key_gate, dict_gate in dict_terminal.items():
-                score = fuzz.ratio(key_terminal + key_gate, terminal + gate)
+                if key_terminal == "Parking":
+                    _key_terminal = ""
+                else:
+                    _key_terminal = key_terminal
+                score = fuzz.ratio(_key_terminal + key_gate, terminal + gate)
                 logger.debug("Looking for Terminal %s Gate %s. Terminal %s and Gate %s reached score of %s", terminal, gate, key_terminal, key_gate, score)
                 if score >= best_score:
                     best_score = score

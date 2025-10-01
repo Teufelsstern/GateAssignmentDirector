@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.8] - 2025-10-02
+
+### Added
+- Success messages now shown in Recent Activity when gate is assigned ("Successfully assigned to gate: A23")
+- Strategic startup pauses with informative progress messages for smoother UX
+- Status callback system for director to push progress updates to UI
+- Airport label debouncing (300ms) to prevent flickering through multiple states
+- `GsxMenuNotChangedError` exception for uncertain gate assignments (menu didn't update but action may have succeeded)
+- Unit test for float type preservation in config loading
+- Unit tests for `GsxMenuNotChangedError` handling (2 tests)
+- Early exit check for empty GSX menus to prevent loop execution issues
+
+### Changed
+- Startup flow now displays incremental progress: "Initializing monitoring system" → "Connected to flight data source" → "Gate assignment system ready"
+- GSX initialization messages show "Connecting to GSX system..." and "GSX connection established"
+- Airport parking analysis shows contextual message when mapping data
+- Error messages in Recent Activity now user-friendly and simplified (e.g., "GSX menu issue - check logs if persistent")
+- Menu navigation errors that might not be actual failures now marked as uncertain instead of failed
+- Float config values (sleep_short, sleep_long, ground_check_interval, aircraft_request_interval) now explicitly converted to float on load
+
+### Fixed
+- Config float values being saved as integers in YAML when whole numbers (1.0 → 1)
+- Float fields in config UI now always display with decimal notation (e.g., "1.0" not "1")
+- Build script now includes SimConnect.dll in PyInstaller bundle
+- Build script unicode errors on Windows console (replaced checkmarks/warnings with [OK]/[WARN])
+- Gate assignments no longer marked as failed when menu doesn't change (now uncertain with user prompt to verify)
+
+### Improved
+- Startup experience feels more deliberate and informative instead of "everything at once"
+- Recent Activity panel shows actionable, concise messages instead of technical error dumps
+- User confidence with clear feedback at each initialization step
+- Build process robustness with automatic DLL detection and inclusion
+
+### Technical
+- All 230 tests pass
+- Added `import time` to director.py for startup pauses
+- Director tests mock `time.sleep` to avoid actual delays in test execution
+- UI tests updated for new `threading.Timer`-based startup flow
+
 ## [0.8.7] - 2025-09-30
 
 ### Changed

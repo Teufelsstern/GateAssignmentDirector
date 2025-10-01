@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock, MagicMock, patch, mock_open
 import json
 from GateAssignmentDirector.gate_assignment import GateAssignment
-from GateAssignmentDirector.exceptions import GsxMenuError
+from GateAssignmentDirector.exceptions import GsxMenuError, GsxMenuNotChangedError
 
 
 class TestGateAssignment(unittest.TestCase):
@@ -209,6 +209,35 @@ class TestGateAssignment(unittest.TestCase):
         # Verify the correct SimConnect variables were set
         calls = self.mock_sim_manager.set_variable.call_args_list
         self.assertEqual(len(calls), 2)
+
+    @patch('os.path.exists')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('json.load')
+    def test_assign_gate_menu_not_changed_returns_uncertain(self, mock_json_load, mock_file, mock_exists):
+        """Test GsxMenuNotChangedError returns success with _uncertain flag"""
+        mock_exists.side_effect = lambda path: "_interpreted.json" in path
+        mock_json_load.return_value = {
+            "terminals": {
+                "1": {
+                    "5A": {"position_id": "Gate 1-5A", "gate": "5A"}
+                }
+            }
+        }
+
+        self.mock_sim_manager.is_on_ground.return_value = True
+        self.mock_menu_navigator.click_planned.side_effect = GsxMenuNotChangedError("Menu didn't change")
+
+        success, gate_info = self.gate_assignment.assign_gate(
+            airport="KLAX",
+            terminal="1",
+            gate_number="5",
+            gate_letter="A"
+        )
+
+        self.assertTrue(success)
+        self.assertIsNotNone(gate_info)
+        self.assertTrue(gate_info.get('_uncertain', False))
+        self.assertEqual(gate_info['gate'], "5A")
 
 
 if __name__ == "__main__":

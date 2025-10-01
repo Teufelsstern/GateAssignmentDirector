@@ -78,3 +78,14 @@ class GsxInvalidStateError(GsxError):
     """
 
     pass
+
+
+class GsxMenuNotChangedError(GsxMenuError):
+    """Menu did not change after clicking (might still have worked)
+
+    Raised when:
+    - Menu doesn't update after clicking an option
+    - This is often just a GSX display quirk, not necessarily a failure
+    """
+
+    pass

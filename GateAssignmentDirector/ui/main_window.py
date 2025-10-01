@@ -53,6 +53,11 @@ class DirectorUI:
         self.vwl = None
         self.val = []
 
+        # Airport update debouncing
+        self._airport_update_pending = None
+        self._last_known_departure = None
+        self._last_known_destination = None
+
         # Setup main window
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
@@ -247,8 +252,13 @@ class DirectorUI:
             # Load other fields
             for field_name, entry in self.config_entries.items():
                 value = getattr(self.config, field_name, "")
+                # Format floats with .1f to always show at least one decimal place
+                if isinstance(value, float):
+                    value = f"{value:.1f}"
+                else:
+                    value = str(value)
                 entry.delete(0, "end")
-                entry.insert(0, str(value))
+                entry.insert(0, value)
 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load configuration:\n{e}")
@@ -310,9 +320,45 @@ class DirectorUI:
                 msg = self.format(record) + "\n"
                 self.text_widget.after(0, lambda: self._append(msg))
 
-                # Also show errors in Recent Activity
+                # Show simplified errors in Recent Activity for user-relevant issues
                 if record.levelno >= logging.ERROR:
-                    self.activity_widget.after(0, lambda: self._append_activity(msg))
+                    simplified_msg = self._simplify_error_for_activity(record)
+                    if simplified_msg:
+                        self.activity_widget.after(0, lambda m=simplified_msg: self._append_activity(m + "\n"))
+
+            def _simplify_error_for_activity(self, record):
+                """Convert technical errors to user-friendly messages for Recent Activity"""
+                msg = record.getMessage().lower()
+
+                # Suppress warnings about uncertain assignments (already shown via callback)
+                if "uncertain" in msg or "might have succeeded" in msg:
+                    return None
+
+                # Suppress low-level GSX menu errors (they're often transient/expected)
+                if "menu" in msg and any(x in msg for x in ["failed to read", "empty", "timeout"]):
+                    return "GSX menu issue - check logs if persistent"
+
+                # Connection failures (important)
+                if "simconnect" in msg or "connection" in msg:
+                    return "Connection issue - check simulator"
+
+                # GSX initialization failures (important)
+                if "failed to initialize gsx" in msg:
+                    return "GSX initialization failed - check setup"
+
+                # Gate assignment failures (user-relevant)
+                if "gate assignment failed" in msg:
+                    return None  # Already logged by our success/failure messages
+
+                # API errors (somewhat important)
+                if "api" in msg and "error" in msg:
+                    return "API communication issue"
+
+                # For other errors, show generic message
+                if record.levelno >= logging.ERROR:
+                    return "Unexpected issue - check logs for details"
+
+                return None
 
             def _append(self, msg):
                 self.text_widget.configure(state="normal")
@@ -342,16 +388,30 @@ class DirectorUI:
 
         self._append_activity("Starting monitoring...\n")
 
+        # Brief pause to let user see the acknowledgment
+        threading.Timer(0.5, self._continue_monitoring_startup).start()
+
+    def _continue_monitoring_startup(self):
+        """Continue monitoring startup after initial pause"""
+        self._append_activity("Initializing monitoring system...\n")
+
+        # Set up status callback for director to update UI
+        self.director.status_callback = self._report_director_status
+
         # Start director in separate thread
         self.process_thread = threading.Thread(target=self._run_director, daemon=True)
         self.process_thread.start()
 
-        airport_text = self._format_airport_display(
+        # Schedule airport update with debouncing
+        self._schedule_airport_update(
             self.director.departure_airport,
             self.director.current_airport
         )
-        color = c('sage') if self.director.current_airport else c('mustard')
-        self.airport_label.configure(text=airport_text, text_color=color)
+
+    def _report_director_status(self, message: str):
+        """Handle status updates from director (called from background thread)"""
+        # Use after() to safely update UI from background thread
+        self.activity_text.after(0, lambda: self._append_activity(f"{message}\n"))
 
     def _run_director(self):
         """Run the director (called in thread)"""
@@ -424,12 +484,10 @@ class DirectorUI:
 
         # Reset current_airport to director's value and update UI
         self.current_airport = self.director.current_airport
-        airport_text = self._format_airport_display(
+        self._schedule_airport_update(
             self.director.departure_airport,
             self.director.current_airport
         )
-        color = c('sage') if self.director.current_airport else c('mustard')
-        self.airport_label.configure(text=airport_text, text_color=color)
 
         self._append_activity("Manual override cleared.\n")
         logging.info("Manual override cleared")
@@ -475,15 +533,20 @@ class DirectorUI:
     def _assign_gate_thread(self, airport, terminal, gate):
         """Run gate assignment in background thread"""
         try:
-            success = self.director.gsx.assign_gate_when_ready(
+            success, assigned_gate = self.director.gsx.assign_gate_when_ready(
                 airport=airport,
                 terminal=terminal,
                 gate_number=gate,
                 wait_for_ground=True,
             )
-            result = "completed" if success else "failed"
-            self.activity_text.after(0, lambda: self._append_activity(f"Gate assignment {result}\n"))
-            logging.info(f"Manual gate assignment {result}")
+            if success and assigned_gate:
+                gate_name = assigned_gate.get('gate', 'Unknown')
+                success_msg = f"Successfully assigned to gate: {gate_name}\n"
+                self.activity_text.after(0, lambda msg=success_msg: self._append_activity(msg))
+                logging.info(f"Manual gate assignment succeeded: {gate_name}")
+            else:
+                self.activity_text.after(0, lambda: self._append_activity("Gate assignment failed\n"))
+                logging.info("Manual gate assignment failed")
         except Exception as e:
             error_msg = f"Gate assignment error: {e}"
             logging.error(error_msg)
@@ -539,6 +602,29 @@ class DirectorUI:
             else:
                 return "to ..."
 
+    def _schedule_airport_update(self, departure: Optional[str], destination: Optional[str]):
+        """Schedule an airport label update with debouncing to avoid flickering"""
+        # Cancel any pending update
+        if self._airport_update_pending:
+            self.root.after_cancel(self._airport_update_pending)
+
+        # Store the values we want to display
+        self._last_known_departure = departure
+        self._last_known_destination = destination
+
+        # Schedule update after 300ms delay (allows multiple rapid changes to settle)
+        self._airport_update_pending = self.root.after(300, self._apply_airport_update)
+
+    def _apply_airport_update(self):
+        """Apply the pending airport label update"""
+        self._airport_update_pending = None
+        airport_text = self._format_airport_display(
+            self._last_known_departure,
+            self._last_known_destination
+        )
+        color = c('sage') if self._last_known_destination else c('mustard')
+        self.airport_label.configure(text=airport_text, text_color=color)
+
     def _append_activity(self, message: str):
         """Append message to activity text (handles read-only state)"""
         self.activity_text.configure(state="normal")
@@ -567,14 +653,12 @@ class DirectorUI:
         """Periodically update UI state from director"""
         # Don't update airport from director if override is active
         if not self.override_active:
-            if self.director.current_airport != self.current_airport:
+            if self.director.current_airport != self.current_airport or self.director.departure_airport != self._last_known_departure:
                 self.current_airport = self.director.current_airport
-                airport_text = self._format_airport_display(
+                self._schedule_airport_update(
                     self.director.departure_airport,
                     self.director.current_airport
                 )
-                color = c('sage') if self.director.current_airport else c('mustard')
-                self.airport_label.configure(text=airport_text, text_color=color)
 
         # Enable/disable Assign Gate button based on available data
         has_data = self.current_airport is not None and (

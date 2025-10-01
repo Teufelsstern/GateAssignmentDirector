@@ -92,6 +92,12 @@ class GADConfig:
             data = yaml.safe_load(f)
             logger.info("Read config file: %s", yaml_path)
 
+        # Ensure float fields are always floats (YAML may load 1.0 as int 1)
+        float_fields = ['sleep_short', 'sleep_long', 'ground_check_interval', 'aircraft_request_interval']
+        for field in float_fields:
+            if field in data:
+                data[field] = float(data[field])
+
         # Create instance with YAML data
         return cls(**data)
 
