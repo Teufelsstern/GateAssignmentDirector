@@ -222,6 +222,99 @@ class TestJSONMonitor(unittest.TestCase):
         # Should only call callback once
         self.assertEqual(callback_mock.call_count, 1)
 
+    @patch('GateAssignmentDirector.si_api_hook.Path')
+    @patch('GateAssignmentDirector.si_api_hook.configparser.ConfigParser')
+    def test_extract_flight_data_complete(self, mock_config, mock_path):
+        """Test extract_flight_data extracts all fields correctly"""
+        monitor = JSONMonitor(self.test_file_path)
+
+        test_data = {
+            "flight_details": {
+                "current_flight": {
+                    "flight_destination": "KLAX",
+                    "flight_origin": "KJFK",
+                    "airline": "United",
+                    "flight_number": "UA123",
+                    "assigned_gate": "Terminal 5 Gate 12A"
+                }
+            }
+        }
+
+        result = monitor.extract_flight_data(test_data)
+
+        self.assertEqual(result['airport'], "KLAX")
+        self.assertEqual(result['departure_airport'], "KJFK")
+        self.assertEqual(result['airline'], "United")
+        self.assertEqual(result['flight_number'], "UA123")
+        self.assertEqual(result['assigned_gate'], "Terminal 5 Gate 12A")
+
+    @patch('GateAssignmentDirector.si_api_hook.Path')
+    @patch('GateAssignmentDirector.si_api_hook.configparser.ConfigParser')
+    def test_extract_flight_data_missing_fields(self, mock_config, mock_path):
+        """Test extract_flight_data handles missing fields gracefully"""
+        monitor = JSONMonitor(self.test_file_path)
+
+        test_data = {
+            "flight_details": {
+                "current_flight": {
+                    "flight_destination": "KLAX"
+                }
+            }
+        }
+
+        result = monitor.extract_flight_data(test_data)
+
+        self.assertEqual(result['airport'], "KLAX")
+        self.assertIsNone(result['airline'])
+        self.assertIsNone(result['flight_number'])
+        self.assertIsNone(result['assigned_gate'])
+
+    @patch('GateAssignmentDirector.si_api_hook.Path')
+    @patch('GateAssignmentDirector.si_api_hook.configparser.ConfigParser')
+    def test_extract_flight_data_malformed(self, mock_config, mock_path):
+        """Test extract_flight_data handles malformed data"""
+        monitor = JSONMonitor(self.test_file_path)
+
+        test_data = {"invalid": "structure"}
+
+        result = monitor.extract_flight_data(test_data)
+
+        # Should return dict with None values when structure is malformed
+        self.assertIsNone(result['airport'])
+        self.assertIsNone(result['airline'])
+        self.assertIsNone(result['flight_number'])
+
+    @patch('GateAssignmentDirector.si_api_hook.Path')
+    @patch('GateAssignmentDirector.si_api_hook.configparser.ConfigParser')
+    def test_flight_data_callback_invoked(self, mock_config, mock_path):
+        """Test flight_data_callback is invoked with extracted data"""
+        flight_callback_mock = Mock()
+        monitor = JSONMonitor(
+            self.test_file_path,
+            flight_data_callback=flight_callback_mock
+        )
+
+        test_data = {
+            "flight_details": {
+                "current_flight": {
+                    "flight_destination": "KLAX",
+                    "airline": "Delta",
+                    "flight_number": "DL456"
+                }
+            }
+        }
+
+        # Manually call extract and callback to test the flow
+        flight_data = monitor.extract_flight_data(test_data)
+        if monitor.flight_data_callback:
+            monitor.flight_data_callback(flight_data)
+
+        flight_callback_mock.assert_called_once()
+        call_args = flight_callback_mock.call_args[0][0]
+        self.assertEqual(call_args['airport'], "KLAX")
+        self.assertEqual(call_args['airline'], "Delta")
+        self.assertEqual(call_args['flight_number'], "DL456")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -24,7 +24,7 @@ MENU_NAVIGATION_OPTIONS = [
 ]
 
 GATE_PATTERNS = [
-    re.compile(r"Gate\s+([A-Z]?\s*\d+\s*[A-Z]?)", re.IGNORECASE),
+    re.compile(r"Gate\s+([A-Z]?\s*\d+\s*[A-Z]?\b)", re.IGNORECASE),
     re.compile(r"^([A-Z]?\s*\d+\s*[A-Z]?)$", re.IGNORECASE),
     re.compile(r"^([A-Z]\s*\d+)$", re.IGNORECASE),
 ]
@@ -242,7 +242,7 @@ class MenuLogger:
                 (Gate|Parking)?
                 ([A-Z]+)?
                 (\d+)?
-                ([A-Z]+)?
+                ([A-Z]\b)?
             """,
             re.IGNORECASE | re.VERBOSE,
         )

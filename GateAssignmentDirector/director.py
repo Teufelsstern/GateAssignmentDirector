@@ -23,19 +23,28 @@ class GateAssignmentDirector:
         self.monitor_thread: Optional[threading.Thread] = None
         self.running = False
         self.current_airport: Optional[str] = None
+        self.departure_airport: Optional[str] = None
+        self.current_flight_data: Dict[str, Any] = {}
 
     def start_monitoring(self, json_file_path: str) -> None:
         """Start the JSON monitor in a separate thread"""
         self.monitor = JSONMonitor(
             json_file_path,
             enable_gsx_integration=False,
-            gate_callback=self._queue_gate_assignment
+            gate_callback=self._queue_gate_assignment,
+            flight_data_callback=self._update_flight_data
         )
 
         self.running = True
         self.monitor_thread = threading.Thread(target=self.monitor.monitor, daemon=True)
         self.monitor_thread.start()
         logger.info("Monitoring started")
+
+    def _update_flight_data(self, flight_data: Dict[str, Any]) -> None:
+        """Callback to update flight data on every poll"""
+        self.current_flight_data = flight_data
+        self.current_airport = flight_data.get('airport')
+        self.departure_airport = flight_data.get('departure_airport')
 
     def _queue_gate_assignment(self, gate_info: Dict[str, Any]) -> None:
         """Callback when gate is detected"""

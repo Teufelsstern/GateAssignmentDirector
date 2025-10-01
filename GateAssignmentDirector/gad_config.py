@@ -17,17 +17,20 @@ logger = logging.getLogger(__name__)
 class GADConfig:
     """Configuration for Gate Assignment Director"""
     # All configurable fields - loaded from YAML
-    menu_file_paths: list[str] = field(default_factory=list)
-    sleep_short: float = None
-    sleep_long: float = None
-    ground_check_interval: float = None
-    aircraft_request_interval: float = None
-    max_menu_check_attempts: int = None
+    menu_file_paths: list[str] = field(default_factory=lambda: [
+        r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
+        r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
+    ])
+    sleep_short: float = 0.1
+    sleep_long: float = 0.3
+    ground_check_interval: float = 1.0
+    aircraft_request_interval: float = 2.0
+    max_menu_check_attempts: int = 4
     logging_level: str = 'DEBUG'
     logging_format: str = '%(asctime)s - %(levelname)s - %(message)s'
     logging_datefmt: str = '%H:%M:%S'
-    SI_API_KEY: str = None
-    default_airline: str = None
+    SI_API_KEY: str = 'YOUR_API_KEY_HERE'
+    default_airline: str = 'GSX'
 
     logging.basicConfig(
         level=logging_level,

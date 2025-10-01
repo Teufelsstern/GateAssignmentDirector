@@ -262,6 +262,44 @@ class TestGateAssignmentDirector(unittest.TestCase):
         # Should have processed all 3 gates
         self.assertEqual(mock_gsx.assign_gate_when_ready.call_count, 3)
 
+    def test_update_flight_data_stores_data(self):
+        """Test _update_flight_data stores complete flight data dict"""
+        flight_data = {
+            'airport': 'KLAX',
+            'departure_airport': 'KJFK',
+            'airline': 'Delta',
+            'flight_number': 'DL456',
+            'assigned_gate': 'Terminal 5 Gate 12'
+        }
+
+        self.director._update_flight_data(flight_data)
+
+        self.assertEqual(self.director.current_flight_data, flight_data)
+
+    def test_update_flight_data_updates_current_airport(self):
+        """Test _update_flight_data updates current_airport from flight data"""
+        flight_data = {
+            'airport': 'EDDS',
+            'airline': 'Lufthansa',
+            'flight_number': 'LH123'
+        }
+
+        self.director._update_flight_data(flight_data)
+
+        self.assertEqual(self.director.current_airport, 'EDDS')
+
+    def test_update_flight_data_no_airport(self):
+        """Test _update_flight_data handles missing airport field gracefully"""
+        flight_data = {
+            'airline': 'United',
+            'flight_number': 'UA789'
+        }
+
+        self.director._update_flight_data(flight_data)
+
+        self.assertEqual(self.director.current_flight_data, flight_data)
+        self.assertIsNone(self.director.current_airport)
+
 
 if __name__ == "__main__":
     unittest.main()
