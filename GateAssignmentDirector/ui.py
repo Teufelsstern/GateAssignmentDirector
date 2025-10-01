@@ -16,7 +16,7 @@ __all__ = ['DirectorUI', 'GateManagementWindow']
 
 
 if __name__ == "__main__":
-    from GateAssignmentDirector.config import GsxConfig
-    config = GsxConfig()
+    from GateAssignmentDirector.gad_config import GADConfig
+    config = GADConfig()
     app = DirectorUI()
     app.run()

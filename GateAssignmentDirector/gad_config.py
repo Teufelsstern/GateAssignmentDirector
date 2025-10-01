@@ -1,4 +1,4 @@
-"""Configuration module for GSX Hook"""
+"""Configuration module for Gate Assignment Director"""
 import getpass
 import yaml
 import logging
@@ -9,8 +9,8 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 @dataclass
-class GsxConfig:
-    """Configuration for GSX Hook"""
+class GADConfig:
+    """Configuration for Gate Assignment Director"""
     # All configurable fields - loaded from YAML
     menu_file_paths: list[str] = field(default_factory=list)
     sleep_short: float = None
@@ -99,7 +99,7 @@ class GsxConfig:
 
 
 # Global config instance (load from YAML)
-config = GsxConfig.from_yaml()
+config = GADConfig.from_yaml()
 
 logging.basicConfig(
     level=config.logging_level,

@@ -50,6 +50,7 @@ gsx_menu_logs/
 config.yaml
 monitor_config.ini
 AGENT_KNOWLEDGE.md
+docs/agents/
 
 # Secrets
 .env

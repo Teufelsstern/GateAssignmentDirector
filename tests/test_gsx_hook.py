@@ -1,12 +1,12 @@
 import unittest
 from unittest.mock import Mock, MagicMock, patch, call
 from GateAssignmentDirector.gsx_hook import GsxHook
-from GateAssignmentDirector.config import GsxConfig
+from GateAssignmentDirector.gad_config import GADConfig
 
 
 def create_mock_config():
     """Helper to create properly configured mock config"""
-    mock_config = Mock(spec=GsxConfig)
+    mock_config = Mock(spec=GADConfig)
     mock_config.logging_level = "INFO"
     mock_config.logging_format = "%(message)s"
     mock_config.logging_datefmt = "%Y-%m-%d"
@@ -172,7 +172,7 @@ class TestGsxHookInitialization(unittest.TestCase):
         hook = GsxHook()
 
         self.assertIsNotNone(hook.config)
-        self.assertIsInstance(hook.config, GsxConfig)
+        self.assertIsInstance(hook.config, GADConfig)
 
     @patch('GateAssignmentDirector.gsx_hook.GateAssignment')
     @patch('GateAssignmentDirector.gsx_hook.MenuNavigator')

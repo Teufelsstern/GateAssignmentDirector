@@ -4,7 +4,7 @@ import logging
 import time
 from typing import Optional
 
-from GateAssignmentDirector.config import GsxConfig
+from GateAssignmentDirector.gad_config import GADConfig
 from GateAssignmentDirector.simconnect_manager import SimConnectManager
 from GateAssignmentDirector.menu_reader import MenuReader
 from GateAssignmentDirector.menu_navigator import MenuNavigator
@@ -20,10 +20,10 @@ class GsxHook:
     """Main GSX automation interface with menu logging"""
 
     def __init__(
-        self, config: Optional[GsxConfig] = None, enable_menu_logging: bool = True
+        self, config: Optional[GADConfig] = None, enable_menu_logging: bool = True
     ) -> None:
         """Initialize GSX Hook with optional configuration and menu logging"""
-        self.config = config if config is not None else GsxConfig.from_yaml()
+        self.config = config if config is not None else GADConfig.from_yaml()
         self.is_initialized = None
         self.enable_menu_logging = enable_menu_logging
 

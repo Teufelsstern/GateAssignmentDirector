@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Callable
 from dataclasses import dataclass, asdict
 
-from GateAssignmentDirector import config
+from GateAssignmentDirector import gad_config
 from GateAssignmentDirector.gsx_enums import GateGroups
 from GateAssignmentDirector.gsx_hook import GsxHook
 

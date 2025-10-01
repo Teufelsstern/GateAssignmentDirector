@@ -8,7 +8,7 @@ from pystray import Icon, Menu, MenuItem
 from PIL import Image, ImageDraw
 
 from GateAssignmentDirector.director import GateAssignmentDirector
-from GateAssignmentDirector.config import GsxConfig
+from GateAssignmentDirector.gad_config import GADConfig
 from GateAssignmentDirector.gsx_hook import GsxHook
 from GateAssignmentDirector.ui.gate_management import GateManagementWindow
 from GateAssignmentDirector.ui.monitor_tab import setup_monitor_tab
@@ -22,7 +22,7 @@ class DirectorUI:
         self.director = GateAssignmentDirector()
         self.process_thread = None
         self.tray_icon = None
-        self.config = GsxConfig.from_yaml()
+        self.config = GADConfig.from_yaml()
         self.current_airport = None
         self.override_active = False
         self.override_airport = None
@@ -222,7 +222,7 @@ class DirectorUI:
         """Load values from YAML into UI fields"""
         try:
             # Reload config from file
-            self.config = GsxConfig.from_yaml()
+            self.config = GADConfig.from_yaml()
 
             # Load other fields
             for field_name, entry in self.config_entries.items():

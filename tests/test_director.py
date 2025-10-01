@@ -8,7 +8,7 @@ from GateAssignmentDirector.director import GateAssignmentDirector
 class TestGateAssignmentDirector(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures"""
-        with patch('GateAssignmentDirector.director.GsxConfig'):
+        with patch('GateAssignmentDirector.director.GADConfig'):
             self.director = GateAssignmentDirector()
 
     def test_initialization(self):

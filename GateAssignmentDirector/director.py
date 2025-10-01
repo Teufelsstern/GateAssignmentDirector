@@ -6,14 +6,14 @@ from typing import Dict, Any, Optional
 
 from GateAssignmentDirector.si_api_hook import JSONMonitor
 from GateAssignmentDirector.gsx_hook import GsxHook
-from GateAssignmentDirector.config import GsxConfig
+from GateAssignmentDirector.gad_config import GADConfig
 
 logger = logging.getLogger(__name__)
 
 class GateAssignmentDirector:
     def __init__(self) -> None:
         self.gate_queue = queue.Queue()
-        self.config = GsxConfig()
+        self.config = GADConfig()
         self.gsx = None
         self.monitor: Optional[JSONMonitor] = None
         self.monitor_thread: Optional[threading.Thread] = None

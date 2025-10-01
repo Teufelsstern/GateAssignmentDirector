@@ -2,15 +2,15 @@ import unittest
 from unittest.mock import Mock, patch, mock_open, call
 from pathlib import Path
 import yaml
-from GateAssignmentDirector.config import GsxConfig
+from GateAssignmentDirector.gad_config import GADConfig
 
 
-class TestGsxConfigDefaults(unittest.TestCase):
-    """Test suite for GsxConfig default values"""
+class TestGADConfigDefaults(unittest.TestCase):
+    """Test suite for GADConfig default values"""
 
     def test_get_defaults_returns_complete_dict(self):
         """Test _get_defaults returns all expected keys"""
-        defaults = GsxConfig._get_defaults()
+        defaults = GADConfig._get_defaults()
 
         expected_keys = {
             'menu_file_paths',
@@ -30,7 +30,7 @@ class TestGsxConfigDefaults(unittest.TestCase):
 
     def test_get_defaults_menu_paths(self):
         """Test _get_defaults returns correct menu file paths"""
-        defaults = GsxConfig._get_defaults()
+        defaults = GADConfig._get_defaults()
 
         self.assertIsInstance(defaults['menu_file_paths'], list)
         self.assertEqual(len(defaults['menu_file_paths']), 2)
@@ -39,7 +39,7 @@ class TestGsxConfigDefaults(unittest.TestCase):
 
     def test_get_defaults_timing_values(self):
         """Test _get_defaults returns correct timing values"""
-        defaults = GsxConfig._get_defaults()
+        defaults = GADConfig._get_defaults()
 
         self.assertEqual(defaults['sleep_short'], 0.1)
         self.assertEqual(defaults['sleep_long'], 0.3)
@@ -48,7 +48,7 @@ class TestGsxConfigDefaults(unittest.TestCase):
 
     def test_get_defaults_logging_values(self):
         """Test _get_defaults returns correct logging configuration"""
-        defaults = GsxConfig._get_defaults()
+        defaults = GADConfig._get_defaults()
 
         self.assertEqual(defaults['logging_level'], 'DEBUG')
         self.assertEqual(defaults['logging_format'], '%(asctime)s - %(levelname)s - %(message)s')
@@ -56,29 +56,29 @@ class TestGsxConfigDefaults(unittest.TestCase):
 
     def test_get_defaults_max_attempts(self):
         """Test _get_defaults returns correct max menu check attempts"""
-        defaults = GsxConfig._get_defaults()
+        defaults = GADConfig._get_defaults()
 
         self.assertEqual(defaults['max_menu_check_attempts'], 4)
 
     def test_get_defaults_api_key_placeholder(self):
         """Test _get_defaults returns API key placeholder"""
-        defaults = GsxConfig._get_defaults()
+        defaults = GADConfig._get_defaults()
 
         self.assertEqual(defaults['SI_API_KEY'], 'YOUR_API_KEY_HERE')
 
     def test_get_defaults_default_airline(self):
         """Test _get_defaults returns default airline"""
-        defaults = GsxConfig._get_defaults()
+        defaults = GADConfig._get_defaults()
 
         self.assertEqual(defaults['default_airline'], 'GSX')
 
 
-class TestGsxConfigInitialization(unittest.TestCase):
-    """Test suite for GsxConfig initialization"""
+class TestGADConfigInitialization(unittest.TestCase):
+    """Test suite for GADConfig initialization"""
 
     def test_initialization_with_all_fields(self):
-        """Test creating GsxConfig with all fields specified"""
-        config = GsxConfig(
+        """Test creating GADConfig with all fields specified"""
+        config = GADConfig(
             menu_file_paths=["path1", "path2"],
             sleep_short=0.2,
             sleep_long=0.5,
@@ -105,8 +105,8 @@ class TestGsxConfigInitialization(unittest.TestCase):
         self.assertEqual(config.default_airline, 'TEST')
 
     def test_initialization_with_defaults(self):
-        """Test creating GsxConfig with default values"""
-        config = GsxConfig()
+        """Test creating GADConfig with default values"""
+        config = GADConfig()
 
         self.assertEqual(config.menu_file_paths, [])
         self.assertIsNone(config.sleep_short)
@@ -120,7 +120,7 @@ class TestGsxConfigInitialization(unittest.TestCase):
 
     def test_username_field_populated(self):
         """Test username field is populated from getpass.getuser"""
-        config = GsxConfig()
+        config = GADConfig()
 
         # Username should be populated (actual value depends on system)
         self.assertIsNotNone(config.username)
@@ -130,7 +130,7 @@ class TestGsxConfigInitialization(unittest.TestCase):
     def test_flight_json_path_computed_correctly(self):
         """Test flight_json_path is computed based on username"""
         # Create config with explicit username
-        config = GsxConfig(username="alice")
+        config = GADConfig(username="alice")
 
         expected_path = r"C:\Users\alice\AppData\Local\SayIntentionsAI\flight.json"
         self.assertEqual(config.flight_json_path, expected_path)
@@ -138,14 +138,14 @@ class TestGsxConfigInitialization(unittest.TestCase):
     def test_flight_json_path_with_different_username(self):
         """Test flight_json_path computed correctly for different username"""
         # Create config with explicit username
-        config = GsxConfig(username="bob_smith")
+        config = GADConfig(username="bob_smith")
 
         expected_path = r"C:\Users\bob_smith\AppData\Local\SayIntentionsAI\flight.json"
         self.assertEqual(config.flight_json_path, expected_path)
 
     def test_flight_json_path_uses_system_username_by_default(self):
         """Test flight_json_path uses actual system username when not specified"""
-        config = GsxConfig()
+        config = GADConfig()
 
         # Should contain the username in the path
         self.assertIn("C:\\Users\\", config.flight_json_path)
@@ -153,12 +153,12 @@ class TestGsxConfigInitialization(unittest.TestCase):
         self.assertIn(config.username, config.flight_json_path)
 
 
-class TestGsxConfigFromYaml(unittest.TestCase):
-    """Test suite for GsxConfig.from_yaml() method"""
+class TestGADConfigFromYaml(unittest.TestCase):
+    """Test suite for GADConfig.from_yaml() method"""
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.Path')
-    @patch('GateAssignmentDirector.config.yaml.safe_load')
+    @patch('GateAssignmentDirector.gad_config.Path')
+    @patch('GateAssignmentDirector.gad_config.yaml.safe_load')
     def test_from_yaml_existing_file(self, mock_yaml_load, mock_path, mock_file):
         """Test loading configuration from existing YAML file"""
         mock_path_instance = Mock()
@@ -180,7 +180,7 @@ class TestGsxConfigFromYaml(unittest.TestCase):
         }
         mock_yaml_load.return_value = yaml_data
 
-        config = GsxConfig.from_yaml("test_config.yaml")
+        config = GADConfig.from_yaml("test_config.yaml")
 
         self.assertEqual(config.menu_file_paths, [r"C:\test\path"])
         self.assertEqual(config.sleep_short, 0.15)
@@ -195,9 +195,9 @@ class TestGsxConfigFromYaml(unittest.TestCase):
         self.assertEqual(config.default_airline, 'UAL')
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.Path')
-    @patch('GateAssignmentDirector.config.yaml.dump')
-    @patch('GateAssignmentDirector.config.yaml.safe_load')
+    @patch('GateAssignmentDirector.gad_config.Path')
+    @patch('GateAssignmentDirector.gad_config.yaml.dump')
+    @patch('GateAssignmentDirector.gad_config.yaml.safe_load')
     def test_from_yaml_creates_default_file_when_missing(self, mock_yaml_load, mock_yaml_dump, mock_path, mock_file):
         """Test from_yaml creates default config file when it doesn't exist"""
         mock_path_instance = Mock()
@@ -205,10 +205,10 @@ class TestGsxConfigFromYaml(unittest.TestCase):
         mock_path_instance.exists.side_effect = [False, True]
         mock_path.return_value = mock_path_instance
 
-        defaults = GsxConfig._get_defaults()
+        defaults = GADConfig._get_defaults()
         mock_yaml_load.return_value = defaults
 
-        config = GsxConfig.from_yaml("new_config.yaml")
+        config = GADConfig.from_yaml("new_config.yaml")
 
         # Should have called yaml.dump to create the file
         mock_yaml_dump.assert_called_once()
@@ -218,34 +218,34 @@ class TestGsxConfigFromYaml(unittest.TestCase):
         self.assertEqual(dump_call_args[1]['allow_unicode'], True)
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.Path')
-    @patch('GateAssignmentDirector.config.yaml.dump')
-    @patch('GateAssignmentDirector.config.yaml.safe_load')
+    @patch('GateAssignmentDirector.gad_config.Path')
+    @patch('GateAssignmentDirector.gad_config.yaml.dump')
+    @patch('GateAssignmentDirector.gad_config.yaml.safe_load')
     def test_from_yaml_default_path(self, mock_yaml_load, mock_yaml_dump, mock_path, mock_file):
         """Test from_yaml uses default path when none specified"""
         mock_path_instance = Mock()
         mock_path_instance.exists.return_value = True
         mock_path.return_value = mock_path_instance
 
-        mock_yaml_load.return_value = GsxConfig._get_defaults()
+        mock_yaml_load.return_value = GADConfig._get_defaults()
 
-        config = GsxConfig.from_yaml()
+        config = GADConfig.from_yaml()
 
         # Should use default path
         mock_path.assert_called_with(".\\GateAssignmentDirector\\config.yaml")
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.Path')
-    @patch('GateAssignmentDirector.config.yaml.safe_load')
+    @patch('GateAssignmentDirector.gad_config.Path')
+    @patch('GateAssignmentDirector.gad_config.yaml.safe_load')
     def test_from_yaml_reads_with_utf8_encoding(self, mock_yaml_load, mock_path, mock_file):
         """Test from_yaml opens file with UTF-8 encoding"""
         mock_path_instance = Mock()
         mock_path_instance.exists.return_value = True
         mock_path.return_value = mock_path_instance
 
-        mock_yaml_load.return_value = GsxConfig._get_defaults()
+        mock_yaml_load.return_value = GADConfig._get_defaults()
 
-        config = GsxConfig.from_yaml("test.yaml")
+        config = GADConfig.from_yaml("test.yaml")
 
         # Verify file was opened with UTF-8 encoding for reading
         read_calls = [call for call in mock_file.call_args_list if 'r' in str(call)]
@@ -256,8 +256,8 @@ class TestGsxConfigFromYaml(unittest.TestCase):
                 self.assertEqual(call_obj[1]['encoding'], 'utf-8')
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.Path')
-    @patch('GateAssignmentDirector.config.yaml.safe_load')
+    @patch('GateAssignmentDirector.gad_config.Path')
+    @patch('GateAssignmentDirector.gad_config.yaml.safe_load')
     def test_from_yaml_partial_config(self, mock_yaml_load, mock_path, mock_file):
         """Test from_yaml handles partial configuration"""
         mock_path_instance = Mock()
@@ -271,7 +271,7 @@ class TestGsxConfigFromYaml(unittest.TestCase):
         }
         mock_yaml_load.return_value = partial_data
 
-        config = GsxConfig.from_yaml("partial.yaml")
+        config = GADConfig.from_yaml("partial.yaml")
 
         # Specified fields should be loaded
         self.assertEqual(config.sleep_short, 0.2)
@@ -281,15 +281,15 @@ class TestGsxConfigFromYaml(unittest.TestCase):
         self.assertIsNone(config.sleep_long)
 
 
-class TestGsxConfigSaveYaml(unittest.TestCase):
-    """Test suite for GsxConfig.save_yaml() method"""
+class TestGADConfigSaveYaml(unittest.TestCase):
+    """Test suite for GADConfig.save_yaml() method"""
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.yaml.dump')
+    @patch('GateAssignmentDirector.gad_config.yaml.dump')
     def test_save_yaml_writes_configurable_fields(self, mock_yaml_dump, mock_file):
         """Test save_yaml writes only configurable fields to YAML"""
 
-        config = GsxConfig(
+        config = GADConfig(
             menu_file_paths=["path1"],
             sleep_short=0.2,
             sleep_long=0.5,
@@ -322,11 +322,11 @@ class TestGsxConfigSaveYaml(unittest.TestCase):
         self.assertEqual(saved_data['SI_API_KEY'], 'save_test_key')
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.yaml.dump')
+    @patch('GateAssignmentDirector.gad_config.yaml.dump')
     def test_save_yaml_excludes_computed_fields(self, mock_yaml_dump, mock_file):
         """Test save_yaml does not save computed fields like username and flight_json_path"""
 
-        config = GsxConfig()
+        config = GADConfig()
         config.save_yaml("output.yaml")
 
         saved_data = mock_yaml_dump.call_args[0][0]
@@ -336,11 +336,11 @@ class TestGsxConfigSaveYaml(unittest.TestCase):
         self.assertNotIn('flight_json_path', saved_data)
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.yaml.dump')
+    @patch('GateAssignmentDirector.gad_config.yaml.dump')
     def test_save_yaml_excludes_default_airline(self, mock_yaml_dump, mock_file):
         """Test save_yaml does not save default_airline field"""
 
-        config = GsxConfig(default_airline='TEST')
+        config = GADConfig(default_airline='TEST')
         config.save_yaml("output.yaml")
 
         saved_data = mock_yaml_dump.call_args[0][0]
@@ -349,33 +349,33 @@ class TestGsxConfigSaveYaml(unittest.TestCase):
         self.assertNotIn('default_airline', saved_data)
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.yaml.dump')
+    @patch('GateAssignmentDirector.gad_config.yaml.dump')
     def test_save_yaml_default_path(self, mock_yaml_dump, mock_file):
         """Test save_yaml uses default path when none specified"""
 
-        config = GsxConfig()
+        config = GADConfig()
         config.save_yaml()
 
         # Should open file with default path
         mock_file.assert_called_with(".\\GateAssignmentDirector\\config.yaml", 'w', encoding='utf-8')
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.yaml.dump')
+    @patch('GateAssignmentDirector.gad_config.yaml.dump')
     def test_save_yaml_custom_path(self, mock_yaml_dump, mock_file):
         """Test save_yaml uses custom path when specified"""
 
-        config = GsxConfig()
+        config = GADConfig()
         config.save_yaml("custom_path.yaml")
 
         # Should open file with custom path
         mock_file.assert_called_with("custom_path.yaml", 'w', encoding='utf-8')
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.yaml.dump')
+    @patch('GateAssignmentDirector.gad_config.yaml.dump')
     def test_save_yaml_formatting_options(self, mock_yaml_dump, mock_file):
         """Test save_yaml uses correct YAML formatting options"""
 
-        config = GsxConfig()
+        config = GADConfig()
         config.save_yaml("output.yaml")
 
         # Check formatting options
@@ -384,21 +384,21 @@ class TestGsxConfigSaveYaml(unittest.TestCase):
         self.assertEqual(dump_call_kwargs['allow_unicode'], True)
 
     @patch('builtins.open', new_callable=mock_open)
-    @patch('GateAssignmentDirector.config.yaml.dump')
+    @patch('GateAssignmentDirector.gad_config.yaml.dump')
     def test_save_yaml_writes_with_utf8_encoding(self, mock_yaml_dump, mock_file):
         """Test save_yaml opens file with UTF-8 encoding"""
 
-        config = GsxConfig()
+        config = GADConfig()
         config.save_yaml("output.yaml")
 
         # Verify file was opened with UTF-8 encoding for writing
         mock_file.assert_called_with("output.yaml", 'w', encoding='utf-8')
 
 
-class TestGsxConfigRoundTrip(unittest.TestCase):
+class TestGADConfigRoundTrip(unittest.TestCase):
     """Test suite for round-trip save and load operations"""
 
-    @patch('GateAssignmentDirector.config.Path')
+    @patch('GateAssignmentDirector.gad_config.Path')
     def test_save_and_load_roundtrip(self, mock_path):
         """Test saving and loading config preserves values"""
         mock_path_instance = Mock()
@@ -406,7 +406,7 @@ class TestGsxConfigRoundTrip(unittest.TestCase):
         mock_path.return_value = mock_path_instance
 
         # Create config with specific values
-        original_config = GsxConfig(
+        original_config = GADConfig(
             menu_file_paths=["path1", "path2"],
             sleep_short=0.25,
             sleep_long=0.6,
@@ -423,13 +423,13 @@ class TestGsxConfigRoundTrip(unittest.TestCase):
         saved_data = {}
 
         with patch('builtins.open', mock_open()) as mock_file:
-            with patch('GateAssignmentDirector.config.yaml.dump') as mock_dump:
+            with patch('GateAssignmentDirector.gad_config.yaml.dump') as mock_dump:
                 original_config.save_yaml("test.yaml")
                 saved_data = mock_dump.call_args[0][0]
 
         with patch('builtins.open', mock_open()):
-            with patch('GateAssignmentDirector.config.yaml.safe_load', return_value=saved_data):
-                loaded_config = GsxConfig.from_yaml("test.yaml")
+            with patch('GateAssignmentDirector.gad_config.yaml.safe_load', return_value=saved_data):
+                loaded_config = GADConfig.from_yaml("test.yaml")
 
         # Verify all configurable fields match
         self.assertEqual(loaded_config.menu_file_paths, original_config.menu_file_paths)
@@ -443,7 +443,7 @@ class TestGsxConfigRoundTrip(unittest.TestCase):
         self.assertEqual(loaded_config.logging_datefmt, original_config.logging_datefmt)
         self.assertEqual(loaded_config.SI_API_KEY, original_config.SI_API_KEY)
 
-    @patch('GateAssignmentDirector.config.Path')
+    @patch('GateAssignmentDirector.gad_config.Path')
     def test_computed_fields_regenerated_after_load(self, mock_path):
         """Test computed fields are regenerated after loading from YAML"""
         mock_path_instance = Mock()
@@ -456,8 +456,8 @@ class TestGsxConfigRoundTrip(unittest.TestCase):
         }
 
         with patch('builtins.open', mock_open()):
-            with patch('GateAssignmentDirector.config.yaml.safe_load', return_value=yaml_data):
-                config = GsxConfig.from_yaml("test.yaml")
+            with patch('GateAssignmentDirector.gad_config.yaml.safe_load', return_value=yaml_data):
+                config = GADConfig.from_yaml("test.yaml")
 
         # Computed fields should be generated (using system username)
         self.assertIsNotNone(config.username)

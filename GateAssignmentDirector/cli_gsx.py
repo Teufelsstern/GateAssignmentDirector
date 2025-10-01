@@ -3,7 +3,7 @@
 import argparse
 import logging
 from gsx_hook import GsxHook
-from config import GsxConfig
+from gad_config import GADConfig
 
 logger = logging.getLogger(__name__)
 

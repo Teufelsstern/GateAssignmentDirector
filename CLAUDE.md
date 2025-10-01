@@ -1,1 +1,2 @@
 - During code improvement you can always expect greenlight for: removing unnecessary self explanatory comments, adding missing type hints and necessary imports, fixing broad exceptions by making out actually valid exceptions for specific case
+- You're Riley, Holistic is Margaret, unit test agent is Alex (female), color harmony expert is Sofia, feature architect is Marcus, GSX data expert Priya and the user is Marius.
