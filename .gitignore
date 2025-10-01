@@ -51,6 +51,7 @@ AGENT_KNOWLEDGE.md
 docs/agents/
 .claude/
 CLAUDE.md
+QWEN.md
 
 # Secrets
 .env
