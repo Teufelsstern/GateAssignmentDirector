@@ -480,6 +480,49 @@ def _append(self, msg: str):
 
 **Purpose:** Prevent user editing while allowing programmatic updates
 
+### Progressive Startup Flow
+
+**New in v0.8.8:** Multi-stage startup with feedback
+
+```python
+def start_monitoring(self):
+    """Start monitoring with staged feedback"""
+    # Stage 1: Immediate acknowledgment
+    self._append_activity("Starting monitoring...\n")
+    self.status_label.configure(text="Monitoring", text_color=c('sage'))
+
+    # Stage 2: 500ms pause for user to see
+    threading.Timer(0.5, self._continue_startup).start()
+
+def _continue_startup(self):
+    """Stage 3: Initialization message"""
+    self._append_activity("Initializing monitoring system...\n")
+
+    # Stage 4: Start director thread
+    self.process_thread = threading.Thread(target=self._run_director, daemon=True)
+    self.process_thread.start()
+```
+
+**Color:** Sage (#9dc4a8) for "Monitoring" status
+**Timing:** 500ms pause prevents "blink and miss it"
+
+### Smart Error Filtering
+
+**New in v0.8.8:** User-friendly activity messages
+
+**Shows:** Gate success/failure, connection issues, relevant errors
+**Suppresses:** Transient menu errors, technical stack traces
+
+```python
+def _simplify_error(self, message):
+    """Convert technical errors to user-friendly messages"""
+    if "simconnect" in message or "connection" in message:
+        return "Connection issue - check simulator"
+    if "menu" in message and "failed to read" in message:
+        return "GSX menu issue - check logs if persistent"
+    return "Unexpected issue - check logs"
+```
+
 ---
 
 ## Threading for UI Updates
@@ -526,6 +569,22 @@ def gate_assigned_callback(airport, gate):
     # DO: Queue the update
     ui.update_queue.put(lambda: ui.update_label(text))
 ```
+
+### Pattern: Status Callbacks from Director
+
+**New in v0.8.8:** Director reports status via callback
+
+```python
+# DirectorUI.__init__
+self.director.status_callback = self._report_director_status
+
+def _report_director_status(self, message: str):
+    """Handle status from director (background thread)"""
+    self.activity_text.after(0, lambda: self._append_activity(f"{message}\n"))
+```
+
+**Thread Safety:** Director calls from background thread → `after()` schedules on main thread
+**Usage:** Gate success messages, warnings, progressive startup updates
 
 ---
 
@@ -639,6 +698,13 @@ menu = (
 ---
 
 ## Version History
+
+### v0.8.8
+- Status callback system (director → UI updates)
+- Progressive startup flow (500ms staged messaging)
+- Airport label debouncing (300ms)
+- Smart error filtering for Recent Activity
+- GADConfig rename throughout
 
 ### v0.8.5
 - Centralized color palette system

@@ -96,6 +96,23 @@ director.process_gate_assignments()           # Blocks processing queue
 director.stop()                               # Cleanup
 ```
 
+#### Director State Management
+
+**Status Callback System (v0.8.8):**
+- `status_callback: Optional[Callable]` - Callback for UI status updates
+- Called from background thread with progress messages
+- Enables progressive startup and real-time feedback
+
+**Airport Override (v0.8.8+):**
+- `airport_override: Optional[str]` - Manual airport selection
+- Bypasses automatic airport detection
+- Used for testing and manual control
+
+**Airport Pre-mapping:**
+- `mapped_airports: set` - Tracks pre-mapped airports
+- Automatically maps parking layout on first airport detection
+- Reduces delay on first gate assignment
+
 #### **2. SI API Hook**
 **File:** `GateAssignmentDirector/si_api_hook.py`
 **Role:** SayIntentions integration
@@ -173,9 +190,9 @@ director.stop()                               # Cleanup
 **Critical Order:** Dependencies must be initialized in this exact sequence:
 
 ```python
-def __init__(self, config: Optional[GsxConfig] = None, enable_menu_logging: bool = True):
+def __init__(self, config: Optional[GADConfig] = None, enable_menu_logging: bool = True):
     # 1. Configuration
-    self.config = config if config is not None else GsxConfig.from_yaml()
+    self.config = config if config is not None else GADConfig.from_yaml()
 
     # 2. SimConnect Manager (no dependencies)
     self.sim_manager = SimConnectManager(self.config)
@@ -284,18 +301,39 @@ GSX Menu (via SimConnect)
 - `JSONMonitor.monitor_thread` - Thread instance
 - Changed via `start_monitoring()` and `stop()`
 
+### Airport Pre-mapping Flow
+
+**New in v0.8.8+:** Director pre-maps airports before first assignment
+
+```
+process_gate_assignments() detects new airport
+    ↓
+Check if airport in mapped_airports set
+    ↓
+If not mapped and on ground:
+    Initialize GsxHook if needed
+    ↓
+    map_available_spots(airport)
+    ↓
+    Add airport to mapped_airports
+    ↓
+    Status callback: "Parking layout ready"
+```
+
+**Purpose:** Front-loads the 10-30 second mapping process, making actual gate assignments instant.
+
 ---
 
 ## Configuration System
 
-### GsxConfig Dataclass
+### GADConfig Dataclass
 
-**File:** `GateAssignmentDirector/config.py`
+**File:** `GateAssignmentDirector/gad_config.py`
 
 **All Configuration Fields:**
 ```python
 @dataclass
-class GsxConfig:
+class GADConfig:
     # Paths
     menu_file_paths: List[str]           # GSX menu file search paths
 
@@ -304,7 +342,7 @@ class GsxConfig:
     sleep_long: float = 0.1              # Long pause
     ground_check_interval: float = 1.0   # Ground polling interval
     aircraft_request_interval: float = 2.0  # SimConnect request interval
-    max_menu_check_attempts: int = 4     # Menu change retries
+    max_menu_check_attempts: int = 15    # Menu change retries
 
     # Logging
     logging_level: str = "DEBUG"
@@ -327,10 +365,10 @@ class GsxConfig:
 
 ```python
 # Option 1: From YAML
-config = GsxConfig.from_yaml()  # Reads GateAssignmentDirector/config.yaml
+config = GADConfig.from_yaml()  # Reads GateAssignmentDirector/config.yaml
 
 # Option 2: Programmatic
-config = GsxConfig(
+config = GADConfig(
     menu_file_paths=[...],
     SI_API_KEY="your_key"
 )
@@ -497,7 +535,7 @@ if __name__ == "__main__":
 ### 1. Dependency Injection
 All components receive dependencies via constructor:
 ```python
-def __init__(self, config: GsxConfig, logger: MenuLogger, ...):
+def __init__(self, config: GADConfig, logger: MenuLogger, ...):
     self.config = config
     self.logger = logger
 ```
@@ -533,6 +571,15 @@ monitor = JSONMonitor(config, gate_callback=director.enqueue_gate_assignment)
 ---
 
 ## Version-Specific Architectural Changes
+
+### v0.8.8
+- Status callback system
+- Airport pre-mapping
+- max_menu_check_attempts: 4→15
+- Progressive startup UX
+
+### v0.8.7
+- Config renamed: config.py → gad_config.py, GsxConfig → GADConfig
 
 ### v0.8.6
 - GsxHook now accepts optional config parameter (was ignored before)

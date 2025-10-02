@@ -1,7 +1,7 @@
 # Agent Documentation - GateAssignmentDirector
 
-**Version:** 0.8.6
-**Last Updated:** 2025-09-30
+**Version:** 0.8.8+
+**Last Updated:** 2025-10-02
 
 Welcome to the modular agent documentation for the SayIntentionsBridge (GateAssignmentDirector) project. This documentation is split by domain to help specialized AI agents quickly find relevant information.
 
@@ -66,7 +66,7 @@ SI API Hook (SayIntentions Monitor) → Queue → GSX Hook (Main Interface)
 | `menu_reader.py` | GSX menu file reading | `MenuReader`, `MenuState` |
 | `menu_navigator.py` | Menu automation | `MenuNavigator` |
 | `menu_logger.py` | Menu mapping & logging | `MenuLogger` |
-| `config.py` | Configuration management | `GsxConfig` |
+| `gad_config.py` | Configuration management | `GADConfig` |
 | `gsx_enums.py` | Type-safe constants | `SearchType`, `GsxVariable`, etc. |
 | `exceptions.py` | Custom exceptions | `GsxError`, `GsxMenuError`, etc. |
 
@@ -119,11 +119,11 @@ logger.error(f"Failed: {e}")
 ### 4. Configuration Access
 ```python
 # Option 1: Global instance
-from GateAssignmentDirector.config import config
+from GateAssignmentDirector.gad_config import config
 path = config.flight_json_path
 
 # Option 2: Instance passed in constructor
-def __init__(self, config: GsxConfig):
+def __init__(self, config: GADConfig):
     self.config = config
 ```
 
@@ -136,7 +136,19 @@ with open(file_path, 'r', encoding='utf-8') as f:
 
 ## Version-Specific Notes
 
-### v0.8.6 (Latest)
+### v0.8.8 (Current)
+- Status callback system for director → UI updates
+- Airport pre-mapping functionality
+- Progressive startup with informative messages
+- Test count: 250 tests (was 183)
+- User-friendly error messages in Recent Activity
+
+### v0.8.7
+- Configuration renamed: config.py → gad_config.py
+- GsxConfig class → GADConfig
+- All imports updated across 10 files
+
+### v0.8.6
 - GsxHook now respects provided config parameter
 - Fuzzy matching threshold changed from 10 to 0
 - Gate assignment handles None values with null coalescing
@@ -205,3 +217,5 @@ Navigate to the specialized documentation files above based on your domain of wo
 ---
 
 *This modular structure was created in v0.8.6 to improve agent efficiency. The legacy `AGENT_KNOWLEDGE.md` at project root is deprecated.*
+
+**Note:** This file was renamed from `README.md` to `OVERVIEW.md` to avoid conflict with the project root README.
