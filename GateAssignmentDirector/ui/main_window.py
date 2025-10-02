@@ -460,11 +460,11 @@ class DirectorUI:
         self.override_terminal = terminal
         self.override_gate = gate
         self.current_airport = airport
+        self.director.airport_override = airport
 
-        # Update airport display
         self.airport_label.configure(
             text=f"{airport} (MANUAL)",
-            text_color="#D4A574"  # Muted mustard
+            text_color="#D4A574"
         )
 
         self._append_activity(f"Manual override applied: {airport} Terminal {terminal} Gate {gate}\n")
@@ -476,13 +476,12 @@ class DirectorUI:
         self.override_airport = None
         self.override_terminal = None
         self.override_gate = None
+        self.director.airport_override = None
 
-        # Clear entry fields
         self.override_airport_entry.delete(0, "end")
         self.override_terminal_entry.delete(0, "end")
         self.override_gate_entry.delete(0, "end")
 
-        # Reset current_airport to director's value and update UI
         self.current_airport = self.director.current_airport
         self._schedule_airport_update(
             self.director.departure_airport,
@@ -494,19 +493,15 @@ class DirectorUI:
 
     def assign_gate_manual(self):
         """Manually trigger gate assignment"""
-        if not self.current_airport:
-            messagebox.showerror("Error", "No airport data available. Set manual override or start monitoring.")
-            return
-
-        # Get gate data from override or director
         if self.override_active:
             airport = self.override_airport
             terminal = self.override_terminal or ""
             gate = self.override_gate or ""
         else:
-            # Get from director's last gate info
+            if not self.current_airport:
+                messagebox.showerror("Error", "No airport data available. Set manual override or start monitoring.")
+                return
             airport = self.director.current_airport
-            # Need to get terminal/gate from director - for now use empty
             terminal = ""
             gate = ""
 

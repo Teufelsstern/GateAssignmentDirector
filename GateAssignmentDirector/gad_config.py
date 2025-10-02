@@ -25,7 +25,7 @@ class GADConfig:
     sleep_long: float = 0.3
     ground_check_interval: float = 1.0
     aircraft_request_interval: float = 2.0
-    max_menu_check_attempts: int = 4
+    max_menu_check_attempts: int = 15
     logging_level: str = 'DEBUG'
     logging_format: str = '%(asctime)s - %(levelname)s - %(message)s'
     logging_datefmt: str = '%H:%M:%S'

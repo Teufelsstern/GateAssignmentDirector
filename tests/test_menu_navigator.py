@@ -92,8 +92,9 @@ class TestMenuNavigator(unittest.TestCase):
         """Test clicking planned gate with navigation info"""
         gate_info = {
             "raw_info": {
-                "level_0_index": 2,
-                "next_clicks": 3,
+                "level_0_page": 1,
+                "level_0_option_index": 2,
+                "level_1_next_clicks": 3,
                 "menu_index": 5
             }
         }

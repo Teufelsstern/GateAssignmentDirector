@@ -44,24 +44,6 @@ class MenuReader:
             options_enum=[(0, "Initial")],
             raw_lines=["Initial"],
         )
-        self.previous_state = self.current_state
-
-    def has_changed(self, check_option: str = "Default") -> bool:
-        """Check if menu has changed"""
-        menu_actions = ["Next", "Back", "Close", "Cancel"]
-
-        if len(self.current_state.options) != len(self.previous_state.options):
-            changed = True
-        elif check_option == "Default":
-            current_opt = next((opt for opt in self.current_state.options if opt not in menu_actions), None)
-            previous_opt = next((opt for opt in self.previous_state.options if opt not in menu_actions), None)
-            changed = current_opt != previous_opt if current_opt and previous_opt else False
-        else:
-            check_opt = next((opt for opt in self.current_state.options if opt not in menu_actions), None)
-            changed = check_opt != check_option if check_opt else False
-
-        self.previous_state = self.current_state
-        return changed
 
     def read_menu(self) -> MenuState:
         """Read and return current menu state"""
@@ -87,11 +69,13 @@ class MenuReader:
                             raw_lines=lines,
                             file_timestamp=current_timestamp,
                         )
+                        if error_count > 0:
+                            logger.debug("Managed to read menu despite %s errors", error_count)
                         break
                 except (OSError, IOError) as e:
                     error_count += 1
                     if error_count >= max_retries:
-                        raise
+                        raise e
         except (OSError, IOError) as e:
             logger.error(f"Failed to read menu file: {e}")
             raise

@@ -442,6 +442,38 @@ class TestDirectorUIOverrideControls(unittest.TestCase):
         self.ui.activity_text.insert.assert_called_once_with("end", "Manual override cleared.\n")
         mock_log_info.assert_called_once_with("Manual override cleared")
 
+    @patch('GateAssignmentDirector.ui.main_window.logging.info')
+    def test_apply_override_sets_director_airport_override(self, mock_log_info):
+        """Test apply_override sets director.airport_override"""
+        self.ui.override_airport_entry.get.return_value = "EDDF"
+        self.ui.override_terminal_entry.get.return_value = "1"
+        self.ui.override_gate_entry.get.return_value = "A23"
+
+        self.ui.apply_override()
+
+        self.assertEqual(self.ui.director.airport_override, "EDDF")
+
+    @patch('GateAssignmentDirector.ui.main_window.logging.info')
+    def test_clear_override_clears_director_airport_override(self, mock_log_info):
+        """Test clear_override sets director.airport_override to None"""
+        self.ui.director.airport_override = "EDDF"
+
+        self.ui.clear_override()
+
+        self.assertIsNone(self.ui.director.airport_override)
+
+    @patch('GateAssignmentDirector.ui.main_window.logging.info')
+    def test_apply_override_updates_director_airport_on_change(self, mock_log_info):
+        """Test applying new override updates director.airport_override"""
+        self.ui.director.airport_override = "KLAX"
+        self.ui.override_airport_entry.get.return_value = "KJFK"
+        self.ui.override_terminal_entry.get.return_value = "4"
+        self.ui.override_gate_entry.get.return_value = "B32"
+
+        self.ui.apply_override()
+
+        self.assertEqual(self.ui.director.airport_override, "KJFK")
+
     def test_toggle_override_section_shows_panel(self):
         """Test toggle_override_section makes panel visible"""
         self.ui.override_section_visible = False

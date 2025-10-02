@@ -179,14 +179,10 @@ class MenuLogger:
                             "depth": self.current_depth,
                         }
 
-                        # Add navigation info if available
                         if navigation_info:
-                            spot_data["level_0_index"] = navigation_info.get(
-                                "level_0_index"
-                            )
-                            spot_data["next_clicks"] = navigation_info.get(
-                                "next_clicks"
-                            )
+                            spot_data["level_0_page"] = navigation_info.get("level_0_page")
+                            spot_data["level_0_option_index"] = navigation_info.get("level_0_option_index")
+                            spot_data["level_1_next_clicks"] = navigation_info.get("level_1_next_clicks")
 
                         self.menu_map[f"available_{spot_type}"][spot_id] = spot_data
                     break

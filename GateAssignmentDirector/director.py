@@ -26,7 +26,9 @@ class GateAssignmentDirector:
         self.current_airport: Optional[str] = None
         self.departure_airport: Optional[str] = None
         self.current_flight_data: Dict[str, Any] = {}
-        self.status_callback = None  # Callback for UI status updates
+        self.status_callback = None
+        self.airport_override: Optional[str] = None
+        self.mapped_airports: set = set()
 
     def start_monitoring(self, json_file_path: str) -> None:
         """Start the JSON monitor in a separate thread"""
@@ -72,6 +74,40 @@ class GateAssignmentDirector:
 
         while self.running:
             try:
+                current_airport = self.airport_override if self.airport_override else self.current_airport
+
+                if (current_airport and current_airport not in self.mapped_airports):
+
+                    if not self.gsx or not self.gsx.is_initialized:
+                        if self.status_callback:
+                            self.status_callback("Connecting to GSX system...")
+                        time.sleep(0.5)
+
+                        self.gsx = GsxHook(self.config, enable_menu_logging=True)
+                        if not self.gsx.is_initialized:
+                            logger.error("Failed to initialize GSX Hook for pre-mapping")
+                            if self.status_callback:
+                                self.status_callback("GSX connection failed - check simulator")
+                        else:
+                            if self.status_callback:
+                                self.status_callback("GSX connection established")
+                            time.sleep(0.5)
+
+                    if self.gsx and self.gsx.is_initialized and self.gsx.sim_manager.is_on_ground():
+                        if self.status_callback:
+                            self.status_callback(f"Pre-mapping {current_airport} parking layout...")
+
+                        try:
+                            self.gsx.gate_assignment.map_available_spots(current_airport)
+                            self.mapped_airports.add(current_airport)
+                            logger.info(f"Successfully pre-mapped {current_airport}")
+                            if self.status_callback:
+                                self.status_callback(f"{current_airport} parking layout ready")
+                        except Exception as e:
+                            logger.error(f"Failed to pre-map {current_airport}: {e}")
+                            if self.status_callback:
+                                self.status_callback(f"Pre-mapping failed: {e}")
+
                 gate_info = self.gate_queue.get(timeout=1.0)
                 logger.info(f"Processing gate assignment: {gate_info}")
 
@@ -94,9 +130,10 @@ class GateAssignmentDirector:
                         self.status_callback("GSX connection established")
                     time.sleep(0.5)
 
-                # Process assignment
+                airport = self.airport_override if self.airport_override else gate_info.get('airport', 'EDDS')
+
                 success, assigned_gate = self.gsx.assign_gate_when_ready(
-                    airport=gate_info.get('airport', 'EDDS'),
+                    airport=airport,
                     gate_letter=gate_info.get('gate_letter', ""),
                     gate_number=gate_info.get('gate_number', ""),
                     terminal=gate_info.get('terminal', ""),
