@@ -55,6 +55,7 @@ class GateAssignment:
         if not os.path.exists(file1) and not os.path.exists(file2):
             logger.debug("Airport %s has not been parsed yet. Starting parsing", airport)
             self.menu_logger.start_session(gate_info=GateInfo(airport=airport))
+            self._refresh_menu()
             level_0_page = 0
             current_menu_state = self.menu_reader.read_menu()
             if not current_menu_state.options:
@@ -76,10 +77,9 @@ class GateAssignment:
                     f"Could not parse ICAO from menu title: '{current_menu_state.title}'"
                 )
             while True:
-
                 current_menu_state = self.menu_reader.read_menu()
                 level_0_options = [
-                    opt for opt in current_menu_state.options if "Next" not in opt
+                    opt for opt in current_menu_state.options if ("Next" not in opt and "Runway" not in opt)
                 ]
                 logger.debug(
                     f"Found {len(level_0_options)} options on page {level_0_page}"
@@ -87,7 +87,6 @@ class GateAssignment:
                 time.sleep(self.config.sleep_short)
                 for level_0_option_index, option in enumerate(level_0_options):
                     level_1_next_clicks = 0
-                    self._navigate_to_level_0_page(level_0_page)
                     current_menu_state = self.menu_reader.read_menu()
                     if "Previous" in option[1:].split():
                         continue
@@ -131,6 +130,7 @@ class GateAssignment:
                             logger.debug(
                                 f"No more Next button at level 1 for page {level_0_page}, option {level_0_option_index}. Total clicks: {level_1_next_clicks}"
                             )
+                            self._navigate_to_level_0_page(level_0_page)
                             break
                 self._navigate_to_level_0_page(level_0_page)
                 time.sleep(1.0)
