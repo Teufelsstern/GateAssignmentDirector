@@ -46,6 +46,8 @@ class DirectorUI:
         self.override_airport_entry = None
         self.override_terminal_entry = None
         self.override_gate_entry = None
+        self.apply_override_btn = None
+        self.clear_override_btn = None
         self.start_btn = None
         self.stop_btn = None
         self.assign_gate_btn = None
@@ -386,9 +388,13 @@ class DirectorUI:
         self.stop_btn.configure(state="normal", text_color="#4a4050")
         self.status_label.configure(text="Monitoring", text_color=c('sage'))
 
+        if self.apply_override_btn:
+            self.apply_override_btn.configure(state="disabled")
+        if self.clear_override_btn:
+            self.clear_override_btn.configure(state="disabled")
+
         self._append_activity("Starting monitoring...\n")
 
-        # Brief pause to let user see the acknowledgment
         threading.Timer(0.5, self._continue_monitoring_startup).start()
 
     def _continue_monitoring_startup(self):
@@ -427,6 +433,11 @@ class DirectorUI:
         self.start_btn.configure(state="normal")
         self.stop_btn.configure(state="disabled", text_color="#e8d9d6")
         self.status_label.configure(text="Stopped", text_color="#C67B7B")
+
+        if self.apply_override_btn:
+            self.apply_override_btn.configure(state="normal")
+        if self.clear_override_btn:
+            self.clear_override_btn.configure(state="normal")
 
         self._append_activity("Monitoring stopped.\n")
 
@@ -555,7 +566,13 @@ class DirectorUI:
                 "No airport has been detected yet. Using default EDDS.\n\n"
                 "Start monitoring and wait for a gate assignment to automatically detect the airport."
             )
-        GateManagementWindow(self.root, self.current_airport)
+
+        # Pass gate_assignment reference if available
+        gate_assignment = None
+        if self.director.gsx and self.director.gsx.is_initialized:
+            gate_assignment = self.director.gsx.gate_assignment
+
+        GateManagementWindow(self.root, self.current_airport, gate_assignment)
 
     def save_logs(self):
         """Save logs to file with date-stamped default filename"""
@@ -599,7 +616,9 @@ class DirectorUI:
 
     def _schedule_airport_update(self, departure: Optional[str], destination: Optional[str]):
         """Schedule an airport label update with debouncing to avoid flickering"""
-        # Cancel any pending update
+        if self.override_active:
+            return
+
         if self._airport_update_pending:
             self.root.after_cancel(self._airport_update_pending)
 

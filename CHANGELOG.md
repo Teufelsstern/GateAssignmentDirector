@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.9] - 2025-10-05
+
+### Added
+- Gate Management Window: Multi-select gates/terminals with Ctrl/Shift+Click
+- Gate Management Window: Conflict detection when moving gates (warns about overwrites)
+- Gate Management Window: Alphanumeric sorting on save (Gate 2 before Gate 10)
+- Gate Management Window: Unsaved changes tracking with confirmation dialog on close
+- Gate Management Window: Working copy pattern (changes only saved when explicitly requested)
+- Gate Management Window: Auto-fill input fields when selecting gates/terminals from tree
+- Gate Management Window: Reset Data function to re-parse interpreted airport data
+- "Dock" keyword support in menu logger for airports using Dock instead of Gate
+- Configurable keyword lists (GATE_KEYWORDS, PARKING_KEYWORDS) for easy extension
+- 29 comprehensive unit tests for Gate Management Window features (test_gate_management_window.py)
+
+### Changed
+- Gate Management Window: Terminal click now selects all child gates for bulk operations
+- Gate Management Window: Move Gate function now processes multiple gates in single operation
+- Gate Management Window: Empty source terminals automatically removed after gate moves
+- Override buttons (Apply/Clear) now disabled during monitoring to prevent UI blocking
+- Menu logger now uses keyword lists instead of hardcoded string checks
+
+### Fixed
+- Airport override now persists in UI when monitoring starts (stays as "EDDS (MANUAL)")
+- Prevented airport label from being overwritten by monitoring when override is active
+- Menu logger now recognizes "Dock" gates in addition to "Gate" gates
+
+### Improved
+- Gate Management Window workflow: Click terminal → all gates selected → specify destination → move entire terminal
+- Data safety: All operations modify working copy only, changes require explicit save
+- User protection: Warns before overwriting gates, confirms before closing with unsaved changes
+- Natural sorting ensures gates display in logical order (1, 2, 10 instead of 1, 10, 2)
+
+### Technical
+- All 259 tests pass (230 existing + 29 new Gate Management Window tests)
+- Gate Management Window uses deep copy pattern for data integrity
+- Alphanumeric sorting uses regex-based natural sort key algorithm
+
 ## [0.8.8] - 2025-10-02
 
 ### Added

@@ -89,7 +89,7 @@ def setup_monitor_tab(parent_ui, tab):
     override_btn_frame = ctk.CTkFrame(parent_ui.override_panel, fg_color="transparent")
     override_btn_frame.pack(fill="x", padx=10, pady=(0, 0))
 
-    _button(
+    parent_ui.apply_override_btn = _button(
         override_btn_frame,
         parent_ui.apply_override,
         text="Apply Override",
@@ -105,7 +105,7 @@ def setup_monitor_tab(parent_ui, tab):
         text_color=c('purple_gray')
     )
 
-    _button(
+    parent_ui.clear_override_btn = _button(
         override_btn_frame,
         parent_ui.clear_override,
         text="Clear Override",

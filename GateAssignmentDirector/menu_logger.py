@@ -23,8 +23,12 @@ MENU_NAVIGATION_OPTIONS = [
     GsxMenuKeywords.CANCEL.value,
 ]
 
+GATE_KEYWORDS = ["Gate", "Dock"]
+PARKING_KEYWORDS = ["Parking", "Stand", "Remote", "Ramp"]
+
 GATE_PATTERNS = [
     re.compile(r"Gate\s+([A-Z]?\s*\d+\s*[A-Z]?\b)", re.IGNORECASE),
+    re.compile(r"Dock\s+([A-Z]?\s*\d+\s*[A-Z]?\b)", re.IGNORECASE),
     re.compile(r"^([A-Z]?\s*\d+\s*[A-Z]?)$", re.IGNORECASE),
     re.compile(r"^([A-Z]\s*\d+)$", re.IGNORECASE),
 ]
@@ -156,12 +160,22 @@ class MenuLogger:
     ) -> None:
         """Extract gate and spot information from menu options"""
         spot_type = "gates"
-        if "Gate" in menu_title:
-            patterns = GATE_PATTERNS
-        elif "Parking" in menu_title:
-            patterns = PARKING_PATTERNS
-            spot_type = "spots"
-        else:
+        patterns = None
+
+        for keyword in GATE_KEYWORDS:
+            if keyword in menu_title:
+                patterns = GATE_PATTERNS
+                spot_type = "gates"
+                break
+
+        if not patterns:
+            for keyword in PARKING_KEYWORDS:
+                if keyword in menu_title:
+                    patterns = PARKING_PATTERNS
+                    spot_type = "spots"
+                    break
+
+        if not patterns:
             return
 
         for index, option in enumerate(options):
