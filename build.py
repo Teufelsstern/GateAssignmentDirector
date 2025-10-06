@@ -56,6 +56,7 @@ args = [
     '--onedir',
     '--windowed',  # No console window
     '--name=GateAssignmentDirector',
+    '-y',  # Overwrite output directory without confirmation
     '--add-data=LICENSE;.',
     '--add-data=README.md;.',
     '--add-data=GateAssignmentDirector/config.yaml;GateAssignmentDirector',
