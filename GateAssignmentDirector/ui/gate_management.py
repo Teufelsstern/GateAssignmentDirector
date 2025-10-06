@@ -268,15 +268,15 @@ class GateManagementWindow:
         )
         self.rename_terminal_entry.pack(side="left")
 
-        _label(rename_frame, text="New full text:", size=16, pady=(5, 0), padx=(10, 0))
-        self.new_fulltext_entry = ctk.CTkEntry(
+        _label(rename_frame, text="New gate key:", size=16, pady=(5, 0), padx=(10, 0))
+        self.new_gate_key_entry = ctk.CTkEntry(
             rename_frame,
-            placeholder_text="Gate 71 - Medium - 2x  /J",
+            placeholder_text="B28A",
             corner_radius=6,
             border_width=1,
             border_color=c('charcoal_lighter')
         )
-        self.new_fulltext_entry.pack(fill="x", padx=10, pady=(0, 5))
+        self.new_gate_key_entry.pack(fill="x", padx=10, pady=(0, 5))
 
         _button(
             rename_frame,
@@ -454,8 +454,8 @@ class GateManagementWindow:
                 self.rename_gate_entry.insert(0, gate_num)
                 self.rename_terminal_entry.delete(0, 'end')
                 self.rename_terminal_entry.insert(0, terminal)
-                self.new_fulltext_entry.delete(0, 'end')
-                self.new_fulltext_entry.insert(0, full_text if full_text != "-" else "")
+                self.new_gate_key_entry.delete(0, 'end')
+                self.new_gate_key_entry.insert(0, gate_num)
 
                 self.log_status(f"Selected: Gate {gate_num} in Terminal {terminal}")
             else:
@@ -634,11 +634,11 @@ class GateManagementWindow:
                 self.log_status("ERROR: Please load data first")
                 return
 
-            gate_num = self.rename_gate_entry.get().strip()
+            old_gate_key = self.rename_gate_entry.get().strip()
             terminal = self.rename_terminal_entry.get().strip()
-            new_full_text = self.new_fulltext_entry.get().strip()
+            new_gate_key = self.new_gate_key_entry.get().strip()
 
-            if not all([gate_num, terminal, new_full_text]):
+            if not all([old_gate_key, terminal, new_gate_key]):
                 self.log_status("ERROR: Please fill all fields")
                 return
 
@@ -650,17 +650,33 @@ class GateManagementWindow:
                 return
 
             # Check if gate exists in terminal
-            if gate_num not in terminals[terminal]:
+            if old_gate_key not in terminals[terminal]:
                 self.log_status(
-                    f"ERROR: Gate {gate_num} not found in Terminal {terminal}"
+                    f"ERROR: Gate {old_gate_key} not found in Terminal {terminal}"
                 )
                 return
 
-            # Update the full_text
-            terminals[terminal][gate_num]["raw_info"]["full_text"] = new_full_text
+            # Check if new key already exists (and is different from old key)
+            if new_gate_key != old_gate_key and new_gate_key in terminals[terminal]:
+                proceed = messagebox.askyesno(
+                    "Gate Already Exists",
+                    f"Gate {new_gate_key} already exists in Terminal {terminal}.\n\n"
+                    f"Renaming will overwrite the existing gate.\n\n"
+                    f"Do you want to continue?",
+                    icon='warning'
+                )
+                if not proceed:
+                    self.log_status("Rename cancelled")
+                    return
+
+            # Rename the gate key
+            gate_data = terminals[terminal].pop(old_gate_key)
+            gate_data["gate"] = new_gate_key
+            gate_data["position_id"] = f"Terminal {terminal} Gate {new_gate_key}"
+            terminals[terminal][new_gate_key] = gate_data
 
             self.log_status(
-                f"SUCCESS: Renamed Gate {gate_num} in Terminal {terminal}"
+                f"SUCCESS: Renamed Gate {old_gate_key} to {new_gate_key} in Terminal {terminal}"
             )
             self.has_unsaved_changes = True
             self.refresh_tree()  # Refresh tree view from working copy

@@ -52,6 +52,7 @@ docs/agents/
 .claude/
 CLAUDE.md
 QWEN.md
+approach_thinking.md
 
 # Secrets
 .env
