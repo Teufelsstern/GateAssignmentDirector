@@ -19,7 +19,7 @@ MONITOR_TAB = {
 
 # Config Tab Tooltips
 CONFIG_TAB = {
-    'si_api_key': "SayIntentions API key for enhanced gate matching (optional, contact support for key)",
+    'SI_API_KEY': "SayIntentions API key for enhanced gate matching (optional, contact support for key)",
     'default_airline': "Default airline to select in GSX menu (e.g., 'United_2000', 'GSX', 'Delta_4000')",
     'sleep_short': "Short delay between GSX operations in seconds (minimum 0.1, default 0.1)",
     'sleep_long': "Longer delay for GSX menu transitions in seconds (minimum 0.2, default 0.3)",
