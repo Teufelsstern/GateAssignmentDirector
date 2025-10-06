@@ -59,6 +59,7 @@ args = [
     '--add-data=LICENSE;.',
     '--add-data=README.md;.',
     '--add-data=GateAssignmentDirector/config.yaml;GateAssignmentDirector',
+    '--add-data=GateAssignmentDirector/monitor_config.ini;GateAssignmentDirector',
     '--add-data=GateAssignmentDirector/icon.ico;GateAssignmentDirector',
     '--hidden-import=customtkinter',
     '--hidden-import=CTkToolTip',
