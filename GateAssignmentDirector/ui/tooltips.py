@@ -1,5 +1,13 @@
 """Tooltip definitions for Gate Assignment Director UI"""
 
+try:
+    from CTkToolTip import CTkToolTip
+    TOOLTIPS_AVAILABLE = True
+except ImportError:
+    TOOLTIPS_AVAILABLE = False
+    import logging
+    logging.warning("CTkToolTip not available - tooltips will be disabled")
+
 # Monitor Tab Tooltips
 MONITOR_TAB = {
     'airport_label': "Shows departure → destination airport (yellow=estimating, green=confirmed)",
@@ -49,10 +57,7 @@ def attach_tooltip(widget, tooltip_key: str, delay: float = 0.6):
         tooltip_key: Key to lookup in tooltip dicts
         delay: Delay before showing tooltip in seconds (default 0.2)
     """
-    try:
-        from CTkToolTip import CTkToolTip
-    except ImportError:
-        print("Warning: CTkToolTip not installed. Run: pip install CTkToolTip")
+    if not TOOLTIPS_AVAILABLE:
         return
 
     # Search all tooltip dictionaries
@@ -62,4 +67,5 @@ def attach_tooltip(widget, tooltip_key: str, delay: float = 0.6):
             return
 
     # If not found, warn developer
-    print(f"Warning: No tooltip defined for key '{tooltip_key}'")
+    import logging
+    logging.warning(f"No tooltip defined for key '{tooltip_key}'")

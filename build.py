@@ -74,6 +74,7 @@ args = [
     '--hidden-import=requests',
     '--collect-all=customtkinter',
     '--collect-all=CTkToolTip',
+    '--copy-metadata=CTkToolTip',
     '--clean',
 ]
 
