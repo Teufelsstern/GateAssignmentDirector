@@ -20,7 +20,7 @@ This document covers test suite organization, mock patterns, common fixtures, as
 ## Test Suite Organization
 
 **Test Location:** `tests/` (project root)
-**Test Count:** 183 unit tests (as of v0.8.6)
+**Test Count:** 250 unit tests (as of v0.8.8)
 **Framework:** Python `unittest` with `unittest.mock`
 
 ### Test File Naming
@@ -75,7 +75,7 @@ from typing import Dict, Any, Optional
 
 ```python
 from GateAssignmentDirector.gate_assignment import GateAssignment
-from GateAssignmentDirector.config import GsxConfig
+from GateAssignmentDirector.gad_config import GADConfig
 from GateAssignmentDirector.exceptions import GsxMenuError, GsxTimeoutError
 from GateAssignmentDirector.si_api_hook import GateInfo, GateParser
 from GateAssignmentDirector.menu_reader import MenuState
@@ -88,12 +88,12 @@ from GateAssignmentDirector.gsx_enums import SearchType
 
 ### Config Mock Template
 
-**Use this in every test that needs GsxConfig:**
+**Use this in every test that needs GADConfig:**
 
 ```python
 def create_mock_config():
     """Reusable mock config with all required attributes"""
-    mock_config = Mock(spec=GsxConfig)
+    mock_config = Mock(spec=GADConfig)
 
     # Paths
     mock_config.menu_file_paths = ["/path/to/menu"]
@@ -266,7 +266,7 @@ def test_assign_gate_with_api_call(self, mock_json, mock_file, mock_exists, mock
 ```python
 def test_with_spec(self):
     """Test with spec ensures mock matches real class"""
-    mock_config = Mock(spec=GsxConfig)
+    mock_config = Mock(spec=GADConfig)
     # mock_config.invalid_attr  # Would raise AttributeError
 
     mock_config.logging_level = "INFO"  # Valid attribute
@@ -335,6 +335,20 @@ with self.assertRaises(GsxMenuError):
 with self.assertRaises(GsxMenuError) as context:
     self.component.operation()
 self.assertIn("expected text", str(context.exception))
+```
+
+### GsxMenuNotChangedError Pattern
+
+**New in v0.8.8:** Test uncertain gate assignments
+
+```python
+def test_menu_not_changed_handling(self):
+    """Test handles menu not changing gracefully"""
+    with self.assertRaises(GsxMenuNotChangedError) as context:
+        gate_assignment.assign_gate("KLAX", gate_number="5")
+
+    # Verify returns uncertain flag
+    self.assertIn("may have still succeeded", str(context.exception))
 ```
 
 ### Mock Call Assertions
@@ -420,7 +434,7 @@ coverage html  # Generates htmlcov/index.html
 
 | Test File | Module Under Test | Test Count | Key Coverage |
 |-----------|-------------------|------------|--------------|
-| `test_config.py` | `config.py` | 27 | YAML loading, saving, defaults, computed fields, round-trip |
+| `test_config.py` | `gad_config.py` | 35+ | YAML loading, saving, defaults, computed fields, round-trip, float preservation |
 | `test_director.py` | `director.py` | ~10 | Queue processing, threading, gate callbacks |
 | `test_gate_assignment.py` | `gate_assignment.py` | 11 | Fuzzy matching, assignment workflow, ground waiting, API calls |
 | `test_gate_management_parsing.py` | `ui/gate_management.py` | 6 | Size parsing, jetway parsing, rename/move operations |
@@ -432,7 +446,7 @@ coverage html  # Generates htmlcov/index.html
 | `test_si_api_hook.py` | `si_api_hook.py` (JSONMonitor) | ~20 | File monitoring, change detection, gate callbacks |
 | `test_simconnect_manager.py` | `simconnect_manager.py` | 12 | Connection, variable reading/writing, ground detection, disconnection edge cases |
 
-**Total:** 183 tests
+**Total:** 250 tests
 
 ---
 

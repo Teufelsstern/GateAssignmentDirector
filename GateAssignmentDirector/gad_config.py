@@ -1,6 +1,6 @@
 """Configuration module for Gate Assignment Director"""
 
-# Licensed under GPL-3.0-or-later with additional terms
+# Licensed under AGPL-3.0-or-later with additional terms
 # See LICENSE file for full text and additional requirements
 
 import getpass
@@ -25,12 +25,13 @@ class GADConfig:
     sleep_long: float = 0.3
     ground_check_interval: float = 1.0
     aircraft_request_interval: float = 2.0
-    max_menu_check_attempts: int = 4
+    max_menu_check_attempts: int = 15
     logging_level: str = 'DEBUG'
     logging_format: str = '%(asctime)s - %(levelname)s - %(message)s'
     logging_datefmt: str = '%H:%M:%S'
     SI_API_KEY: str = 'YOUR_API_KEY_HERE'
     default_airline: str = 'GSX'
+    minimize_to_tray: bool = True
 
     logging.basicConfig(
         level=logging_level,
@@ -63,6 +64,7 @@ class GADConfig:
             'logging_datefmt': '%H:%M:%S',
             'SI_API_KEY': 'YOUR_API_KEY_HERE',
             'default_airline': 'GSX',
+            'minimize_to_tray': True,
         }
 
     @classmethod
@@ -92,6 +94,12 @@ class GADConfig:
             data = yaml.safe_load(f)
             logger.info("Read config file: %s", yaml_path)
 
+        # Ensure float fields are always floats (YAML may load 1.0 as int 1)
+        float_fields = ['sleep_short', 'sleep_long', 'ground_check_interval', 'aircraft_request_interval']
+        for field in float_fields:
+            if field in data:
+                data[field] = float(data[field])
+
         # Create instance with YAML data
         return cls(**data)
 
@@ -116,6 +124,8 @@ class GADConfig:
             'logging_format': self.logging_format,
             'logging_datefmt': self.logging_datefmt,
             'SI_API_KEY': self.SI_API_KEY,
+            'default_airline': self.default_airline,
+            'minimize_to_tray': self.minimize_to_tray,
         }
 
         with open(yaml_path, 'w', encoding='utf-8') as f:

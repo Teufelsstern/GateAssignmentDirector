@@ -147,8 +147,9 @@ Gate data is stored in two formats in `gsx_menu_logs/` directory.
         "Next"
       ],
       "navigation_info": {
-        "level_0_index": 0,
-        "next_clicks": 0,
+        "level_0_page": 0,
+        "level_0_option_index": 0,
+        "level_1_next_clicks": 0,
         "menu_index": 0
       }
     },
@@ -161,8 +162,9 @@ Gate data is stored in two formats in `gsx_menu_logs/` directory.
         "Next"
       ],
       "navigation_info": {
-        "level_0_index": 0,
-        "next_clicks": 1,
+        "level_0_page": 0,
+        "level_0_option_index": 0,
+        "level_1_next_clicks": 1,
         "menu_index": 0
       }
     }
@@ -178,8 +180,9 @@ Gate data is stored in two formats in `gsx_menu_logs/` directory.
   - `title`: GSX menu title
   - `options`: Raw menu text as displayed in GSX
   - `navigation_info`: How to reach this menu
-    - `level_0_index`: Top-level menu selection
-    - `next_clicks`: Number of "Next" button clicks
+    - `level_0_page`: Page number at top level (0=first page)
+    - `level_0_option_index`: Option index on that page
+    - `level_1_next_clicks`: Next clicks at level 1 submenu
     - `menu_index`: Option index within current page
 
 ### Interpreted Format: `{ICAO}_interpreted.json`
@@ -205,8 +208,9 @@ Gate data is stored in two formats in `gsx_menu_logs/` directory.
           "menu_index": 0,
           "found_in_menu": "Select Gate Position",
           "depth": 0,
-          "level_0_index": 0,
-          "next_clicks": 0
+          "level_0_page": 0,
+          "level_0_option_index": 0,
+          "level_1_next_clicks": 0
         }
       },
       "7": {
@@ -221,8 +225,9 @@ Gate data is stored in two formats in `gsx_menu_logs/` directory.
           "menu_index": 1,
           "found_in_menu": "Select Gate Position",
           "depth": 0,
-          "level_0_index": 0,
-          "next_clicks": 0
+          "level_0_page": 0,
+          "level_0_option_index": 0,
+          "level_1_next_clicks": 0
         }
       }
     },
@@ -239,8 +244,9 @@ Gate data is stored in two formats in `gsx_menu_logs/` directory.
           "menu_index": 0,
           "found_in_menu": "Select Gate Position",
           "depth": 0,
-          "level_0_index": 0,
-          "next_clicks": 1
+          "level_0_page": 0,
+          "level_0_option_index": 0,
+          "level_1_next_clicks": 1
         }
       }
     }
@@ -263,8 +269,9 @@ Gate data is stored in two formats in `gsx_menu_logs/` directory.
       - `menu_index`: Position in menu
       - `found_in_menu`: Menu title where found
       - `depth`: Menu nesting level
-      - `level_0_index`: Top-level selection
-      - `next_clicks`: Pagination count to reach this gate
+      - `level_0_page`: Page number at top level (0=first page)
+      - `level_0_option_index`: Option index on that page
+      - `level_1_next_clicks`: Next clicks at level 1 submenu
 
 ### Transformation: Raw → Interpreted
 
@@ -502,9 +509,9 @@ def map_available_spots(self, airport: str) -> Dict[str, Any]:
 
         # Log this menu state
         navigation_info = {
-            "level_0_index": index,
-            "next_clicks": 0,
-            "menu_index": index
+            "level_0_page": 0,
+            "level_0_option_index": index,
+            "level_1_next_clicks": 0
         }
         self.menu_logger.log_menu_state(current_menu, navigation_info)
 
@@ -512,14 +519,14 @@ def map_available_spots(self, airport: str) -> Dict[str, Any]:
         self.menu_navigator.click_by_index(index)
 
         # Step 4: Paginate through "Next" buttons
-        next_clicks = 0
+        level_1_next_clicks = 0
         while self.menu_navigator.click_next():  # Returns False when "Next" not found
-            next_clicks += 1
+            level_1_next_clicks += 1
             submenu = self.menu_reader.read_menu()
             navigation_info = {
-                "level_0_index": index,
-                "next_clicks": next_clicks,
-                "menu_index": 0  # Assuming first option in paginated view
+                "level_0_page": 0,
+                "level_0_option_index": index,
+                "level_1_next_clicks": level_1_next_clicks
             }
             self.menu_logger.log_menu_state(submenu, navigation_info)
 
@@ -545,6 +552,15 @@ def map_available_spots(self, airport: str) -> Dict[str, Any]:
 
 1. `gsx_menu_logs/{ICAO}.json` - Raw capture
 2. `gsx_menu_logs/{ICAO}_interpreted.json` - Structured database
+
+### Navigation Paradigm: Page-Based System
+
+**Changed in v0.8.8+:** Menu navigation switched from index-based to page-based.
+
+**Old:** Click option N, then paginate
+**New:** Navigate to page X, click option Y, paginate at submenu
+
+Improves reliability by tracking exact page position.
 
 ---
 

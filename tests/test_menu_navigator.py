@@ -92,8 +92,9 @@ class TestMenuNavigator(unittest.TestCase):
         """Test clicking planned gate with navigation info"""
         gate_info = {
             "raw_info": {
-                "level_0_index": 2,
-                "next_clicks": 3,
+                "level_0_page": 1,
+                "level_0_option_index": 2,
+                "level_1_next_clicks": 3,
                 "menu_index": 5
             }
         }
@@ -221,8 +222,8 @@ class TestSearchOptions(unittest.TestCase):
 
         result = _search_options(["missing"], SearchType.KEYWORD, menu)
 
-        # Returns last index when not found
-        self.assertEqual(result, 1)
+        # Returns -1 when not found (correct behavior)
+        self.assertEqual(result, -1)
 
     def test_search_airline(self):
         """Test searching for airline code"""

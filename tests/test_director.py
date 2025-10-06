@@ -17,6 +17,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.assertIsInstance(self.director.gate_queue, queue.Queue)
         self.assertFalse(self.director.running)
         self.assertIsNone(self.director.current_airport)
+        self.assertEqual(self.director.mapped_airports, set())
 
     def test_queue_gate_assignment(self):
         """Test queueing gate assignment puts item in queue"""
@@ -59,9 +60,10 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.assertEqual(self.director.gate_queue.qsize(), 3)
         self.assertEqual(self.director.current_airport, "KJFK")  # Last one
 
+    @patch('GateAssignmentDirector.director.time.sleep')
     @patch('GateAssignmentDirector.director.JSONMonitor')
     @patch('threading.Thread')
-    def test_start_monitoring(self, mock_thread, mock_monitor):
+    def test_start_monitoring(self, mock_thread, mock_monitor, mock_sleep):
         """Test starting monitoring creates monitor and thread"""
         test_path = "test_flight.json"
 
@@ -71,9 +73,10 @@ class TestGateAssignmentDirector(unittest.TestCase):
         mock_thread.assert_called_once()
         self.assertTrue(self.director.running)
 
+    @patch('GateAssignmentDirector.director.time.sleep')
     @patch('GateAssignmentDirector.director.JSONMonitor')
     @patch('threading.Thread')
-    def test_start_monitoring_passes_callback(self, mock_thread, mock_monitor):
+    def test_start_monitoring_passes_callback(self, mock_thread, mock_monitor, mock_sleep):
         """Test monitoring setup passes correct callback"""
         test_path = "test_flight.json"
         mock_monitor_instance = Mock()
@@ -86,12 +89,18 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.assertFalse(call_args[1]["enable_gsx_integration"])
         self.assertIsNotNone(call_args[1]["gate_callback"])
 
+    @patch('GateAssignmentDirector.director.time.sleep')
     @patch('GateAssignmentDirector.director.GsxHook')
-    def test_process_gate_assignments_initializes_gsx(self, mock_gsx_hook):
+    def test_process_gate_assignments_initializes_gsx(self, mock_gsx_hook, mock_sleep):
         """Test processing gate assignment initializes GSX when needed"""
         mock_gsx_instance = Mock()
         mock_gsx_instance.is_initialized = True
-        mock_gsx_instance.assign_gate_when_ready.return_value = True
+
+        def assign_gate_and_stop(*args, **kwargs):
+            self.director.running = False
+            return (True, {'gate': 'A5'})
+
+        mock_gsx_instance.assign_gate_when_ready.side_effect = assign_gate_and_stop
         mock_gsx_hook.return_value = mock_gsx_instance
 
         # Add gate to queue
@@ -103,28 +112,23 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         # Run one iteration
         self.director.running = True
-
-        def stop_after_one():
-            # Let it process one item then stop
-            import time
-            time.sleep(0.2)
-            self.director.running = False
-
-        stop_thread = threading.Thread(target=stop_after_one)
-        stop_thread.start()
-
         self.director.process_gate_assignments()
-        stop_thread.join()
 
         # GSX should have been initialized
         mock_gsx_hook.assert_called_once()
 
+    @patch('GateAssignmentDirector.director.time.sleep')
     @patch('GateAssignmentDirector.director.GsxHook')
-    def test_process_gate_assignments_calls_assign_gate(self, mock_gsx_hook):
+    def test_process_gate_assignments_calls_assign_gate(self, mock_gsx_hook, mock_sleep):
         """Test processing calls assign_gate_when_ready with correct params"""
         mock_gsx_instance = Mock()
         mock_gsx_instance.is_initialized = True
-        mock_gsx_instance.assign_gate_when_ready.return_value = True
+
+        def assign_gate_and_stop(*args, **kwargs):
+            self.director.running = False
+            return (True, {'gate': 'A5'})
+
+        mock_gsx_instance.assign_gate_when_ready.side_effect = assign_gate_and_stop
         mock_gsx_hook.return_value = mock_gsx_instance
 
         gate_info = {
@@ -138,17 +142,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.director.gate_queue.put(gate_info)
 
         self.director.running = True
-
-        def stop_after_one():
-            import time
-            time.sleep(0.2)
-            self.director.running = False
-
-        stop_thread = threading.Thread(target=stop_after_one)
-        stop_thread.start()
-
         self.director.process_gate_assignments()
-        stop_thread.join()
 
         # Check assign_gate_when_ready was called with correct params
         mock_gsx_instance.assign_gate_when_ready.assert_called_once()
@@ -157,15 +151,14 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.assertEqual(call_kwargs["gate_number"], "5")
         self.assertEqual(call_kwargs["gate_letter"], "A")
 
+    @patch('GateAssignmentDirector.director.time.sleep')
     @patch('GateAssignmentDirector.director.GsxHook')
-    def test_process_gate_assignments_handles_empty_queue(self, mock_gsx_hook):
+    def test_process_gate_assignments_handles_empty_queue(self, mock_gsx_hook, mock_sleep):
         """Test processing handles empty queue gracefully"""
         # Queue is empty, should timeout and continue
         self.director.running = True
 
         def stop_quickly():
-            import time
-            time.sleep(0.1)
             self.director.running = False
 
         stop_thread = threading.Thread(target=stop_quickly)
@@ -175,8 +168,9 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.director.process_gate_assignments()
         stop_thread.join()
 
+    @patch('GateAssignmentDirector.director.time.sleep')
     @patch('GateAssignmentDirector.director.GsxHook')
-    def test_process_gate_assignments_gsx_init_failure(self, mock_gsx_hook):
+    def test_process_gate_assignments_gsx_init_failure(self, mock_gsx_hook, mock_sleep):
         """Test processing handles GSX initialization failure"""
         mock_gsx_instance = Mock()
         mock_gsx_instance.is_initialized = False
@@ -188,8 +182,6 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.director.running = True
 
         def stop_after_one():
-            import time
-            time.sleep(0.2)
             self.director.running = False
 
         stop_thread = threading.Thread(target=stop_after_one)
@@ -229,11 +221,21 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         self.assertFalse(self.director.running)
 
-    def test_multiple_gate_assignments_in_sequence(self):
+    @patch('GateAssignmentDirector.director.time.sleep')
+    def test_multiple_gate_assignments_in_sequence(self, mock_sleep):
         """Test processing multiple gate assignments sequentially"""
         mock_gsx = Mock()
         mock_gsx.is_initialized = True
-        mock_gsx.assign_gate_when_ready.return_value = True
+
+        call_count = [0]
+
+        def assign_gate_and_stop(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] >= 3:
+                self.director.running = False
+            return (True, {'gate': 'A5'})
+
+        mock_gsx.assign_gate_when_ready.side_effect = assign_gate_and_stop
         self.director.gsx = mock_gsx
 
         # Queue multiple gates
@@ -247,17 +249,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
             self.director.gate_queue.put(gate)
 
         self.director.running = True
-
-        def stop_after_processing():
-            import time
-            time.sleep(0.5)  # Give time to process all 3
-            self.director.running = False
-
-        stop_thread = threading.Thread(target=stop_after_processing)
-        stop_thread.start()
-
         self.director.process_gate_assignments()
-        stop_thread.join()
 
         # Should have processed all 3 gates
         self.assertEqual(mock_gsx.assign_gate_when_ready.call_count, 3)
@@ -299,6 +291,290 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         self.assertEqual(self.director.current_flight_data, flight_data)
         self.assertIsNone(self.director.current_airport)
+
+    def test_airport_override_initialization(self):
+        """Test director initializes with no airport override"""
+        self.assertIsNone(self.director.airport_override)
+
+    @patch('GateAssignmentDirector.director.time.sleep')
+    @patch('GateAssignmentDirector.director.GsxHook')
+    def test_airport_override_takes_precedence_over_gate_info(self, mock_gsx_hook, mock_sleep):
+        """Test airport override is used instead of gate_info airport"""
+        mock_gsx_instance = Mock()
+        mock_gsx_instance.is_initialized = True
+
+        def assign_gate_and_stop(*args, **kwargs):
+            self.director.running = False
+            return (True, {'gate': 'A5'})
+
+        mock_gsx_instance.assign_gate_when_ready.side_effect = assign_gate_and_stop
+        mock_gsx_hook.return_value = mock_gsx_instance
+
+        gate_info = {
+            "gate_number": "5",
+            "gate_letter": "A",
+            "airport": "KLAX"
+        }
+        self.director.gate_queue.put(gate_info)
+        self.director.airport_override = "KJFK"
+
+        self.director.running = True
+        self.director.process_gate_assignments()
+
+        call_kwargs = mock_gsx_instance.assign_gate_when_ready.call_args[1]
+        self.assertEqual(call_kwargs["airport"], "KJFK")
+
+    @patch('GateAssignmentDirector.director.time.sleep')
+    @patch('GateAssignmentDirector.director.GsxHook')
+    def test_gate_info_airport_used_when_no_override(self, mock_gsx_hook, mock_sleep):
+        """Test gate_info airport is used when override is None"""
+        mock_gsx_instance = Mock()
+        mock_gsx_instance.is_initialized = True
+
+        def assign_gate_and_stop(*args, **kwargs):
+            self.director.running = False
+            return (True, {'gate': 'A5'})
+
+        mock_gsx_instance.assign_gate_when_ready.side_effect = assign_gate_and_stop
+        mock_gsx_hook.return_value = mock_gsx_instance
+
+        gate_info = {
+            "gate_number": "5",
+            "gate_letter": "A",
+            "airport": "KLAX"
+        }
+        self.director.gate_queue.put(gate_info)
+        self.director.airport_override = None
+
+        self.director.running = True
+        self.director.process_gate_assignments()
+
+        call_kwargs = mock_gsx_instance.assign_gate_when_ready.call_args[1]
+        self.assertEqual(call_kwargs["airport"], "KLAX")
+
+    @patch('GateAssignmentDirector.director.time.sleep')
+    @patch('GateAssignmentDirector.director.GsxHook')
+    def test_airport_override_with_automatic_detection(self, mock_gsx_hook, mock_sleep):
+        """Test override works with automatic gate detection through queue"""
+        mock_gsx_instance = Mock()
+        mock_gsx_instance.is_initialized = True
+
+        call_count = [0]
+
+        def assign_gate_and_stop(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] >= 2:
+                self.director.running = False
+            return (True, {'gate': 'A5'})
+
+        mock_gsx_instance.assign_gate_when_ready.side_effect = assign_gate_and_stop
+        mock_gsx_hook.return_value = mock_gsx_instance
+
+        gates = [
+            {"gate_number": "5", "airport": "KLAX"},
+            {"gate_number": "6", "airport": "EDDF"}
+        ]
+
+        for gate in gates:
+            self.director.gate_queue.put(gate)
+
+        self.director.airport_override = "KJFK"
+        self.director.running = True
+        self.director.process_gate_assignments()
+
+        self.assertEqual(mock_gsx_instance.assign_gate_when_ready.call_count, 2)
+        for call in mock_gsx_instance.assign_gate_when_ready.call_args_list:
+            self.assertEqual(call[1]["airport"], "KJFK")
+
+    @patch('GateAssignmentDirector.director.time.sleep')
+    @patch('GateAssignmentDirector.director.GsxHook')
+    def test_process_gate_assignments_handles_uncertain_result(self, mock_gsx_hook, mock_sleep):
+        """Test processing handles uncertain gate assignment result"""
+        mock_gsx_instance = Mock()
+        mock_gsx_instance.is_initialized = True
+
+        def assign_gate_uncertain(*args, **kwargs):
+            self.director.running = False
+            return (True, {'gate': 'A5', '_uncertain': True})
+
+        mock_gsx_instance.assign_gate_when_ready.side_effect = assign_gate_uncertain
+        mock_gsx_hook.return_value = mock_gsx_instance
+
+        gate_info = {
+            "gate_number": "5",
+            "gate_letter": "A",
+            "airport": "KLAX"
+        }
+        self.director.gate_queue.put(gate_info)
+
+        self.director.running = True
+        self.director.process_gate_assignments()
+
+        mock_gsx_instance.assign_gate_when_ready.assert_called_once()
+
+    @patch('GateAssignmentDirector.director.time.sleep')
+    @patch('GateAssignmentDirector.director.GsxHook')
+    def test_pre_mapping_triggers_when_on_ground_with_airport(self, mock_gsx_hook, mock_sleep):
+        """Test pre-mapping triggers when aircraft is on ground with airport set"""
+        mock_gsx_instance = Mock()
+        mock_gsx_instance.is_initialized = True
+        mock_gsx_instance.sim_manager.is_on_ground.return_value = True
+        mock_gsx_instance.gate_assignment.map_available_spots.return_value = {"terminals": {}}
+
+        def stop_after_mapping(*args, **kwargs):
+            self.director.running = False
+
+        mock_gsx_instance.gate_assignment.map_available_spots.side_effect = stop_after_mapping
+        mock_gsx_hook.return_value = mock_gsx_instance
+
+        self.director.current_airport = "EDDF"
+        self.director.running = True
+        self.director.process_gate_assignments()
+
+        mock_gsx_instance.gate_assignment.map_available_spots.assert_called_once_with("EDDF")
+        self.assertIn("EDDF", self.director.mapped_airports)
+
+    @patch('GateAssignmentDirector.director.time.sleep')
+    @patch('GateAssignmentDirector.director.GsxHook')
+    def test_pre_mapping_not_triggered_when_not_on_ground(self, mock_gsx_hook, mock_sleep):
+        """Test pre-mapping does not trigger when aircraft is not on ground"""
+        mock_gsx_instance = Mock()
+        mock_gsx_instance.is_initialized = True
+        mock_gsx_instance.sim_manager.is_on_ground.return_value = False
+
+        def stop_quickly():
+            self.director.running = False
+
+        stop_thread = threading.Thread(target=stop_quickly)
+        mock_gsx_hook.return_value = mock_gsx_instance
+
+        self.director.current_airport = "EDDF"
+        self.director.running = True
+
+        stop_thread.start()
+        self.director.process_gate_assignments()
+        stop_thread.join()
+
+        mock_gsx_instance.gate_assignment.map_available_spots.assert_not_called()
+        self.assertNotIn("EDDF", self.director.mapped_airports)
+
+    @patch('GateAssignmentDirector.director.time.sleep')
+    @patch('GateAssignmentDirector.director.GsxHook')
+    def test_pre_mapping_not_triggered_when_no_airport(self, mock_gsx_hook, mock_sleep):
+        """Test pre-mapping does not trigger when airport is not set"""
+        mock_gsx_instance = Mock()
+        mock_gsx_instance.is_initialized = True
+        mock_gsx_instance.sim_manager.is_on_ground.return_value = True
+
+        def stop_quickly():
+            self.director.running = False
+
+        stop_thread = threading.Thread(target=stop_quickly)
+        mock_gsx_hook.return_value = mock_gsx_instance
+
+        self.director.current_airport = None
+        self.director.running = True
+
+        stop_thread.start()
+        self.director.process_gate_assignments()
+        stop_thread.join()
+
+        mock_gsx_instance.gate_assignment.map_available_spots.assert_not_called()
+
+    @patch('GateAssignmentDirector.director.time.sleep')
+    @patch('GateAssignmentDirector.director.GsxHook')
+    def test_pre_mapping_not_triggered_when_already_mapped(self, mock_gsx_hook, mock_sleep):
+        """Test pre-mapping does not trigger when airport already mapped"""
+        mock_gsx_instance = Mock()
+        mock_gsx_instance.is_initialized = True
+        mock_gsx_instance.sim_manager.is_on_ground.return_value = True
+
+        def stop_quickly():
+            self.director.running = False
+
+        stop_thread = threading.Thread(target=stop_quickly)
+        mock_gsx_hook.return_value = mock_gsx_instance
+
+        self.director.current_airport = "EDDF"
+        self.director.mapped_airports.add("EDDF")
+        self.director.running = True
+
+        stop_thread.start()
+        self.director.process_gate_assignments()
+        stop_thread.join()
+
+        mock_gsx_instance.gate_assignment.map_available_spots.assert_not_called()
+
+    @patch('GateAssignmentDirector.director.time.sleep')
+    @patch('GateAssignmentDirector.director.GsxHook')
+    def test_mapped_airports_prevents_duplicate_mapping(self, mock_gsx_hook, mock_sleep):
+        """Test mapped_airports set prevents duplicate pre-mapping"""
+        mock_gsx_instance = Mock()
+        mock_gsx_instance.is_initialized = True
+        mock_gsx_instance.sim_manager.is_on_ground.return_value = True
+
+        call_count = [0]
+
+        def count_calls(*args, **kwargs):
+            call_count[0] += 1
+            if call_count[0] >= 1:
+                self.director.running = False
+
+        mock_gsx_instance.gate_assignment.map_available_spots.side_effect = count_calls
+        mock_gsx_hook.return_value = mock_gsx_instance
+
+        self.director.current_airport = "EDDF"
+        self.director.running = True
+        self.director.process_gate_assignments()
+
+        self.assertEqual(mock_gsx_instance.gate_assignment.map_available_spots.call_count, 1)
+        self.assertIn("EDDF", self.director.mapped_airports)
+
+    @patch('GateAssignmentDirector.director.time.sleep')
+    @patch('GateAssignmentDirector.director.GsxHook')
+    def test_pre_mapping_initializes_gsx_when_needed(self, mock_gsx_hook, mock_sleep):
+        """Test pre-mapping initializes GSX when not yet initialized"""
+        mock_gsx_instance = Mock()
+        mock_gsx_instance.is_initialized = True
+        mock_gsx_instance.sim_manager.is_on_ground.return_value = True
+
+        def stop_after_init(*args, **kwargs):
+            self.director.running = False
+
+        mock_gsx_instance.gate_assignment.map_available_spots.side_effect = stop_after_init
+        mock_gsx_hook.return_value = mock_gsx_instance
+
+        self.director.gsx = None
+        self.director.current_airport = "EDDF"
+        self.director.running = True
+        self.director.process_gate_assignments()
+
+        mock_gsx_hook.assert_called_once()
+        mock_gsx_instance.gate_assignment.map_available_spots.assert_called_once_with("EDDF")
+
+    @patch('GateAssignmentDirector.director.time.sleep')
+    @patch('GateAssignmentDirector.director.GsxHook')
+    def test_pre_mapping_handles_mapping_failure_gracefully(self, mock_gsx_hook, mock_sleep):
+        """Test pre-mapping handles errors gracefully and continues"""
+        mock_gsx_instance = Mock()
+        mock_gsx_instance.is_initialized = True
+        mock_gsx_instance.sim_manager.is_on_ground.return_value = True
+        mock_gsx_instance.gate_assignment.map_available_spots.side_effect = Exception("Mapping failed")
+
+        def stop_quickly():
+            self.director.running = False
+
+        stop_thread = threading.Thread(target=stop_quickly)
+        mock_gsx_hook.return_value = mock_gsx_instance
+
+        self.director.current_airport = "EDDF"
+        self.director.running = True
+
+        stop_thread.start()
+        self.director.process_gate_assignments()
+        stop_thread.join()
+
+        self.assertNotIn("EDDF", self.director.mapped_airports)
 
 
 if __name__ == "__main__":

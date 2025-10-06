@@ -1,6 +1,6 @@
 """Main window class for the Gate Assignment Director UI"""
 
-# Licensed under GPL-3.0-or-later with additional terms
+# Licensed under AGPL-3.0-or-later with additional terms
 # See LICENSE file for full text and additional requirements
 
 import customtkinter as ctk
@@ -46,12 +46,19 @@ class DirectorUI:
         self.override_airport_entry = None
         self.override_terminal_entry = None
         self.override_gate_entry = None
+        self.apply_override_btn = None
+        self.clear_override_btn = None
         self.start_btn = None
         self.stop_btn = None
         self.assign_gate_btn = None
         self.activity_text = None
         self.vwl = None
         self.val = []
+
+        # Airport update debouncing
+        self._airport_update_pending = None
+        self._last_known_departure = None
+        self._last_known_destination = None
 
         # Setup main window
         ctk.set_appearance_mode("dark")
@@ -78,8 +85,8 @@ class DirectorUI:
         self.root.minsize(350, 430)
         self.root.maxsize(800, 800)
 
-        # Override close button to minimize to tray
-        self.root.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
+        # Override close button behavior based on config
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # Setup system tray
         self._setup_tray()
@@ -195,17 +202,30 @@ class DirectorUI:
         self.vwl.pack(side="left", padx=2)
 
     def _create_tray_icon(self):
-        """Create a simple icon for system tray"""
-        width = 64
-        height = 64
-        image = Image.new("RGB", (width, height), (30, 30, 30))
-        dc = ImageDraw.Draw(image)
+        """Load the application icon for system tray"""
+        # Get icon path (same logic as window icon)
+        import sys
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller bundle
+            base_path = Path(sys._MEIPASS)
+            icon_path = base_path / "GateAssignmentDirector" / "icon.ico"
+        else:
+            # Running as normal Python script
+            icon_path = Path(__file__).parent.parent / "icon.ico"
 
-        # Draw a simple "G" shape
-        dc.rectangle([16, 16, 48, 48], outline=(100, 150, 200), width=4)
-        dc.rectangle([32, 28, 48, 36], fill=(100, 150, 200))
-
-        return image
+        if icon_path.exists():
+            # Load the icon file and convert to Image
+            image = Image.open(str(icon_path))
+            return image
+        else:
+            # Fallback to generated icon if file not found
+            width = 64
+            height = 64
+            image = Image.new("RGB", (width, height), (30, 30, 30))
+            dc = ImageDraw.Draw(image)
+            dc.rectangle([16, 16, 48, 48], outline=(100, 150, 200), width=4)
+            dc.rectangle([32, 28, 48, 36], fill=(100, 150, 200))
+            return image
 
     def _setup_tray(self):
         """Setup system tray icon"""
@@ -222,6 +242,13 @@ class DirectorUI:
 
         # Run tray icon in separate thread
         threading.Thread(target=self.tray_icon.run, daemon=True).start()
+
+    def on_close(self):
+        """Handle window close button - minimize to tray or quit based on config"""
+        if self.config.minimize_to_tray:
+            self.hide_to_tray()
+        else:
+            self.quit_app()
 
     def hide_to_tray(self):
         """Hide window to system tray"""
@@ -245,10 +272,23 @@ class DirectorUI:
             self.config = GADConfig.from_yaml()
 
             # Load other fields
-            for field_name, entry in self.config_entries.items():
+            for field_name, widget in self.config_entries.items():
                 value = getattr(self.config, field_name, "")
-                entry.delete(0, "end")
-                entry.insert(0, str(value))
+
+                # Handle checkboxes differently from entries
+                if isinstance(widget, ctk.CTkCheckBox):
+                    if value:
+                        widget.select()
+                    else:
+                        widget.deselect()
+                else:
+                    # Format floats with .1f to always show at least one decimal place
+                    if isinstance(value, float):
+                        value = f"{value:.1f}"
+                    else:
+                        value = str(value)
+                    widget.delete(0, "end")
+                    widget.insert(0, value)
 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load configuration:\n{e}")
@@ -257,18 +297,22 @@ class DirectorUI:
         """Save values from UI fields to YAML"""
         try:
             # Get other fields
-            for field_name, entry in self.config_entries.items():
-                value = entry.get().strip()
+            for field_name, widget in self.config_entries.items():
+                # Handle checkboxes differently from entries
+                if isinstance(widget, ctk.CTkCheckBox):
+                    value = widget.get() == 1  # CTkCheckBox.get() returns 0 or 1
+                else:
+                    value = widget.get().strip()
 
-                # Convert to appropriate type based on config field type
-                current_value = getattr(self.config, field_name)
-                if isinstance(current_value, bool):
-                    value = value.lower() in ('true', '1', 'yes')
-                elif isinstance(current_value, int):
-                    # For int fields, convert via float first to handle decimal inputs
-                    value = int(float(value))
-                elif isinstance(current_value, float):
-                    value = float(value)
+                    # Convert to appropriate type based on config field type
+                    current_value = getattr(self.config, field_name)
+                    if isinstance(current_value, bool):
+                        value = value.lower() in ('true', '1', 'yes')
+                    elif isinstance(current_value, int):
+                        # For int fields, convert via float first to handle decimal inputs
+                        value = int(float(value))
+                    elif isinstance(current_value, float):
+                        value = float(value)
 
                 setattr(self.config, field_name, value)
 
@@ -310,9 +354,45 @@ class DirectorUI:
                 msg = self.format(record) + "\n"
                 self.text_widget.after(0, lambda: self._append(msg))
 
-                # Also show errors in Recent Activity
+                # Show simplified errors in Recent Activity for user-relevant issues
                 if record.levelno >= logging.ERROR:
-                    self.activity_widget.after(0, lambda: self._append_activity(msg))
+                    simplified_msg = self._simplify_error_for_activity(record)
+                    if simplified_msg:
+                        self.activity_widget.after(0, lambda m=simplified_msg: self._append_activity(m + "\n"))
+
+            def _simplify_error_for_activity(self, record):
+                """Convert technical errors to user-friendly messages for Recent Activity"""
+                msg = record.getMessage().lower()
+
+                # Suppress warnings about uncertain assignments (already shown via callback)
+                if "uncertain" in msg or "might have succeeded" in msg:
+                    return None
+
+                # Suppress low-level GSX menu errors (they're often transient/expected)
+                if "menu" in msg and any(x in msg for x in ["failed to read", "empty", "timeout"]):
+                    return "GSX menu issue - check logs if persistent"
+
+                # Connection failures (important)
+                if "simconnect" in msg or "connection" in msg:
+                    return "Connection issue - check simulator"
+
+                # GSX initialization failures (important)
+                if "failed to initialize gsx" in msg:
+                    return "GSX initialization failed - check setup"
+
+                # Gate assignment failures (user-relevant)
+                if "gate assignment failed" in msg:
+                    return None  # Already logged by our success/failure messages
+
+                # API errors (somewhat important)
+                if "api" in msg and "error" in msg:
+                    return "API communication issue"
+
+                # For other errors, show generic message
+                if record.levelno >= logging.ERROR:
+                    return "Unexpected issue - check logs for details"
+
+                return None
 
             def _append(self, msg):
                 self.text_widget.configure(state="normal")
@@ -340,18 +420,40 @@ class DirectorUI:
         self.stop_btn.configure(state="normal", text_color="#4a4050")
         self.status_label.configure(text="Monitoring", text_color=c('sage'))
 
+        if self.apply_override_btn:
+            self.apply_override_btn.configure(state="disabled")
+        if self.clear_override_btn:
+            self.clear_override_btn.configure(state="disabled")
+
         self._append_activity("Starting monitoring...\n")
+
+        threading.Timer(0.5, self._continue_monitoring_startup).start()
+
+    def _continue_monitoring_startup(self):
+        """Continue monitoring startup after initial pause"""
+        self._append_activity("Initializing monitoring system...\n")
+
+        # Set up status callback for director to update UI
+        self.director.status_callback = self._report_director_status
 
         # Start director in separate thread
         self.process_thread = threading.Thread(target=self._run_director, daemon=True)
         self.process_thread.start()
 
-        airport_text = self._format_airport_display(
+        # Schedule airport update with debouncing
+        self._schedule_airport_update(
             self.director.departure_airport,
             self.director.current_airport
         )
-        color = c('sage') if self.director.current_airport else c('mustard')
-        self.airport_label.configure(text=airport_text, text_color=color)
+
+    def _report_director_status(self, message: str):
+        """Handle status updates from director (called from background thread)"""
+        # Use after() to safely update UI from background thread
+        self.activity_text.after(0, lambda: self._append_activity(f"{message}\n"))
+
+        # Check if director stopped due to error
+        if "monitoring stopped" in message.lower():
+            self.root.after(0, self._handle_auto_stop)
 
     def _run_director(self):
         """Run the director (called in thread)"""
@@ -368,7 +470,23 @@ class DirectorUI:
         self.stop_btn.configure(state="disabled", text_color="#e8d9d6")
         self.status_label.configure(text="Stopped", text_color="#C67B7B")
 
+        if self.apply_override_btn:
+            self.apply_override_btn.configure(state="normal")
+        if self.clear_override_btn:
+            self.clear_override_btn.configure(state="normal")
+
         self._append_activity("Monitoring stopped.\n")
+
+    def _handle_auto_stop(self):
+        """Handle when director auto-stops (e.g., GSX connection failure)"""
+        self.start_btn.configure(state="normal")
+        self.stop_btn.configure(state="disabled", text_color="#e8d9d6")
+        self.status_label.configure(text="Stopped", text_color="#C67B7B")
+
+        if self.apply_override_btn:
+            self.apply_override_btn.configure(state="normal")
+        if self.clear_override_btn:
+            self.clear_override_btn.configure(state="normal")
 
     def toggle_override_section(self):
         """Toggle the manual override section visibility"""
@@ -400,11 +518,11 @@ class DirectorUI:
         self.override_terminal = terminal
         self.override_gate = gate
         self.current_airport = airport
+        self.director.airport_override = airport
 
-        # Update airport display
         self.airport_label.configure(
             text=f"{airport} (MANUAL)",
-            text_color="#D4A574"  # Muted mustard
+            text_color="#D4A574"
         )
 
         self._append_activity(f"Manual override applied: {airport} Terminal {terminal} Gate {gate}\n")
@@ -416,39 +534,32 @@ class DirectorUI:
         self.override_airport = None
         self.override_terminal = None
         self.override_gate = None
+        self.director.airport_override = None
 
-        # Clear entry fields
         self.override_airport_entry.delete(0, "end")
         self.override_terminal_entry.delete(0, "end")
         self.override_gate_entry.delete(0, "end")
 
-        # Reset current_airport to director's value and update UI
         self.current_airport = self.director.current_airport
-        airport_text = self._format_airport_display(
+        self._schedule_airport_update(
             self.director.departure_airport,
             self.director.current_airport
         )
-        color = c('sage') if self.director.current_airport else c('mustard')
-        self.airport_label.configure(text=airport_text, text_color=color)
 
         self._append_activity("Manual override cleared.\n")
         logging.info("Manual override cleared")
 
     def assign_gate_manual(self):
         """Manually trigger gate assignment"""
-        if not self.current_airport:
-            messagebox.showerror("Error", "No airport data available. Set manual override or start monitoring.")
-            return
-
-        # Get gate data from override or director
         if self.override_active:
             airport = self.override_airport
             terminal = self.override_terminal or ""
             gate = self.override_gate or ""
         else:
-            # Get from director's last gate info
+            if not self.current_airport:
+                messagebox.showerror("Error", "No airport data available. Set manual override or start monitoring.")
+                return
             airport = self.director.current_airport
-            # Need to get terminal/gate from director - for now use empty
             terminal = ""
             gate = ""
 
@@ -475,15 +586,20 @@ class DirectorUI:
     def _assign_gate_thread(self, airport, terminal, gate):
         """Run gate assignment in background thread"""
         try:
-            success = self.director.gsx.assign_gate_when_ready(
+            success, assigned_gate = self.director.gsx.assign_gate_when_ready(
                 airport=airport,
                 terminal=terminal,
                 gate_number=gate,
                 wait_for_ground=True,
             )
-            result = "completed" if success else "failed"
-            self.activity_text.after(0, lambda: self._append_activity(f"Gate assignment {result}\n"))
-            logging.info(f"Manual gate assignment {result}")
+            if success and assigned_gate:
+                gate_name = assigned_gate.get('gate', 'Unknown')
+                success_msg = f"Successfully assigned to gate: {gate_name}\n"
+                self.activity_text.after(0, lambda msg=success_msg: self._append_activity(msg))
+                logging.info(f"Manual gate assignment succeeded: {gate_name}")
+            else:
+                self.activity_text.after(0, lambda: self._append_activity("Gate assignment failed\n"))
+                logging.info("Manual gate assignment failed")
         except Exception as e:
             error_msg = f"Gate assignment error: {e}"
             logging.error(error_msg)
@@ -497,7 +613,13 @@ class DirectorUI:
                 "No airport has been detected yet. Using default EDDS.\n\n"
                 "Start monitoring and wait for a gate assignment to automatically detect the airport."
             )
-        GateManagementWindow(self.root, self.current_airport)
+
+        # Pass gate_assignment reference if available
+        gate_assignment = None
+        if self.director.gsx and self.director.gsx.is_initialized:
+            gate_assignment = self.director.gsx.gate_assignment
+
+        GateManagementWindow(self.root, self.current_airport, gate_assignment)
 
     def save_logs(self):
         """Save logs to file with date-stamped default filename"""
@@ -539,6 +661,31 @@ class DirectorUI:
             else:
                 return "to ..."
 
+    def _schedule_airport_update(self, departure: Optional[str], destination: Optional[str]):
+        """Schedule an airport label update with debouncing to avoid flickering"""
+        if self.override_active:
+            return
+
+        if self._airport_update_pending:
+            self.root.after_cancel(self._airport_update_pending)
+
+        # Store the values we want to display
+        self._last_known_departure = departure
+        self._last_known_destination = destination
+
+        # Schedule update after 300ms delay (allows multiple rapid changes to settle)
+        self._airport_update_pending = self.root.after(300, self._apply_airport_update)
+
+    def _apply_airport_update(self):
+        """Apply the pending airport label update"""
+        self._airport_update_pending = None
+        airport_text = self._format_airport_display(
+            self._last_known_departure,
+            self._last_known_destination
+        )
+        color = c('sage') if self._last_known_destination else c('mustard')
+        self.airport_label.configure(text=airport_text, text_color=color)
+
     def _append_activity(self, message: str):
         """Append message to activity text (handles read-only state)"""
         self.activity_text.configure(state="normal")
@@ -567,14 +714,12 @@ class DirectorUI:
         """Periodically update UI state from director"""
         # Don't update airport from director if override is active
         if not self.override_active:
-            if self.director.current_airport != self.current_airport:
+            if self.director.current_airport != self.current_airport or self.director.departure_airport != self._last_known_departure:
                 self.current_airport = self.director.current_airport
-                airport_text = self._format_airport_display(
+                self._schedule_airport_update(
                     self.director.departure_airport,
                     self.director.current_airport
                 )
-                color = c('sage') if self.director.current_airport else c('mustard')
-                self.airport_label.configure(text=airport_text, text_color=color)
 
         # Enable/disable Assign Gate button based on available data
         has_data = self.current_airport is not None and (

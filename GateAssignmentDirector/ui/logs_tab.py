@@ -1,10 +1,11 @@
 """Logs tab UI setup for the Gate Assignment Director"""
 
-# Licensed under GPL-3.0-or-later with additional terms
+# Licensed under AGPL-3.0-or-later with additional terms
 # See LICENSE file for full text and additional requirements
 
 import customtkinter as ctk
 from GateAssignmentDirector.ui.ui_helpers import _button
+from GateAssignmentDirector.ui.tooltips import attach_tooltip
 
 
 def setup_logs_tab(parent_ui, tab):
@@ -21,7 +22,7 @@ def setup_logs_tab(parent_ui, tab):
     button_frame = ctk.CTkFrame(tab, fg_color="transparent")
     button_frame.pack(fill="x", padx=20, pady=(0, 20))
 
-    _button(
+    save_btn = _button(
         button_frame,
         command=parent_ui.save_logs,
         text="Save Logs",
@@ -31,8 +32,9 @@ def setup_logs_tab(parent_ui, tab):
         side="left",
         padx=(0, 10)
     )
+    attach_tooltip(save_btn, 'save_logs_btn')
 
-    _button(
+    clear_btn = _button(
         button_frame,
         command=parent_ui.clear_logs,
         text="Clear Logs",
@@ -41,3 +43,4 @@ def setup_logs_tab(parent_ui, tab):
         hover_color="#5a5a5a",
         side="left"
     )
+    attach_tooltip(clear_btn, 'clear_logs_btn')

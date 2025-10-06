@@ -5,6 +5,82 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.9] - 2025-10-05
+
+### Added
+- Gate Management Window: Multi-select gates/terminals with Ctrl/Shift+Click
+- Gate Management Window: Conflict detection when moving gates (warns about overwrites)
+- Gate Management Window: Alphanumeric sorting on save (Gate 2 before Gate 10)
+- Gate Management Window: Unsaved changes tracking with confirmation dialog on close
+- Gate Management Window: Working copy pattern (changes only saved when explicitly requested)
+- Gate Management Window: Auto-fill input fields when selecting gates/terminals from tree
+- Gate Management Window: Reset Data function to re-parse interpreted airport data
+- "Dock" keyword support in menu logger for airports using Dock instead of Gate
+- Configurable keyword lists (GATE_KEYWORDS, PARKING_KEYWORDS) for easy extension
+- 29 comprehensive unit tests for Gate Management Window features (test_gate_management_window.py)
+
+### Changed
+- Gate Management Window: Terminal click now selects all child gates for bulk operations
+- Gate Management Window: Move Gate function now processes multiple gates in single operation
+- Gate Management Window: Empty source terminals automatically removed after gate moves
+- Override buttons (Apply/Clear) now disabled during monitoring to prevent UI blocking
+- Menu logger now uses keyword lists instead of hardcoded string checks
+
+### Fixed
+- Airport override now persists in UI when monitoring starts (stays as "EDDS (MANUAL)")
+- Prevented airport label from being overwritten by monitoring when override is active
+- Menu logger now recognizes "Dock" gates in addition to "Gate" gates
+
+### Improved
+- Gate Management Window workflow: Click terminal → all gates selected → specify destination → move entire terminal
+- Data safety: All operations modify working copy only, changes require explicit save
+- User protection: Warns before overwriting gates, confirms before closing with unsaved changes
+- Natural sorting ensures gates display in logical order (1, 2, 10 instead of 1, 10, 2)
+
+### Technical
+- All 259 tests pass (230 existing + 29 new Gate Management Window tests)
+- Gate Management Window uses deep copy pattern for data integrity
+- Alphanumeric sorting uses regex-based natural sort key algorithm
+
+## [0.8.8] - 2025-10-02
+
+### Added
+- Success messages now shown in Recent Activity when gate is assigned ("Successfully assigned to gate: A23")
+- Strategic startup pauses with informative progress messages for smoother UX
+- Status callback system for director to push progress updates to UI
+- Airport label debouncing (300ms) to prevent flickering through multiple states
+- `GsxMenuNotChangedError` exception for uncertain gate assignments (menu didn't update but action may have succeeded)
+- Unit test for float type preservation in config loading
+- Unit tests for `GsxMenuNotChangedError` handling (2 tests)
+- Early exit check for empty GSX menus to prevent loop execution issues
+
+### Changed
+- Startup flow now displays incremental progress: "Initializing monitoring system" → "Connected to flight data source" → "Gate assignment system ready"
+- GSX initialization messages show "Connecting to GSX system..." and "GSX connection established"
+- Airport parking analysis shows contextual message when mapping data
+- Error messages in Recent Activity now user-friendly and simplified (e.g., "GSX menu issue - check logs if persistent")
+- Menu navigation errors that might not be actual failures now marked as uncertain instead of failed
+- Float config values (sleep_short, sleep_long, ground_check_interval, aircraft_request_interval) now explicitly converted to float on load
+
+### Fixed
+- Config float values being saved as integers in YAML when whole numbers (1.0 → 1)
+- Float fields in config UI now always display with decimal notation (e.g., "1.0" not "1")
+- Build script now includes SimConnect.dll in PyInstaller bundle
+- Build script unicode errors on Windows console (replaced checkmarks/warnings with [OK]/[WARN])
+- Gate assignments no longer marked as failed when menu doesn't change (now uncertain with user prompt to verify)
+
+### Improved
+- Startup experience feels more deliberate and informative instead of "everything at once"
+- Recent Activity panel shows actionable, concise messages instead of technical error dumps
+- User confidence with clear feedback at each initialization step
+- Build process robustness with automatic DLL detection and inclusion
+
+### Technical
+- All 230 tests pass
+- Added `import time` to director.py for startup pauses
+- Director tests mock `time.sleep` to avoid actual delays in test execution
+- UI tests updated for new `threading.Timer`-based startup flow
+
 ## [0.8.7] - 2025-09-30
 
 ### Changed

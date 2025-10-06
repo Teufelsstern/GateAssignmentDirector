@@ -31,8 +31,9 @@ class TestMenuLogger(unittest.TestCase):
         position_info = {
             "full_text": "Gate 5A - Small",
             "menu_index": 2,
-            "level_0_index": 1,
-            "next_clicks": 0
+            "level_0_page": 1,
+            "level_0_option_index": 0,
+            "level_1_next_clicks": 0
         }
 
         result = self.logger._interpret_position("5A", position_info, "gate")
@@ -155,7 +156,7 @@ class TestMenuLogger(unittest.TestCase):
         """Test extracting gates from menu options"""
         options = ["Gate 5A", "Gate 5B", "Next", "Back"]
         menu_title = "Select Gate"
-        navigation_info = {"level_0_index": 1, "next_clicks": 0}
+        navigation_info = {"level_0_page": 1, "level_0_option_index": 0, "level_1_next_clicks": 0}
 
         self.logger._extract_gates_and_spots(options, menu_title, navigation_info)
 
@@ -177,7 +178,7 @@ class TestMenuLogger(unittest.TestCase):
         """Test extracting parking spots from menu"""
         options = ["Parking 101", "Parking 102", "Stand A"]
         menu_title = "Select Parking"
-        navigation_info = {"level_0_index": 2, "next_clicks": 1}
+        navigation_info = {"level_0_page": 1, "level_0_option_index": 1, "level_1_next_clicks": 1}
 
         self.logger._extract_gates_and_spots(options, menu_title, navigation_info)
 
@@ -188,7 +189,7 @@ class TestMenuLogger(unittest.TestCase):
         """Test that parking menu doesn't extract items as gates"""
         options = ["Parking 101", "Gate 5A", "Stand A"]
         menu_title = "Select Parking"
-        navigation_info = {"level_0_index": 2, "next_clicks": 1}
+        navigation_info = {"level_0_page": 1, "level_0_option_index": 1, "level_1_next_clicks": 1}
 
         self.logger._extract_gates_and_spots(options, menu_title, navigation_info)
 

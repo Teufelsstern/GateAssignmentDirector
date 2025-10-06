@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock, MagicMock, patch, mock_open
 import json
 from GateAssignmentDirector.gate_assignment import GateAssignment
-from GateAssignmentDirector.exceptions import GsxMenuError
+from GateAssignmentDirector.exceptions import GsxMenuError, GsxMenuNotChangedError
 
 
 class TestGateAssignment(unittest.TestCase):
@@ -202,13 +202,121 @@ class TestGateAssignment(unittest.TestCase):
         self.assertGreater(self.mock_sim_manager.is_on_ground.call_count, 1)
 
 
-    def test_open_menu(self):
-        """Test opening GSX menu sets correct variables"""
-        self.gate_assignment._open_menu()
+    def test_refresh_menu(self):
+        """Test refreshing GSX menu sets correct variables"""
+        self.gate_assignment._refresh_menu()
 
         # Verify the correct SimConnect variables were set
         calls = self.mock_sim_manager.set_variable.call_args_list
         self.assertEqual(len(calls), 2)
+
+    @patch('os.path.exists')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('json.load')
+    def test_assign_gate_menu_not_changed_returns_uncertain(self, mock_json_load, mock_file, mock_exists):
+        """Test GsxMenuNotChangedError returns success with _uncertain flag"""
+        mock_exists.side_effect = lambda path: "_interpreted.json" in path
+        mock_json_load.return_value = {
+            "terminals": {
+                "1": {
+                    "5A": {"position_id": "Gate 1-5A", "gate": "5A"}
+                }
+            }
+        }
+
+        self.mock_sim_manager.is_on_ground.return_value = True
+        self.mock_menu_navigator.click_planned.side_effect = GsxMenuNotChangedError("Menu didn't change")
+
+        success, gate_info = self.gate_assignment.assign_gate(
+            airport="KLAX",
+            terminal="1",
+            gate_number="5",
+            gate_letter="A"
+        )
+
+        self.assertTrue(success)
+        self.assertIsNotNone(gate_info)
+        self.assertTrue(gate_info.get('_uncertain', False))
+        self.assertEqual(gate_info['gate'], "5A")
+
+    @patch('os.path.exists')
+    @patch('os.getcwd')
+    def test_map_available_spots_icao_match_success(self, mock_getcwd, mock_exists):
+        """Test ICAO verification succeeds when menu shows expected airport"""
+        mock_exists.return_value = False
+        mock_getcwd.return_value = "/test/path"
+
+        self.mock_menu_reader.read_menu.return_value = Mock(
+            title="GSX EDDF Parking", options=["Gate A1", "Gate A2"]
+        )
+        self.mock_menu_navigator.click_by_index.return_value = True
+
+        with patch('builtins.open', mock_open(read_data='{"terminals": {}}')):
+            with patch('json.load', return_value={"terminals": {}}):
+                result = self.gate_assignment.map_available_spots("EDDF")
+
+        self.assertIsNotNone(result)
+        self.mock_menu_logger.start_session.assert_called_once()
+
+    @patch('os.path.exists')
+    @patch('os.getcwd')
+    def test_map_available_spots_icao_mismatch_raises_error(self, mock_getcwd, mock_exists):
+        """Test ICAO verification raises error when menu shows different airport"""
+        mock_exists.return_value = False
+        mock_getcwd.return_value = "/test/path"
+
+        self.mock_menu_reader.read_menu.return_value = Mock(
+            title="GSX EDDM Parking", options=["Gate A1", "Gate A2"]
+        )
+
+        with self.assertRaises(GsxMenuError) as context:
+            self.gate_assignment.map_available_spots("EDDF")
+
+        self.assertIn("ICAO mismatch", str(context.exception))
+        self.assertIn("EDDF", str(context.exception))
+        self.assertIn("EDDM", str(context.exception))
+
+    @patch('os.path.exists')
+    @patch('os.getcwd')
+    def test_map_available_spots_no_icao_in_title_logs_warning(self, mock_getcwd, mock_exists):
+        """Test ICAO verification logs warning when no ICAO found in title"""
+        mock_exists.return_value = False
+        mock_getcwd.return_value = "/test/path"
+
+        self.mock_menu_reader.read_menu.return_value = Mock(
+            title="Select parking position", options=["Gate A1", "Gate A2"]
+        )
+        self.mock_menu_navigator.click_by_index.return_value = True
+
+        with patch('builtins.open', mock_open(read_data='{"terminals": {}}')):
+            with patch('json.load', return_value={"terminals": {}}):
+                with patch('GateAssignmentDirector.gate_assignment.logger') as mock_logger:
+                    result = self.gate_assignment.map_available_spots("EDDF")
+
+                    mock_logger.warning.assert_called_once()
+                    warning_call = mock_logger.warning.call_args[0][0]
+                    self.assertIn("Could not parse ICAO", warning_call)
+                    self.assertIn("Select parking position", warning_call)
+
+        self.assertIsNotNone(result)
+
+    @patch('os.path.exists')
+    @patch('os.getcwd')
+    def test_map_available_spots_multiple_icaos_uses_first_match(self, mock_getcwd, mock_exists):
+        """Test ICAO verification uses first match when multiple ICAOs in title"""
+        mock_exists.return_value = False
+        mock_getcwd.return_value = "/test/path"
+
+        self.mock_menu_reader.read_menu.return_value = Mock(
+            title="GSX EDDF departure to KJFK", options=["Gate A1"]
+        )
+        self.mock_menu_navigator.click_by_index.return_value = True
+
+        with patch('builtins.open', mock_open(read_data='{"terminals": {}}')):
+            with patch('json.load', return_value={"terminals": {}}):
+                result = self.gate_assignment.map_available_spots("EDDF")
+
+        self.assertIsNotNone(result)
 
 
 if __name__ == "__main__":

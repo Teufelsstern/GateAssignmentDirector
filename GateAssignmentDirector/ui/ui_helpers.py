@@ -1,6 +1,6 @@
 """UI helper functions for creating consistent widgets"""
 
-# Licensed under GPL-3.0-or-later with additional terms
+# Licensed under AGPL-3.0-or-later with additional terms
 # See LICENSE file for full text and additional requirements
 
 import customtkinter as ctk
@@ -83,8 +83,8 @@ def _label(
     width: Optional[int] = None,
     side: Optional[str] = None,
     bold: bool = True
-) -> None:
-    """Create a text label for the current frame"""
+) -> ctk.CTkLabel:
+    """Create a text label for the current frame and return it"""
     label_kwargs = {
         "text": text,
         "font": ("Arial", size, "bold" if bold else "normal"),
@@ -99,6 +99,8 @@ def _label(
         label.pack(side=side, padx=padx, pady=pady)
     else:
         label.pack(anchor="w", pady=pady, padx=padx)
+
+    return label
 
 
 def _button(

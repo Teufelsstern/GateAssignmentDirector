@@ -1,6 +1,6 @@
 """Menu state logging and persistence for GSX Hook - Simplified Version"""
 
-# Licensed under GPL-3.0-or-later with additional terms
+# Licensed under AGPL-3.0-or-later with additional terms
 # See LICENSE file for full text and additional requirements
 
 import json
@@ -23,8 +23,12 @@ MENU_NAVIGATION_OPTIONS = [
     GsxMenuKeywords.CANCEL.value,
 ]
 
+GATE_KEYWORDS = ["Gate", "Dock"]
+PARKING_KEYWORDS = ["Parking", "Stand", "Remote", "Ramp"]
+
 GATE_PATTERNS = [
     re.compile(r"Gate\s+([A-Z]?\s*\d+\s*[A-Z]?\b)", re.IGNORECASE),
+    re.compile(r"Dock\s+([A-Z]?\s*\d+\s*[A-Z]?\b)", re.IGNORECASE),
     re.compile(r"^([A-Z]?\s*\d+\s*[A-Z]?)$", re.IGNORECASE),
     re.compile(r"^([A-Z]\s*\d+)$", re.IGNORECASE),
 ]
@@ -156,12 +160,22 @@ class MenuLogger:
     ) -> None:
         """Extract gate and spot information from menu options"""
         spot_type = "gates"
-        if "Gate" in menu_title:
-            patterns = GATE_PATTERNS
-        elif "Parking" in menu_title:
-            patterns = PARKING_PATTERNS
-            spot_type = "spots"
-        else:
+        patterns = None
+
+        for keyword in GATE_KEYWORDS:
+            if keyword in menu_title:
+                patterns = GATE_PATTERNS
+                spot_type = "gates"
+                break
+
+        if not patterns:
+            for keyword in PARKING_KEYWORDS:
+                if keyword in menu_title:
+                    patterns = PARKING_PATTERNS
+                    spot_type = "spots"
+                    break
+
+        if not patterns:
             return
 
         for index, option in enumerate(options):
@@ -179,14 +193,10 @@ class MenuLogger:
                             "depth": self.current_depth,
                         }
 
-                        # Add navigation info if available
                         if navigation_info:
-                            spot_data["level_0_index"] = navigation_info.get(
-                                "level_0_index"
-                            )
-                            spot_data["next_clicks"] = navigation_info.get(
-                                "next_clicks"
-                            )
+                            spot_data["level_0_page"] = navigation_info.get("level_0_page")
+                            spot_data["level_0_option_index"] = navigation_info.get("level_0_option_index")
+                            spot_data["level_1_next_clicks"] = navigation_info.get("level_1_next_clicks")
 
                         self.menu_map[f"available_{spot_type}"][spot_id] = spot_data
                     break

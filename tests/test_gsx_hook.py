@@ -208,7 +208,7 @@ class TestGsxHookMethods(unittest.TestCase):
         mock_sim_instance = Mock()
         mock_sim.return_value = mock_sim_instance
         mock_gate_instance = Mock()
-        mock_gate_instance.assign_gate.return_value = True
+        mock_gate_instance.assign_gate.return_value = (True, {'gate': '5A'})
         mock_gate.return_value = mock_gate_instance
 
         hook = GsxHook(config=mock_config)
@@ -224,11 +224,11 @@ class TestGsxHookMethods(unittest.TestCase):
         self.assertEqual(call_kwargs["airport"], "KLAX")
         self.assertEqual(call_kwargs["gate_number"], "5")
         self.assertEqual(call_kwargs["gate_letter"], "A")
-        self.assertTrue(result)
+        self.assertEqual(result, (True, {'gate': '5A'}))
 
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
     def test_assign_gate_when_ready_not_initialized(self, mock_sim):
-        """Test assign_gate_when_ready returns False when not initialized"""
+        """Test assign_gate_when_ready returns (False, None) when not initialized"""
         mock_config = create_mock_config()
         mock_config.from_yaml.return_value = mock_config
 
@@ -240,7 +240,7 @@ class TestGsxHookMethods(unittest.TestCase):
         hook = GsxHook(config=mock_config)
         result = hook.assign_gate_when_ready(airport="KLAX")
 
-        self.assertFalse(result)
+        self.assertEqual(result, (False, None))
 
     @patch('GateAssignmentDirector.gsx_hook.GateAssignment')
     @patch('GateAssignmentDirector.gsx_hook.MenuNavigator')
@@ -375,7 +375,7 @@ class TestGsxHookMethods(unittest.TestCase):
 
         # First call fails, second succeeds
         mock_gate_instance = Mock()
-        mock_gate_instance.assign_gate.side_effect = [False, True]
+        mock_gate_instance.assign_gate.side_effect = [(False, None), (True, {'gate': 'A5'})]
         mock_gate.return_value = mock_gate_instance
 
         hook = GsxHook(config=mock_config)
@@ -385,8 +385,8 @@ class TestGsxHookMethods(unittest.TestCase):
         self.assertEqual(mock_gate_instance.assign_gate.call_count, 2)
         # Should close menu between attempts
         mock_sim_instance.set_variable.assert_called()
-        # Final result should be True (success on retry)
-        self.assertTrue(result)
+        # Final result should be (True, dict) (success on retry)
+        self.assertEqual(result, (True, {'gate': 'A5'}))
 
     @patch('GateAssignmentDirector.gsx_hook.time.sleep')
     @patch('GateAssignmentDirector.gsx_hook.GateAssignment')
@@ -404,7 +404,7 @@ class TestGsxHookMethods(unittest.TestCase):
 
         # Both calls fail
         mock_gate_instance = Mock()
-        mock_gate_instance.assign_gate.return_value = False
+        mock_gate_instance.assign_gate.return_value = (False, None)
         mock_gate.return_value = mock_gate_instance
 
         hook = GsxHook(config=mock_config)
@@ -414,8 +414,8 @@ class TestGsxHookMethods(unittest.TestCase):
         self.assertEqual(mock_gate_instance.assign_gate.call_count, 2)
         # Should close menu between attempts
         mock_sim_instance.set_variable.assert_called()
-        # Final result should be False
-        self.assertFalse(result)
+        # Final result should be (False, None)
+        self.assertEqual(result, (False, None))
 
     @patch('GateAssignmentDirector.gsx_hook.GateAssignment')
     @patch('GateAssignmentDirector.gsx_hook.MenuNavigator')
@@ -432,7 +432,7 @@ class TestGsxHookMethods(unittest.TestCase):
 
         # First call succeeds
         mock_gate_instance = Mock()
-        mock_gate_instance.assign_gate.return_value = True
+        mock_gate_instance.assign_gate.return_value = (True, {'gate': 'A5'})
         mock_gate.return_value = mock_gate_instance
 
         hook = GsxHook(config=mock_config)
@@ -440,8 +440,8 @@ class TestGsxHookMethods(unittest.TestCase):
 
         # Should only call assign_gate once
         self.assertEqual(mock_gate_instance.assign_gate.call_count, 1)
-        # Final result should be True
-        self.assertTrue(result)
+        # Final result should be (True, dict)
+        self.assertEqual(result, (True, {'gate': 'A5'}))
 
 
 if __name__ == "__main__":

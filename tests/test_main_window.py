@@ -223,28 +223,39 @@ class TestDirectorUIMonitoringControls(unittest.TestCase):
         self.ui.stop_btn = MagicMock()
         self.ui.status_label = MagicMock()
         self.ui.activity_text = MagicMock()
+        self.ui.airport_label = MagicMock()
         self.ui.config = MagicMock()
         self.ui.config.flight_json_path = "C:/test/flight.json"
 
-    @patch('threading.Thread')
-    def test_start_monitoring_ui_state_changes(self, mock_thread):
+    @patch('threading.Timer')
+    def test_start_monitoring_ui_state_changes(self, mock_timer):
         """Test start_monitoring updates UI state correctly"""
         self.ui.start_monitoring()
 
         self.ui.start_btn.configure.assert_called_once_with(state="disabled")
         self.ui.stop_btn.configure.assert_called_once_with(state="normal", text_color="#4a4050")
-        self.ui.status_label.configure.assert_called_once_with(text="Monitoring", text_color="#6B9E78")
+        self.ui.status_label.configure.assert_called_once_with(text="Monitoring", text_color="#9dc4a8")
 
-    @patch('threading.Thread')
-    def test_start_monitoring_activity_log_entry(self, mock_thread):
+    @patch('threading.Timer')
+    def test_start_monitoring_activity_log_entry(self, mock_timer):
         """Test start_monitoring adds activity log entry"""
         self.ui.start_monitoring()
 
         self.ui.activity_text.insert.assert_called_once_with("end", "Starting monitoring...\n")
+        mock_timer.assert_called_once_with(0.5, self.ui._continue_monitoring_startup)
+        mock_timer.return_value.start.assert_called_once()
 
     @patch('threading.Thread')
-    def test_start_monitoring_spawns_thread(self, mock_thread):
+    @patch('threading.Timer')
+    def test_start_monitoring_spawns_thread(self, mock_timer, mock_thread):
         """Test start_monitoring creates daemon thread for director"""
+        # Capture the timer callback and invoke it immediately
+        def execute_callback(delay, callback):
+            callback()
+            return MagicMock()
+
+        mock_timer.side_effect = execute_callback
+
         self.ui.start_monitoring()
 
         mock_thread.assert_called_once()
@@ -431,6 +442,38 @@ class TestDirectorUIOverrideControls(unittest.TestCase):
         self.ui.activity_text.insert.assert_called_once_with("end", "Manual override cleared.\n")
         mock_log_info.assert_called_once_with("Manual override cleared")
 
+    @patch('GateAssignmentDirector.ui.main_window.logging.info')
+    def test_apply_override_sets_director_airport_override(self, mock_log_info):
+        """Test apply_override sets director.airport_override"""
+        self.ui.override_airport_entry.get.return_value = "EDDF"
+        self.ui.override_terminal_entry.get.return_value = "1"
+        self.ui.override_gate_entry.get.return_value = "A23"
+
+        self.ui.apply_override()
+
+        self.assertEqual(self.ui.director.airport_override, "EDDF")
+
+    @patch('GateAssignmentDirector.ui.main_window.logging.info')
+    def test_clear_override_clears_director_airport_override(self, mock_log_info):
+        """Test clear_override sets director.airport_override to None"""
+        self.ui.director.airport_override = "EDDF"
+
+        self.ui.clear_override()
+
+        self.assertIsNone(self.ui.director.airport_override)
+
+    @patch('GateAssignmentDirector.ui.main_window.logging.info')
+    def test_apply_override_updates_director_airport_on_change(self, mock_log_info):
+        """Test applying new override updates director.airport_override"""
+        self.ui.director.airport_override = "KLAX"
+        self.ui.override_airport_entry.get.return_value = "KJFK"
+        self.ui.override_terminal_entry.get.return_value = "4"
+        self.ui.override_gate_entry.get.return_value = "B32"
+
+        self.ui.apply_override()
+
+        self.assertEqual(self.ui.director.airport_override, "KJFK")
+
     def test_toggle_override_section_shows_panel(self):
         """Test toggle_override_section makes panel visible"""
         self.ui.override_section_visible = False
@@ -590,7 +633,7 @@ class TestDirectorUIGateManagement(unittest.TestCase):
     def test_assign_gate_thread_successful(self, mock_log_info):
         """Test _assign_gate_thread with successful gate assignment"""
         mock_gsx = MagicMock()
-        mock_gsx.assign_gate_when_ready.return_value = True
+        mock_gsx.assign_gate_when_ready.return_value = (True, {'gate': 'A23'})
         self.ui.director.gsx = mock_gsx
 
         self.ui._assign_gate_thread("EDDF", "1", "A23")
@@ -608,17 +651,17 @@ class TestDirectorUIGateManagement(unittest.TestCase):
         after_lambda = after_call[0][1]
         after_lambda()
         insert_call = self.ui.activity_text.insert.call_args[0][1]
-        self.assertIn("completed", insert_call)
+        self.assertIn("Successfully assigned to gate: A23", insert_call)
 
         mock_log_info.assert_called_once()
         log_msg = mock_log_info.call_args[0][0]
-        self.assertIn("completed", log_msg)
+        self.assertIn("Manual gate assignment succeeded: A23", log_msg)
 
     @patch('GateAssignmentDirector.ui.main_window.logging.info')
     def test_assign_gate_thread_failed(self, mock_log_info):
         """Test _assign_gate_thread with failed gate assignment"""
         mock_gsx = MagicMock()
-        mock_gsx.assign_gate_when_ready.return_value = False
+        mock_gsx.assign_gate_when_ready.return_value = (False, None)
         self.ui.director.gsx = mock_gsx
 
         self.ui._assign_gate_thread("EDDF", "1", "A23")

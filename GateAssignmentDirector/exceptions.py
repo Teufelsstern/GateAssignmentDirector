@@ -6,7 +6,7 @@ Having them in a separate file prevents circular imports and provides a clean
 exception hierarchy.
 """
 
-# Licensed under GPL-3.0-or-later with additional terms
+# Licensed under AGPL-3.0-or-later with additional terms
 # See LICENSE file for full text and additional requirements
 
 
@@ -75,6 +75,17 @@ class GsxInvalidStateError(GsxError):
     - Aircraft is not in a valid state for GSX operations
     - GSX state variables indicate an error condition
     - Operations are attempted when prerequisites are not met
+    """
+
+    pass
+
+
+class GsxMenuNotChangedError(GsxMenuError):
+    """Menu did not change after clicking (might still have worked)
+
+    Raised when:
+    - Menu doesn't update after clicking an option
+    - This is often just a GSX display quirk, not necessarily a failure
     """
 
     pass
