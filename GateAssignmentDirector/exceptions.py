@@ -6,7 +6,7 @@ Having them in a separate file prevents circular imports and provides a clean
 exception hierarchy.
 """
 
-# Licensed under GPL-3.0-or-later with additional terms
+# Licensed under AGPL-3.0-or-later with additional terms
 # See LICENSE file for full text and additional requirements
 
 
