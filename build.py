@@ -61,12 +61,17 @@ args = [
     '--add-data=GateAssignmentDirector/config.yaml;GateAssignmentDirector',
     '--add-data=GateAssignmentDirector/icon.ico;GateAssignmentDirector',
     '--hidden-import=customtkinter',
+    '--hidden-import=CTkToolTip',
     '--hidden-import=PIL',
     '--hidden-import=PIL._tkinter_finder',
     '--hidden-import=pystray',
     '--hidden-import=tkinter',
     '--hidden-import=_tkinter',
+    '--hidden-import=yaml',
+    '--hidden-import=rapidfuzz',
+    '--hidden-import=requests',
     '--collect-all=customtkinter',
+    '--collect-all=CTkToolTip',
     '--clean',
 ]
 
