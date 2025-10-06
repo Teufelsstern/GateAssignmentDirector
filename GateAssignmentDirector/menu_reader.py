@@ -4,6 +4,7 @@
 # See LICENSE file for full text and additional requirements
 
 import os
+import time
 import logging
 from typing import List, Tuple, Optional
 from dataclasses import dataclass
@@ -58,6 +59,7 @@ class MenuReader:
                         lines = f.readlines()
                         if not lines:
                             error_count += 1
+                            time.sleep(self.config.sleep_short)
                             continue
                         title = lines[0].strip().replace("\n", "")
                         options = [line.strip().replace("\n", "") for line in lines[1:]]
@@ -76,6 +78,7 @@ class MenuReader:
                     error_count += 1
                     if error_count >= max_retries:
                         raise e
+                    time.sleep(self.config.sleep_short)
         except (OSError, IOError) as e:
             logger.error(f"Failed to read menu file: {e}")
             raise

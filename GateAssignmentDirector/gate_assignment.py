@@ -138,7 +138,12 @@ class GateAssignment:
                 if any("Next" in opt for opt in current_menu_state.options):
                     logger.debug(f"Moving to level 0 page {level_0_page + 1}")
                     level_0_page += 1
-                    self.menu_navigator.click_next()
+                    success, info = self.menu_navigator.click_next()
+                    if not success:
+                        raise GsxMenuNotChangedError(
+                            f"Failed to click Next at level 0 page {level_0_page}. "
+                            f"Menu was: {info[0]} with options {info[1]}"
+                        )
                 else:
                     logger.debug(
                         f"No more pages at level 0. Finished on page {level_0_page}"
