@@ -85,9 +85,11 @@ class GateAssignmentDirector:
 
                         self.gsx = GsxHook(self.config, enable_menu_logging=True)
                         if not self.gsx.is_initialized:
-                            logger.error("Failed to initialize GSX Hook for pre-mapping")
+                            logger.error("Failed to initialize GSX Hook for pre-mapping - stopping monitoring")
                             if self.status_callback:
-                                self.status_callback("GSX connection failed - check simulator")
+                                self.status_callback("GSX connection failed - monitoring stopped")
+                            self.stop()
+                            return
                         else:
                             if self.status_callback:
                                 self.status_callback("GSX connection established")
@@ -120,10 +122,11 @@ class GateAssignmentDirector:
 
                     self.gsx = GsxHook(self.config, enable_menu_logging=True)
                     if not self.gsx.is_initialized:
-                        logger.error("Failed to initialize GSX Hook")
+                        logger.error("Failed to initialize GSX Hook - stopping monitoring")
                         if self.status_callback:
-                            self.status_callback("GSX connection failed - check simulator")
-                        continue
+                            self.status_callback("GSX connection failed - monitoring stopped")
+                        self.stop()
+                        return
 
                     # Notify UI of successful connection
                     if self.status_callback:

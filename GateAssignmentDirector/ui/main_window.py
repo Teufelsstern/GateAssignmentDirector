@@ -419,6 +419,10 @@ class DirectorUI:
         # Use after() to safely update UI from background thread
         self.activity_text.after(0, lambda: self._append_activity(f"{message}\n"))
 
+        # Check if director stopped due to error
+        if "monitoring stopped" in message.lower():
+            self.root.after(0, self._handle_auto_stop)
+
     def _run_director(self):
         """Run the director (called in thread)"""
         try:
@@ -440,6 +444,17 @@ class DirectorUI:
             self.clear_override_btn.configure(state="normal")
 
         self._append_activity("Monitoring stopped.\n")
+
+    def _handle_auto_stop(self):
+        """Handle when director auto-stops (e.g., GSX connection failure)"""
+        self.start_btn.configure(state="normal")
+        self.stop_btn.configure(state="disabled", text_color="#e8d9d6")
+        self.status_label.configure(text="Stopped", text_color="#C67B7B")
+
+        if self.apply_override_btn:
+            self.apply_override_btn.configure(state="normal")
+        if self.clear_override_btn:
+            self.clear_override_btn.configure(state="normal")
 
     def toggle_override_section(self):
         """Toggle the manual override section visibility"""
