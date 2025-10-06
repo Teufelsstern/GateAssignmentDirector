@@ -31,6 +31,7 @@ class GADConfig:
     logging_datefmt: str = '%H:%M:%S'
     SI_API_KEY: str = 'YOUR_API_KEY_HERE'
     default_airline: str = 'GSX'
+    minimize_to_tray: bool = True
 
     logging.basicConfig(
         level=logging_level,
@@ -63,6 +64,7 @@ class GADConfig:
             'logging_datefmt': '%H:%M:%S',
             'SI_API_KEY': 'YOUR_API_KEY_HERE',
             'default_airline': 'GSX',
+            'minimize_to_tray': True,
         }
 
     @classmethod
@@ -122,6 +124,8 @@ class GADConfig:
             'logging_format': self.logging_format,
             'logging_datefmt': self.logging_datefmt,
             'SI_API_KEY': self.SI_API_KEY,
+            'default_airline': self.default_airline,
+            'minimize_to_tray': self.minimize_to_tray,
         }
 
         with open(yaml_path, 'w', encoding='utf-8') as f:

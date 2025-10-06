@@ -31,6 +31,11 @@ def setup_config_tab(parent_ui, tab):
         parent_ui, scroll_frame, field_name="default_airline", label_text="Default Airline", padx=(5,0), entry_width=100
     )
 
+    _label(frame=scroll_frame, text="UI Settings", size=16, pady=(10, 0), padx=(5,0))
+    create_config_checkbox(
+        parent_ui, scroll_frame, field_name="minimize_to_tray", label_text="Minimize to tray on close", padx=(5,0)
+    )
+
     _label(
         frame=scroll_frame,
         text="_________ Advanced Settings ___________",
@@ -121,3 +126,25 @@ def create_config_field(parent_ui, parent, field_name:str, label_text:str, label
 
     # Attach tooltip to label instead of entry
     attach_tooltip(label, field_name)
+
+
+def create_config_checkbox(parent_ui, parent, field_name:str, label_text:str, padx:tuple[int,int]=(0,10), size:int = 14):
+    """Create a checkbox for boolean configuration"""
+    frame = ctk.CTkFrame(parent, fg_color="transparent")
+    frame.pack(fill="x", expand=False, pady=(0,5))
+
+    checkbox = ctk.CTkCheckBox(
+        frame,
+        text=label_text,
+        font=("Arial", size),
+        corner_radius=6,
+        border_width=2,
+        checkbox_width=20,
+        checkbox_height=20
+    )
+    checkbox.pack(anchor="w", padx=(10, 10), pady=(0, 5))
+
+    parent_ui.config_entries[field_name] = checkbox
+
+    # Attach tooltip to checkbox
+    attach_tooltip(checkbox, field_name)

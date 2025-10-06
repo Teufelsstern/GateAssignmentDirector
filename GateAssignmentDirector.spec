@@ -1,9 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import copy_metadata
 
 datas = [('LICENSE', '.'), ('README.md', '.'), ('GateAssignmentDirector/config.yaml', 'GateAssignmentDirector'), ('GateAssignmentDirector/monitor_config.ini', 'GateAssignmentDirector'), ('GateAssignmentDirector/icon.ico', 'GateAssignmentDirector')]
 binaries = [('C:\\Users\\mariu\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\SimConnect\\SimConnect.dll', 'SimConnect')]
 hiddenimports = ['customtkinter', 'CTkToolTip', 'PIL', 'PIL._tkinter_finder', 'pystray', 'tkinter', '_tkinter', 'yaml', 'rapidfuzz', 'requests']
+datas += copy_metadata('CTkToolTip')
 tmp_ret = collect_all('customtkinter')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('CTkToolTip')

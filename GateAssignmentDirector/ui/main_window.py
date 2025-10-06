@@ -85,8 +85,8 @@ class DirectorUI:
         self.root.minsize(350, 430)
         self.root.maxsize(800, 800)
 
-        # Override close button to minimize to tray
-        self.root.protocol("WM_DELETE_WINDOW", self.hide_to_tray)
+        # Override close button behavior based on config
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         # Setup system tray
         self._setup_tray()
@@ -202,17 +202,30 @@ class DirectorUI:
         self.vwl.pack(side="left", padx=2)
 
     def _create_tray_icon(self):
-        """Create a simple icon for system tray"""
-        width = 64
-        height = 64
-        image = Image.new("RGB", (width, height), (30, 30, 30))
-        dc = ImageDraw.Draw(image)
+        """Load the application icon for system tray"""
+        # Get icon path (same logic as window icon)
+        import sys
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller bundle
+            base_path = Path(sys._MEIPASS)
+            icon_path = base_path / "GateAssignmentDirector" / "icon.ico"
+        else:
+            # Running as normal Python script
+            icon_path = Path(__file__).parent.parent / "icon.ico"
 
-        # Draw a simple "G" shape
-        dc.rectangle([16, 16, 48, 48], outline=(100, 150, 200), width=4)
-        dc.rectangle([32, 28, 48, 36], fill=(100, 150, 200))
-
-        return image
+        if icon_path.exists():
+            # Load the icon file and convert to Image
+            image = Image.open(str(icon_path))
+            return image
+        else:
+            # Fallback to generated icon if file not found
+            width = 64
+            height = 64
+            image = Image.new("RGB", (width, height), (30, 30, 30))
+            dc = ImageDraw.Draw(image)
+            dc.rectangle([16, 16, 48, 48], outline=(100, 150, 200), width=4)
+            dc.rectangle([32, 28, 48, 36], fill=(100, 150, 200))
+            return image
 
     def _setup_tray(self):
         """Setup system tray icon"""
@@ -229,6 +242,13 @@ class DirectorUI:
 
         # Run tray icon in separate thread
         threading.Thread(target=self.tray_icon.run, daemon=True).start()
+
+    def on_close(self):
+        """Handle window close button - minimize to tray or quit based on config"""
+        if self.config.minimize_to_tray:
+            self.hide_to_tray()
+        else:
+            self.quit_app()
 
     def hide_to_tray(self):
         """Hide window to system tray"""
@@ -252,15 +272,23 @@ class DirectorUI:
             self.config = GADConfig.from_yaml()
 
             # Load other fields
-            for field_name, entry in self.config_entries.items():
+            for field_name, widget in self.config_entries.items():
                 value = getattr(self.config, field_name, "")
-                # Format floats with .1f to always show at least one decimal place
-                if isinstance(value, float):
-                    value = f"{value:.1f}"
+
+                # Handle checkboxes differently from entries
+                if isinstance(widget, ctk.CTkCheckBox):
+                    if value:
+                        widget.select()
+                    else:
+                        widget.deselect()
                 else:
-                    value = str(value)
-                entry.delete(0, "end")
-                entry.insert(0, value)
+                    # Format floats with .1f to always show at least one decimal place
+                    if isinstance(value, float):
+                        value = f"{value:.1f}"
+                    else:
+                        value = str(value)
+                    widget.delete(0, "end")
+                    widget.insert(0, value)
 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load configuration:\n{e}")
@@ -269,18 +297,22 @@ class DirectorUI:
         """Save values from UI fields to YAML"""
         try:
             # Get other fields
-            for field_name, entry in self.config_entries.items():
-                value = entry.get().strip()
+            for field_name, widget in self.config_entries.items():
+                # Handle checkboxes differently from entries
+                if isinstance(widget, ctk.CTkCheckBox):
+                    value = widget.get() == 1  # CTkCheckBox.get() returns 0 or 1
+                else:
+                    value = widget.get().strip()
 
-                # Convert to appropriate type based on config field type
-                current_value = getattr(self.config, field_name)
-                if isinstance(current_value, bool):
-                    value = value.lower() in ('true', '1', 'yes')
-                elif isinstance(current_value, int):
-                    # For int fields, convert via float first to handle decimal inputs
-                    value = int(float(value))
-                elif isinstance(current_value, float):
-                    value = float(value)
+                    # Convert to appropriate type based on config field type
+                    current_value = getattr(self.config, field_name)
+                    if isinstance(current_value, bool):
+                        value = value.lower() in ('true', '1', 'yes')
+                    elif isinstance(current_value, int):
+                        # For int fields, convert via float first to handle decimal inputs
+                        value = int(float(value))
+                    elif isinstance(current_value, float):
+                        value = float(value)
 
                 setattr(self.config, field_name, value)
 
