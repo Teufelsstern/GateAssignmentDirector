@@ -5,6 +5,7 @@
 
 import customtkinter as ctk
 from GateAssignmentDirector.ui.ui_helpers import _label, _button
+from GateAssignmentDirector.ui.tooltips import attach_tooltip
 
 
 def setup_config_tab(parent_ui, tab):
@@ -85,15 +86,16 @@ def setup_config_tab(parent_ui, tab):
     btn_frame = ctk.CTkFrame(tab, fg_color="transparent")
     btn_frame.pack(fill="x", padx=20, pady=(0, 20))
 
-    _button(
+    reload_btn = _button(
         btn_frame,
         parent_ui.load_config_values,
         text="Reload Config",
         side="left",
         padx=(0, 5)
     )
+    attach_tooltip(reload_btn, 'reload_config_btn')
 
-    _button(
+    save_btn = _button(
         btn_frame,
         parent_ui.save_config_values,
         text="Save Config",
@@ -102,6 +104,7 @@ def setup_config_tab(parent_ui, tab):
         side="right",
         padx=(5, 0),
     )
+    attach_tooltip(save_btn, 'save_config_btn')
 
     parent_ui.load_config_values()
 
@@ -115,3 +118,6 @@ def create_config_field(parent_ui, parent, field_name:str, label_text:str, label
     entry.pack(expand=False, side=side)
 
     parent_ui.config_entries[field_name] = entry
+
+    # Attach tooltip using field_name as key
+    attach_tooltip(entry, field_name)
