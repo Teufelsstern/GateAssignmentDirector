@@ -113,11 +113,11 @@ def create_config_field(parent_ui, parent, field_name:str, label_text:str, label
     """Create a labeled entry field for configuration"""
     frame = ctk.CTkFrame(parent, fg_color="transparent")
     frame.pack(fill="x", expand=False)
-    _label(frame, text=label_text + ":", size=size, padx=(10,10), pady=(0,5), side=side, width=label_width, bold=False)
+    label = _label(frame, text=label_text + ":", size=size, padx=(10,10), pady=(0,5), side=side, width=label_width, bold=False)
     entry = ctk.CTkEntry(frame, width=entry_width, height=5, corner_radius=6, border_width=3, border_color="#3a3a3a")
     entry.pack(expand=False, side=side)
 
     parent_ui.config_entries[field_name] = entry
 
-    # Attach tooltip using field_name as key
-    attach_tooltip(entry, field_name)
+    # Attach tooltip to label instead of entry
+    attach_tooltip(label, field_name)

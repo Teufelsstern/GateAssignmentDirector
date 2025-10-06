@@ -23,7 +23,7 @@ def setup_monitor_tab(parent_ui, tab):
     airport_row = ctk.CTkFrame(status_frame, fg_color="transparent")
     airport_row.pack(fill="x", pady=(0, 5), anchor="w")
 
-    _label(
+    airport_label_text = _label(
         airport_row,
         text="Airport:",
         width=70,
@@ -31,17 +31,17 @@ def setup_monitor_tab(parent_ui, tab):
         pady=(0, 0),
         side="left"
     )
+    attach_tooltip(airport_label_text, 'airport_label')
 
     parent_ui.airport_label = ctk.CTkLabel(
         airport_row, text="None", font=("Arial", 14), text_color="#808080"
     )
     parent_ui.airport_label.pack(side="left")
-    attach_tooltip(parent_ui.airport_label, 'airport_label')
 
     status_row = ctk.CTkFrame(status_frame, fg_color="transparent")
     status_row.pack(fill="x", anchor="w")
 
-    _label(
+    status_label_text = _label(
         status_row,
         text="Status:",
         width=70,
@@ -49,12 +49,12 @@ def setup_monitor_tab(parent_ui, tab):
         pady=(0, 0),
         side="left"
     )
+    attach_tooltip(status_label_text, 'status_label')
 
     parent_ui.status_label = ctk.CTkLabel(
         status_row, text="Idle", font=("Arial", 14), text_color="#808080"
     )
     parent_ui.status_label.pack(side="left")
-    attach_tooltip(parent_ui.status_label, 'status_label')
 
     override_toggle_frame = ctk.CTkFrame(status_frame, fg_color="transparent")
     override_toggle_frame.pack(fill="x")
@@ -78,20 +78,20 @@ def setup_monitor_tab(parent_ui, tab):
     override_content = ctk.CTkFrame(parent_ui.override_panel, fg_color="transparent")
     override_content.pack(fill="x", padx=10, pady=(0,10))
 
-    _label(override_content, text="Airport:", size=12, pady=(0, 5), width=40, side="left", padx=(0, 5))
+    override_airport_label = _label(override_content, text="Airport:", size=12, pady=(0, 5), width=40, side="left", padx=(0, 5))
+    attach_tooltip(override_airport_label, 'override_airport_entry')
     parent_ui.override_airport_entry = ctk.CTkEntry(override_content, placeholder_text="ICAO", width=45, corner_radius=6, border_width=1, border_color=c('charcoal_lighter'))
     parent_ui.override_airport_entry.pack(side="left", padx=(0, 5))
-    attach_tooltip(parent_ui.override_airport_entry, 'override_airport_entry')
 
-    _label(override_content, text="Terminal:", size=12, pady=(0, 5), width=50, side="left")
+    override_terminal_label = _label(override_content, text="Terminal:", size=12, pady=(0, 5), width=50, side="left")
+    attach_tooltip(override_terminal_label, 'override_terminal_entry')
     parent_ui.override_terminal_entry = ctk.CTkEntry(override_content, placeholder_text="e.g., 2", width=80, corner_radius=6, border_width=1, border_color=c('charcoal_lighter'))
     parent_ui.override_terminal_entry.pack(side="left", padx=(5, 10))
-    attach_tooltip(parent_ui.override_terminal_entry, 'override_terminal_entry')
 
-    _label(override_content, text="Gate:", size=12, pady=(0, 5), width=30, side="left")
+    override_gate_label = _label(override_content, text="Gate:", size=12, pady=(0, 5), width=30, side="left")
+    attach_tooltip(override_gate_label, 'override_gate_entry')
     parent_ui.override_gate_entry = ctk.CTkEntry(override_content, placeholder_text="e.g., 24A", width=60, corner_radius=6, border_width=1, border_color=c('charcoal_lighter'))
     parent_ui.override_gate_entry.pack(side="left", padx=(5, 0))
-    attach_tooltip(parent_ui.override_gate_entry, 'override_gate_entry')
 
     override_btn_frame = ctk.CTkFrame(parent_ui.override_panel, fg_color="transparent")
     override_btn_frame.pack(fill="x", padx=10, pady=(0, 0))
@@ -187,15 +187,15 @@ def setup_monitor_tab(parent_ui, tab):
     activity_frame = ctk.CTkFrame(tab, corner_radius=6)
     activity_frame.pack(fill="both", expand=True, padx=10, pady=0)
 
-    _label(
+    activity_label = _label(
         activity_frame,
         text="Recent Activity",
         pady=(0, 5),
         padx=(10, 0)
     )
+    attach_tooltip(activity_label, 'activity_text')
 
     parent_ui.activity_text = ctk.CTkTextbox(
         activity_frame, font=("Consolas", 12), fg_color="#1a1a1a", state="disabled"
     )
     parent_ui.activity_text.pack(fill="both", expand=True, padx=10, pady=(0, 5))
-    attach_tooltip(parent_ui.activity_text, 'activity_text')

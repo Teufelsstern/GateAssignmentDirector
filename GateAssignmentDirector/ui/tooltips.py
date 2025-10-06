@@ -40,7 +40,7 @@ LOGS_TAB = {
 }
 
 
-def attach_tooltip(widget, tooltip_key: str, delay: float = 0.2):
+def attach_tooltip(widget, tooltip_key: str, delay: float = 0.6):
     """
     Attach tooltip to widget by looking up key in all tooltip dicts
 
