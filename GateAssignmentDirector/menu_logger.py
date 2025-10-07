@@ -12,6 +12,7 @@ from dataclasses import dataclass, asdict
 from pathlib import Path
 
 from GateAssignmentDirector.gsx_enums import GsxMenuKeywords
+from GateAssignmentDirector.gate_matcher import GateMatcher
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ class MenuLogger:
         self.current_depth: int = 0
         self.navigation_path: List[str] = []
         self.config = config
+        self.gate_matcher = GateMatcher(config)
 
         logging.basicConfig(
             level=config.logging_level,
@@ -72,8 +74,9 @@ class MenuLogger:
         )
 
         self.menu_map: Dict[str, Any] = {
+            "version": "1",
             "airport": None,
-            "last_updated": None,
+            "created": None,
             "available_gates": {},
             "available_spots": {},
         }
@@ -84,7 +87,7 @@ class MenuLogger:
         """Start a new mapping session for an airport"""
         self.current_airport = gate_info.airport
         self.menu_map["airport"] = gate_info.airport
-        self.menu_map["last_updated"] = datetime.now().isoformat()
+        self.menu_map["created"] = datetime.now().isoformat()
         self.navigation_path = []
         self.seen_menus = set()
 
@@ -188,6 +191,7 @@ class MenuLogger:
                             "menu_index": index,
                             "found_in_menu": menu_title,
                             "depth": self.current_depth,
+                            "_parsed": self.gate_matcher.parse_gate_components(spot_id),
                         }
 
                         if navigation_info:
@@ -205,6 +209,7 @@ class MenuLogger:
         if not raw_data:
             return False
         interpreted_data = {
+            "version": "1",
             "airport": airport_icao,
             "created": datetime.now().isoformat(),
             "terminals": {},
@@ -232,29 +237,26 @@ class MenuLogger:
         Extract terminal/area name from menu title.
         Examples:
         - "Terminal - A-Pier (A1-A16)" → "A-Pier" (preferred)
-        - "Terminal - A-Pier (weird)" → "Terminal" (fallback to type)
         - "Apron - West I (V61-V76)" → "West I" (preferred)
-        - "Select Gate" (no pattern) → "Gate" (fallback)
+        - "All Gate positions" (no specific name) → "Terminal 1" (fallback for gates)
+        - "All Parking positions" (no specific name) → "Parking" (fallback for parking)
         """
         # Pattern: <Type> - <Specific Name> (<Range>)
         match = re.search(r'(Terminal|Apron|Gate|Parking)\s*-\s*([^(]+)', menu_title, re.IGNORECASE)
         if match:
-            type_name = match.group(1).strip()
             specific_name = match.group(2).strip()
 
             # If specific name exists and looks reasonable (not empty, not too weird)
             if specific_name and len(specific_name) > 0 and len(specific_name) < 50:
                 return specific_name
 
-            # Fallback to type if specific name is weird/empty
-            return type_name
+        # No specific terminal name found, check if menu is about parking using config keywords
+        for keyword in self.config.position_keywords.get('gsx_parking', []):
+            if keyword.lower() in menu_title.lower():
+                return "Parking"
 
-        # No pattern found, try to extract just the type keyword
-        for keyword in ['Terminal', 'Apron', 'Gate', 'Parking']:
-            if keyword in menu_title:
-                return keyword
-
-        return "Unknown"
+        # Default fallback for gates/terminals
+        return "Terminal 1"
 
     def _extract_gate_identifier(self, position_id: str) -> str:
         """
@@ -295,10 +297,16 @@ class MenuLogger:
         # Use appropriate label based on position type
         position_label = "Stand" if position_type == "parking" else "Gate"
 
+        # Build position_id - avoid duplicating "Terminal" or adding it to "Parking"
+        if terminal.startswith("Terminal") or terminal == "Parking":
+            position_id = f"{terminal} {position_label} {gate}"
+        else:
+            position_id = f"Terminal {terminal} {position_label} {gate}"
+
         return {
             "terminal": terminal,
             "gate": gate,
-            "position_id": f"Terminal {terminal} {position_label} {gate}",
+            "position_id": position_id,
             "type": position_type,
             "raw_info": position_info,
         }

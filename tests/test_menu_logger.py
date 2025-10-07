@@ -17,6 +17,11 @@ class TestMenuLogger(unittest.TestCase):
             'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
             'si_terminal': ['Terminal', 'International', 'Parking', 'Domestic', 'Main', 'Central', 'Pier', 'Concourse', 'Level', 'Apron', 'Stand']
         }
+        self.mock_config.matching_weights = {
+            'gate_number': 0.6,
+            'gate_prefix': 0.3,
+            'terminal': 0.1
+        }
 
         with patch('pathlib.Path.mkdir'):
             self.logger = MenuLogger(self.mock_config, logs_dir="test_logs")
@@ -29,7 +34,7 @@ class TestMenuLogger(unittest.TestCase):
 
         self.assertEqual(self.logger.current_airport, "KLAX")
         self.assertEqual(self.logger.menu_map["airport"], "KLAX")
-        self.assertIsNotNone(self.logger.menu_map["last_updated"])
+        self.assertIsNotNone(self.logger.menu_map["created"])
 
     def test_interpret_position_simple_gate(self):
         """Test interpreting simple gate like 'Gate 5A' with terminal context from menu"""
@@ -101,9 +106,9 @@ class TestMenuLogger(unittest.TestCase):
 
         result = self.logger._interpret_position("Gate Z52H", position_info, "gate")
 
-        self.assertEqual(result["terminal"], "Gate")  # Falls back to type keyword
+        self.assertEqual(result["terminal"], "Terminal 1")  # Falls back to Terminal 1
         self.assertEqual(result["gate"], "Z52H")
-        self.assertEqual(result["position_id"], "Terminal Gate Gate Z52H")
+        self.assertEqual(result["position_id"], "Terminal 1 Gate Z52H")
 
     def test_interpret_position_without_found_in_menu(self):
         """Test interpreting position when found_in_menu is missing"""
@@ -114,10 +119,10 @@ class TestMenuLogger(unittest.TestCase):
 
         result = self.logger._interpret_position("Gate A42B", position_info, "gate")
 
-        # Should fallback to "Unknown" when no menu context is available
-        self.assertEqual(result["terminal"], "Unknown")
+        # Should fallback to "Terminal 1" when no menu context is available
+        self.assertEqual(result["terminal"], "Terminal 1")
         self.assertEqual(result["gate"], "A42B")
-        self.assertEqual(result["position_id"], "Terminal Unknown Gate A42B")
+        self.assertEqual(result["position_id"], "Terminal 1 Gate A42B")
 
     def test_add_to_terminals(self):
         """Test adding position to terminal structure"""
@@ -329,28 +334,28 @@ class TestMenuLogger(unittest.TestCase):
         self.assertEqual(result, "North Wing")
 
     def test_extract_terminal_from_menu_fallback_to_type(self):
-        """Test falling back to type keyword when specific name is weird"""
+        """Test falling back based on menu type when specific name is weird"""
         result = self.logger._extract_terminal_from_menu("Terminal - (weird)")
-        self.assertEqual(result, "Terminal")
+        self.assertEqual(result, "Terminal 1")
 
         result = self.logger._extract_terminal_from_menu("Apron - ")
-        self.assertEqual(result, "Apron")
+        self.assertEqual(result, "Parking")  # Apron menus get "Parking" fallback
 
     def test_extract_terminal_from_menu_simple_keyword(self):
-        """Test extracting terminal from simple menu titles"""
+        """Test falling back based on menu type"""
         result = self.logger._extract_terminal_from_menu("Select Gate")
-        self.assertEqual(result, "Gate")
+        self.assertEqual(result, "Terminal 1")
 
         result = self.logger._extract_terminal_from_menu("Choose Terminal")
-        self.assertEqual(result, "Terminal")
+        self.assertEqual(result, "Terminal 1")
 
         result = self.logger._extract_terminal_from_menu("Parking Options")
-        self.assertEqual(result, "Parking")
+        self.assertEqual(result, "Parking")  # Parking menus get "Parking" fallback
 
     def test_extract_terminal_from_menu_unknown_fallback(self):
-        """Test fallback to Unknown when no recognizable pattern exists"""
+        """Test fallback to Terminal 1 when no recognizable pattern exists"""
         result = self.logger._extract_terminal_from_menu("Some Random Menu Title")
-        self.assertEqual(result, "Unknown")
+        self.assertEqual(result, "Terminal 1")
 
     def test_extract_gate_identifier_removes_gate_keyword(self):
         """Test removing 'Gate' keyword from position ID"""

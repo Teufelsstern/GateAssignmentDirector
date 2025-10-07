@@ -48,6 +48,8 @@ class MenuNavigator:
             if not menu:
                 raise GsxMenuError("Failed to read menu")
             found_index = _search_options(keywords, search_type, menu)
+            if keywords[0] == "activate":
+                found_index -= 2
             if found_index != -1:
                 logger.info(
                     f"Found {keywords} at index {found_index}: {menu.options[found_index]}"

@@ -19,6 +19,7 @@ from GateAssignmentDirector.exceptions import (
 )
 from GateAssignmentDirector.gsx_enums import SearchType, GsxVariable
 from GateAssignmentDirector.menu_logger import GateInfo
+from GateAssignmentDirector.gate_matcher import GateMatcher
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class GateAssignment:
         self.config = config
         self.menu_logger = menu_logger
         self.menu_reader = menu_reader
+        self.gate_matcher = GateMatcher(config)
 
         logging.basicConfig(
             level=config.logging_level,
@@ -52,30 +54,29 @@ class GateAssignment:
         _debug2_2 = os.path.exists(file2)
         logger.debug("Looking for %s at %s. Exists: %s", file1, _debug1_1, _debug1_2)
         logger.debug("Looking for %s at %s. Exists: %s", file2, _debug2_1, _debug2_2)
+        self._refresh_menu()
+        current_menu_state = self.menu_reader.read_menu()
+        icao_pattern = re.compile(r"\b([A-Z]{4})\b")
+        icao_match = icao_pattern.search(current_menu_state.title)
+        if icao_match:
+            menu_icao = icao_match.group(1)
+            if menu_icao != airport:
+                raise GsxMenuError(
+                    f"ICAO mismatch: Expected {airport}, but GSX menu shows {menu_icao}"
+                )
+            logger.info(
+                f"ICAO verified: {menu_icao} matches expected airport {airport}"
+            )
+        else:
+            logger.warning(
+                f"Could not parse ICAO from menu title: '{current_menu_state.title}'"
+            )
+
         if not os.path.exists(file1) and not os.path.exists(file2):
             logger.debug("Airport %s has not been parsed yet. Starting parsing", airport)
             self.menu_logger.start_session(gate_info=GateInfo(airport=airport))
             self._refresh_menu()
             level_0_page = 0
-            current_menu_state = self.menu_reader.read_menu()
-            if not current_menu_state.options:
-                logger.error(f"Menu is empty for {airport}, cannot map parking spots")
-                raise GsxMenuError(f"GSX menu returned no options for {airport}")
-            icao_pattern = re.compile(r"\b([A-Z]{4})\b")
-            icao_match = icao_pattern.search(current_menu_state.title)
-            if icao_match:
-                menu_icao = icao_match.group(1)
-                if menu_icao != airport:
-                    raise GsxMenuError(
-                        f"ICAO mismatch: Expected {airport}, but GSX menu shows {menu_icao}"
-                    )
-                logger.info(
-                    f"ICAO verified: {menu_icao} matches expected airport {airport}"
-                )
-            else:
-                logger.warning(
-                    f"Could not parse ICAO from menu title: '{current_menu_state.title}'"
-                )
             while True:
                 current_menu_state = self.menu_reader.read_menu()
                 all_options = current_menu_state.options
@@ -202,12 +203,12 @@ class GateAssignment:
             time.sleep(0.5)
 
         airport_data = self.map_available_spots(airport)
-        matching_gsx_gate, direct_match = self.find_gate(
+        matching_gsx_gate, needs_api_call = self.find_gate(
             airport_data,
             (terminal or "") + (terminal_number or ""),
             (gate_number or "") + (gate_letter or ""),
         )
-        if direct_match is False:
+        if needs_api_call:
             response = requests.get(
                 "https://apipri.sayintentions.ai/sapi/assignGate",
                 params={
@@ -229,7 +230,7 @@ class GateAssignment:
                 logger.warning("Aircraft not on ground - GSX may fail")
             self._refresh_menu()
             self.menu_navigator.click_planned(matching_gsx_gate)
-            self.menu_navigator.find_and_click(["activate"], SearchType.MENU_ACTION)
+            self.menu_navigator.find_and_click(["activate"], SearchType.KEYWORD)
             self.menu_navigator.find_and_click(
                 [self.config.default_airline or "GSX"], SearchType.AIRLINE
             )
@@ -280,42 +281,22 @@ class GateAssignment:
     def find_gate(
         self, airport_data: Dict[str, Any], terminal: str, gate: str
     ) -> Tuple[Optional[Dict[str, Any]], bool]:
-        for key_terminal, dict_terminal in airport_data["terminals"].items():
-            for key_gate, dict_gate in dict_terminal.items():
-                if key_terminal == terminal and key_gate == gate:
-                    return dict_gate, True
+        """Find gate in airport data using exact or fuzzy matching.
 
-        best_match = None
-        best_score = 0
-
-        for key_terminal, dict_terminal in airport_data["terminals"].items():
-            for key_gate, dict_gate in dict_terminal.items():
-                if key_terminal == "Parking":
-                    _key_terminal = ""
-                else:
-                    _key_terminal = key_terminal
-                score = fuzz.ratio(_key_terminal + key_gate, terminal + gate)
-                logger.debug(
-                    "Looking for Terminal %s Gate %s. Terminal %s and Gate %s reached score of %s",
-                    terminal,
-                    gate,
-                    key_terminal,
-                    key_gate,
-                    score,
-                )
-                if score >= best_score:
-                    best_score = score
-                    best_match = dict_gate
-
-        if best_match:
-            logger.debug(
-                "Chose best match %s with Score %s",
-                best_match["position_id"],
-                best_score,
-            )
+        Returns:
+            Tuple of (gate_data, is_exact_match)
+        """
+        gate_data, is_exact, score, score_components = self.gate_matcher.find_best_match(
+            airport_data, terminal, gate
+        )
+        if gate_data:
+            if score_components["gate_prefix"] > 50.0 and score_components["gate_number"] > 80.0:
+                needs_api_call = False
+            else:
+                needs_api_call = True
         else:
             logger.warning(
                 "No gate match found for Terminal %s Gate %s", terminal, gate
             )
-
-        return best_match, False
+            needs_api_call = True
+        return gate_data, needs_api_call

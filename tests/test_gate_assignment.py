@@ -13,6 +13,13 @@ class TestGateAssignment(unittest.TestCase):
         self.mock_config.logging_format = "%(message)s"
         self.mock_config.logging_datefmt = "%Y-%m-%d"
         self.mock_config.SI_API_KEY = "test_key"
+        self.mock_config.matching_weights = {
+            'gate_number': 0.6,
+            'gate_prefix': 0.3,
+            'terminal': 0.1
+        }
+        self.mock_config.sleep_short = 0.1
+        self.mock_config.sleep_long = 0.1
 
         self.mock_menu_logger = Mock()
         self.mock_menu_reader = Mock()

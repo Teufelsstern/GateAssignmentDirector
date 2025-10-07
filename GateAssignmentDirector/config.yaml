@@ -1,15 +1,23 @@
 SI_API_KEY: Test
-aircraft_request_interval: 2
-ground_check_interval: 1
+aircraft_request_interval: 2.0
+default_airline: Lufthansa
+ground_check_interval: 1.0
 logging_datefmt: '%H:%M:%S'
 logging_format: '%(asctime)s - %(levelname)s - %(message)s'
 logging_level: DEBUG
+matching_minimum_score: 70
+matching_weights:
+  gate_number: 0.6
+  gate_prefix: 0.3
+  terminal: 0.1
 max_menu_check_attempts: 15
 menu_file_paths:
 - C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu
 - C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu
-sleep_long: 0.1
-sleep_short: 0.1
+tooltip_file_paths:
+- C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip
+- C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip
+minimize_to_tray: true
 position_keywords:
   gsx_gate:
   - Gate
@@ -32,3 +40,5 @@ position_keywords:
   - Level
   - Apron
   - Stand
+sleep_long: 0.1
+sleep_short: 0.1

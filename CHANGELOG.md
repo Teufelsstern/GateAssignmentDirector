@@ -10,22 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Position keywords now configurable in config.yaml (gsx_gate, gsx_parking, si_terminal)
 - "Apron" keyword support for GSX parking menus
+- Intelligent fuzzy gate matching with component-based weighted scoring
+- GateMatcher module for matching between SI and GSX gate formats
+- Version numbering in JSON files for future format migration support
+- Configurable matching weights (gate_number: 60%, gate_prefix: 30%, terminal: 10%)
+- Pre-parsed gate components stored in JSON (_parsed field) for fast matching
 
 ### Changed
 - Position interpretation now uses menu title context for terminal extraction
 - Terminal names extracted from menu titles (e.g., "Apron - West I" → terminal="West I")
 - position_id format now reflects actual type ("Terminal X Stand Y" for parking, "Terminal X Gate Y" for gates)
 - Gate identifiers preserve spaces ("Stand V 20" → gate="V 20")
+- Gate matching now uses weighted component scoring instead of simple string comparison
+- find_gate() refactored to delegate to GateMatcher.find_best_match()
 
 ### Fixed
 - Menu mapping index bug: now saves actual menu indices instead of filtered list indices
 - Gate/stand clicking now targets correct menu positions
 - Space preservation in gate identifiers (no more "StandV20" → "StandV")
+- Improved gate matching handles mismatched formats (e.g., "Apron V Spot 19" vs "East III Stand V19")
 
 ### Technical
+- New gate_matcher.py module with GateMatcher class
+- Component parsing: gate_number, gate_prefix, gate_suffix extraction with regex
+- Weighted scoring with configurable weights via config.yaml
+- 13 new tests in test_gate_matcher.py
+- All 60 tests passing (31 menu_logger + 16 gate_assignment + 13 gate_matcher)
 - Removed space-stripping and complex digit-based terminal heuristics
 - Added helper methods: _extract_terminal_from_menu, _extract_gate_identifier
-- All 31 menu_logger tests updated and passing
 
 ## [0.8.9] - 2025-10-05
 

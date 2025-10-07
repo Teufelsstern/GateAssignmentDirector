@@ -21,6 +21,10 @@ class GADConfig:
         r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
         r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
     ])
+    tooltip_file_paths: list[str] = field(default_factory=lambda: [
+        r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
+        r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
+    ])
     sleep_short: float = 0.1
     sleep_long: float = 0.3
     ground_check_interval: float = 1.0
@@ -37,6 +41,12 @@ class GADConfig:
         'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
         'si_terminal': ['Terminal', 'International', 'Parking', 'Domestic', 'Main', 'Central', 'Pier', 'Concourse', 'Level', 'Apron', 'Stand']
     })
+    matching_weights: dict[str, float] = field(default_factory=lambda: {
+        'gate_number': 0.6,
+        'gate_prefix': 0.3,
+        'terminal': 0.1
+    })
+    matching_minimum_score: float = 70.0
 
     logging.basicConfig(
         level=logging_level,
@@ -59,6 +69,10 @@ class GADConfig:
                 r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
                 r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
             ],
+            'tooltip_file_paths': [
+                r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
+                r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
+            ],
             'sleep_short': 0.1,
             'sleep_long': 0.3,
             'ground_check_interval': 1.0,
@@ -74,7 +88,13 @@ class GADConfig:
                 'gsx_gate': ['Gate', 'Dock'],
                 'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
                 'si_terminal': ['Terminal', 'International', 'Parking', 'Domestic', 'Main', 'Central', 'Pier', 'Concourse', 'Level', 'Apron', 'Stand']
-            }
+            },
+            'matching_weights': {
+                'gate_number': 0.6,
+                'gate_prefix': 0.3,
+                'terminal': 0.1
+            },
+            'matching_minimum_score': 70.0
         }
 
     @classmethod
@@ -137,6 +157,8 @@ class GADConfig:
             'default_airline': self.default_airline,
             'minimize_to_tray': self.minimize_to_tray,
             'position_keywords': self.position_keywords,
+            'matching_weights': self.matching_weights,
+            'matching_minimum_score': self.matching_minimum_score,
         }
 
         with open(yaml_path, 'w', encoding='utf-8') as f:
