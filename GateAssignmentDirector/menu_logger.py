@@ -23,9 +23,6 @@ MENU_NAVIGATION_OPTIONS = [
     GsxMenuKeywords.CANCEL.value,
 ]
 
-GATE_KEYWORDS = ["Gate", "Dock"]
-PARKING_KEYWORDS = ["Parking", "Stand", "Remote", "Ramp"]
-
 GATE_PATTERNS = [
     re.compile(r"Gate\s+([A-Z]?\s*\d+\s*[A-Z]?\b)", re.IGNORECASE),
     re.compile(r"Dock\s+([A-Z]?\s*\d+\s*[A-Z]?\b)", re.IGNORECASE),
@@ -162,14 +159,14 @@ class MenuLogger:
         spot_type = "gates"
         patterns = None
 
-        for keyword in GATE_KEYWORDS:
+        for keyword in self.config.position_keywords['gsx_gate']:
             if keyword in menu_title:
                 patterns = GATE_PATTERNS
                 spot_type = "gates"
                 break
 
         if not patterns:
-            for keyword in PARKING_KEYWORDS:
+            for keyword in self.config.position_keywords['gsx_parking']:
                 if keyword in menu_title:
                     patterns = PARKING_PATTERNS
                     spot_type = "spots"
@@ -230,58 +227,78 @@ class MenuLogger:
         logger.info(f"Saved interpreted data to {filepath}")
         return True
 
+    def _extract_terminal_from_menu(self, menu_title: str) -> str:
+        """
+        Extract terminal/area name from menu title.
+        Examples:
+        - "Terminal - A-Pier (A1-A16)" → "A-Pier" (preferred)
+        - "Terminal - A-Pier (weird)" → "Terminal" (fallback to type)
+        - "Apron - West I (V61-V76)" → "West I" (preferred)
+        - "Select Gate" (no pattern) → "Gate" (fallback)
+        """
+        # Pattern: <Type> - <Specific Name> (<Range>)
+        match = re.search(r'(Terminal|Apron|Gate|Parking)\s*-\s*([^(]+)', menu_title, re.IGNORECASE)
+        if match:
+            type_name = match.group(1).strip()
+            specific_name = match.group(2).strip()
+
+            # If specific name exists and looks reasonable (not empty, not too weird)
+            if specific_name and len(specific_name) > 0 and len(specific_name) < 50:
+                return specific_name
+
+            # Fallback to type if specific name is weird/empty
+            return type_name
+
+        # No pattern found, try to extract just the type keyword
+        for keyword in ['Terminal', 'Apron', 'Gate', 'Parking']:
+            if keyword in menu_title:
+                return keyword
+
+        return "Unknown"
+
+    def _extract_gate_identifier(self, position_id: str) -> str:
+        """
+        Extract gate/stand identifier, removing known keywords.
+        Examples:
+        - "Stand V20" → "V20"
+        - "Gate 11B" → "11B"
+        - "A16" → "A16"
+        """
+        # Remove known keywords from config
+        clean_id = position_id
+        for keyword in self.config.position_keywords.get('gsx_gate', []) + \
+                       self.config.position_keywords.get('gsx_parking', []):
+            clean_id = re.sub(rf'\b{keyword}\b\s*', '', clean_id, flags=re.IGNORECASE)
+
+        return clean_id.strip()
+
     def _interpret_position(
         self, position_id: str, position_info: Dict, position_type: str
     ) -> Dict:
         """
-        Asobo and GSX may put all Terminal Gates into parking. We assume that the first number of each parking
-        spot is actually the Terminal and the digits after that are the gate. We clean up the full_text to provide size.
-        The Terminals will be both "A" and "1" respectively in their parsing.
+        Parse position using menu structure.
 
         Available data:
-        - position_id: "11B", "Parking 1" etc.
-        - position_info["full_text"]: "Gate 11B - Small - 1x /J (too small)"
-        - position_info["level_0_index"]: Which button to click
-        - position_info["next_clicks"]: How many Next clicks
+        - position_id: "Stand V20", "Gate 11B", etc. (WITH spaces)
+        - position_info["full_text"]: "Stand V20 - Ramp GA Medium"
+        - position_info["found_in_menu"]: "Apron - East I (V11-V29)"
         - position_type: "gate" or "parking"
         """
-        position_id_s = position_id.replace(" ", "")
-        assumed_terminal = "30"
-        pattern_test = re.compile(
-            r"""
-                (Gate|Parking)?
-                ([A-Z]+)?
-                (\d+)?
-                ([A-Z]\b)?
-            """,
-            re.IGNORECASE | re.VERBOSE,
-        )
-        gate_letters = ["A", "B", "L", "R", "C"]
-        match = pattern_test.search(position_id_s)
-        spot_type = match.group(1) or ""
-        number_prefix = match.group(2) or ""
-        number = match.group(3) or "-1"
-        number_suffix = match.group(4) or ""
+        menu_title = position_info.get("found_in_menu", "")
 
-        assumed_gate = number + number_suffix
-        assumed_terminal = number[0] # First number of the gate is the default terminal
-        if number_prefix != "" and number_prefix not in gate_letters: # Gate Z52H (special), Gate A42B (ignore)
-            assumed_terminal = number_prefix
-        elif number_prefix != "" and number_prefix in gate_letters: #ignore the prefix if suffix present, probably GSX-misc
-            if len(number) == 1: # too short to also be a terminal
-                assumed_terminal = "Terminal"
-            elif number_suffix == "": # move prefix to the back
-                assumed_gate = number + number_prefix
-        elif assumed_terminal == number[0]: # one or three digits aren't normal gates, see if overwritten with special terminal
-            if len(number) == 3:
-                assumed_terminal = "Parking"
-            elif len(number) == 1:
-                assumed_terminal = "1"
+        # Extract terminal from menu title, fallback to type
+        terminal = self._extract_terminal_from_menu(menu_title)
+
+        # Extract gate identifier
+        gate = self._extract_gate_identifier(position_id)
+
+        # Use appropriate label based on position type
+        position_label = "Stand" if position_type == "parking" else "Gate"
 
         return {
-            "terminal": assumed_terminal,
-            "gate": assumed_gate,
-            "position_id": f"Terminal {assumed_terminal} Gate {assumed_gate}",
+            "terminal": terminal,
+            "gate": gate,
+            "position_id": f"Terminal {terminal} {position_label} {gate}",
             "type": position_type,
             "raw_info": position_info,
         }

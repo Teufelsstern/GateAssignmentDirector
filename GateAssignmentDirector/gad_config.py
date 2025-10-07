@@ -32,6 +32,11 @@ class GADConfig:
     SI_API_KEY: str = 'YOUR_API_KEY_HERE'
     default_airline: str = 'GSX'
     minimize_to_tray: bool = True
+    position_keywords: dict[str, list[str]] = field(default_factory=lambda: {
+        'gsx_gate': ['Gate', 'Dock'],
+        'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
+        'si_terminal': ['Terminal', 'International', 'Parking', 'Domestic', 'Main', 'Central', 'Pier', 'Concourse', 'Level', 'Apron', 'Stand']
+    })
 
     logging.basicConfig(
         level=logging_level,
@@ -65,6 +70,11 @@ class GADConfig:
             'SI_API_KEY': 'YOUR_API_KEY_HERE',
             'default_airline': 'GSX',
             'minimize_to_tray': True,
+            'position_keywords': {
+                'gsx_gate': ['Gate', 'Dock'],
+                'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
+                'si_terminal': ['Terminal', 'International', 'Parking', 'Domestic', 'Main', 'Central', 'Pier', 'Concourse', 'Level', 'Apron', 'Stand']
+            }
         }
 
     @classmethod
@@ -126,6 +136,7 @@ class GADConfig:
             'SI_API_KEY': self.SI_API_KEY,
             'default_airline': self.default_airline,
             'minimize_to_tray': self.minimize_to_tray,
+            'position_keywords': self.position_keywords,
         }
 
         with open(yaml_path, 'w', encoding='utf-8') as f:

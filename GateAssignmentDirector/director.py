@@ -36,7 +36,8 @@ class GateAssignmentDirector:
             json_file_path,
             enable_gsx_integration=False,
             gate_callback=self._queue_gate_assignment,
-            flight_data_callback=self._update_flight_data
+            flight_data_callback=self._update_flight_data,
+            gad_config_instance=self.config
         )
 
         self.running = True

@@ -12,6 +12,11 @@ class TestMenuLogger(unittest.TestCase):
         self.mock_config.logging_level = "INFO"
         self.mock_config.logging_format = "%(message)s"
         self.mock_config.logging_datefmt = "%Y-%m-%d"
+        self.mock_config.position_keywords = {
+            'gsx_gate': ['Gate', 'Dock'],
+            'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
+            'si_terminal': ['Terminal', 'International', 'Parking', 'Domestic', 'Main', 'Central', 'Pier', 'Concourse', 'Level', 'Apron', 'Stand']
+        }
 
         with patch('pathlib.Path.mkdir'):
             self.logger = MenuLogger(self.mock_config, logs_dir="test_logs")
@@ -27,81 +32,92 @@ class TestMenuLogger(unittest.TestCase):
         self.assertIsNotNone(self.logger.menu_map["last_updated"])
 
     def test_interpret_position_simple_gate(self):
-        """Test interpreting simple gate like '5A'"""
+        """Test interpreting simple gate like 'Gate 5A' with terminal context from menu"""
         position_info = {
             "full_text": "Gate 5A - Small",
             "menu_index": 2,
+            "found_in_menu": "Terminal - A-Pier (A1-A16)",
             "level_0_page": 1,
             "level_0_option_index": 0,
             "level_1_next_clicks": 0
         }
 
-        result = self.logger._interpret_position("5A", position_info, "gate")
+        result = self.logger._interpret_position("Gate 5A", position_info, "gate")
 
-        self.assertEqual(result["terminal"], "1")  # Single digit defaults to "1"
+        self.assertEqual(result["terminal"], "A-Pier")
         self.assertEqual(result["gate"], "5A")
         self.assertEqual(result["type"], "gate")
+        self.assertEqual(result["position_id"], "Terminal A-Pier Gate 5A")
 
     def test_interpret_position_two_digit_gate(self):
-        """Test interpreting two-digit gate like '25B'"""
+        """Test interpreting two-digit gate with terminal context"""
         position_info = {
             "full_text": "Gate 25B",
-            "menu_index": 3
+            "menu_index": 3,
+            "found_in_menu": "Terminal - B Concourse (B20-B30)"
         }
 
-        result = self.logger._interpret_position("25B", position_info, "gate")
+        result = self.logger._interpret_position("Gate 25B", position_info, "gate")
 
-        self.assertEqual(result["terminal"], "2")  # First digit is terminal
+        self.assertEqual(result["terminal"], "B Concourse")
         self.assertEqual(result["gate"], "25B")
+        self.assertEqual(result["position_id"], "Terminal B Concourse Gate 25B")
 
     def test_interpret_position_three_digit_parking(self):
-        """Test interpreting three-digit parking spot"""
+        """Test interpreting parking spot with menu context"""
         position_info = {
             "full_text": "Parking 101",
-            "menu_index": 1
+            "menu_index": 1,
+            "found_in_menu": "Parking - Long Term (100-200)"
         }
 
         result = self.logger._interpret_position("Parking 101", position_info, "parking")
 
-        self.assertEqual(result["terminal"], "Parking")  # 3 digits = Parking
+        self.assertEqual(result["terminal"], "Long Term")
         self.assertEqual(result["gate"], "101")
+        self.assertEqual(result["position_id"], "Terminal Long Term Stand 101")
 
-    def test_interpret_position_letter_prefix_gate(self):
-        """Test interpreting gate with letter prefix like 'A25'"""
+    def test_interpret_position_stand_with_space(self):
+        """Test interpreting stand with space in identifier"""
         position_info = {
-            "full_text": "Gate A25",
-            "menu_index": 2
+            "full_text": "Stand V 20 - Ramp GA",
+            "menu_index": 2,
+            "found_in_menu": "Apron - West I (V61-V76)"
         }
 
-        result = self.logger._interpret_position("A25", position_info, "gate")
+        result = self.logger._interpret_position("Stand V 20", position_info, "gate")
 
-        self.assertEqual(result["terminal"], "2")
-        self.assertEqual(result["gate"], "25A")  # Letter moved to suffix
+        self.assertEqual(result["terminal"], "West I")
+        self.assertEqual(result["gate"], "V 20")
+        self.assertEqual(result["position_id"], "Terminal West I Gate V 20")
 
-    def test_interpret_position_special_terminal_prefix(self):
-        """Test interpreting gate with special terminal prefix like 'Z52H'"""
+    def test_interpret_position_gate_with_menu_fallback(self):
+        """Test interpreting gate where menu title has only type keyword"""
         position_info = {
             "full_text": "Gate Z52H",
-            "menu_index": 1
+            "menu_index": 1,
+            "found_in_menu": "Select Gate"
         }
 
-        result = self.logger._interpret_position("Z52H", position_info, "gate")
+        result = self.logger._interpret_position("Gate Z52H", position_info, "gate")
 
-        self.assertEqual(result["terminal"], "Z")  # Special terminal
-        self.assertEqual(result["gate"], "52H")
+        self.assertEqual(result["terminal"], "Gate")  # Falls back to type keyword
+        self.assertEqual(result["gate"], "Z52H")
+        self.assertEqual(result["position_id"], "Terminal Gate Gate Z52H")
 
-    def test_interpret_position_with_gate_letter_prefix(self):
-        """Test interpreting gate like 'A42B' where A is gate letter"""
+    def test_interpret_position_without_found_in_menu(self):
+        """Test interpreting position when found_in_menu is missing"""
         position_info = {
             "full_text": "Gate A42B",
             "menu_index": 3
         }
 
-        result = self.logger._interpret_position("A42B", position_info, "gate")
+        result = self.logger._interpret_position("Gate A42B", position_info, "gate")
 
-        # A is a gate letter, so it should be handled specially
-        self.assertEqual(result["gate"], "42B")
-        self.assertEqual(result["terminal"], "4")
+        # Should fallback to "Unknown" when no menu context is available
+        self.assertEqual(result["terminal"], "Unknown")
+        self.assertEqual(result["gate"], "A42B")
+        self.assertEqual(result["position_id"], "Terminal Unknown Gate A42B")
 
     def test_add_to_terminals(self):
         """Test adding position to terminal structure"""
@@ -300,6 +316,91 @@ class TestMenuLogger(unittest.TestCase):
         self.assertEqual(result["terminal"], "1")
         self.assertEqual(result["gate_number"], "5")
         self.assertEqual(result["gate_letter"], "A")
+
+    def test_extract_terminal_from_menu_with_specific_name(self):
+        """Test extracting specific terminal name from menu title"""
+        result = self.logger._extract_terminal_from_menu("Terminal - A-Pier (A1-A16)")
+        self.assertEqual(result, "A-Pier")
+
+        result = self.logger._extract_terminal_from_menu("Apron - West I (V61-V76)")
+        self.assertEqual(result, "West I")
+
+        result = self.logger._extract_terminal_from_menu("Gate - North Wing (N1-N20)")
+        self.assertEqual(result, "North Wing")
+
+    def test_extract_terminal_from_menu_fallback_to_type(self):
+        """Test falling back to type keyword when specific name is weird"""
+        result = self.logger._extract_terminal_from_menu("Terminal - (weird)")
+        self.assertEqual(result, "Terminal")
+
+        result = self.logger._extract_terminal_from_menu("Apron - ")
+        self.assertEqual(result, "Apron")
+
+    def test_extract_terminal_from_menu_simple_keyword(self):
+        """Test extracting terminal from simple menu titles"""
+        result = self.logger._extract_terminal_from_menu("Select Gate")
+        self.assertEqual(result, "Gate")
+
+        result = self.logger._extract_terminal_from_menu("Choose Terminal")
+        self.assertEqual(result, "Terminal")
+
+        result = self.logger._extract_terminal_from_menu("Parking Options")
+        self.assertEqual(result, "Parking")
+
+    def test_extract_terminal_from_menu_unknown_fallback(self):
+        """Test fallback to Unknown when no recognizable pattern exists"""
+        result = self.logger._extract_terminal_from_menu("Some Random Menu Title")
+        self.assertEqual(result, "Unknown")
+
+    def test_extract_gate_identifier_removes_gate_keyword(self):
+        """Test removing 'Gate' keyword from position ID"""
+        result = self.logger._extract_gate_identifier("Gate 11B")
+        self.assertEqual(result, "11B")
+
+        result = self.logger._extract_gate_identifier("Gate A25")
+        self.assertEqual(result, "A25")
+
+    def test_extract_gate_identifier_removes_stand_keyword(self):
+        """Test removing 'Stand' keyword from position ID"""
+        result = self.logger._extract_gate_identifier("Stand V20")
+        self.assertEqual(result, "V20")
+
+        result = self.logger._extract_gate_identifier("Stand V 20")
+        self.assertEqual(result, "V 20")
+
+    def test_extract_gate_identifier_removes_parking_keyword(self):
+        """Test removing 'Parking' keyword from position ID"""
+        result = self.logger._extract_gate_identifier("Parking 101")
+        self.assertEqual(result, "101")
+
+    def test_extract_gate_identifier_removes_dock_keyword(self):
+        """Test removing 'Dock' keyword from position ID"""
+        result = self.logger._extract_gate_identifier("Dock 5A")
+        self.assertEqual(result, "5A")
+
+    def test_extract_gate_identifier_preserves_spaces(self):
+        """Test that spaces within identifiers are preserved"""
+        result = self.logger._extract_gate_identifier("Stand V 20")
+        self.assertEqual(result, "V 20")
+
+        result = self.logger._extract_gate_identifier("Gate 2 B")
+        self.assertEqual(result, "2 B")
+
+    def test_extract_gate_identifier_no_keyword(self):
+        """Test extracting identifier when no keyword is present"""
+        result = self.logger._extract_gate_identifier("A16")
+        self.assertEqual(result, "A16")
+
+        result = self.logger._extract_gate_identifier("V20")
+        self.assertEqual(result, "V20")
+
+    def test_extract_gate_identifier_case_insensitive(self):
+        """Test that keyword removal is case insensitive"""
+        result = self.logger._extract_gate_identifier("GATE 11B")
+        self.assertEqual(result, "11B")
+
+        result = self.logger._extract_gate_identifier("stand V20")
+        self.assertEqual(result, "V20")
 
 
 if __name__ == "__main__":

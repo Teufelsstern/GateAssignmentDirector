@@ -1,5 +1,6 @@
 import unittest
-from GateAssignmentDirector.si_api_hook import GateParser, GateInfo, GATE_PATTERN
+from unittest.mock import Mock
+from GateAssignmentDirector.si_api_hook import GateParser, GateInfo
 
 
 class TestGateParserExtended(unittest.TestCase):
@@ -7,7 +8,13 @@ class TestGateParserExtended(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures"""
-        self.parser = GateParser()
+        self.mock_config = Mock()
+        self.mock_config.position_keywords = {
+            'gsx_gate': ['Gate', 'Dock'],
+            'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
+            'si_terminal': ['Terminal', 'International', 'Parking', 'Domestic', 'Main', 'Central', 'Pier', 'Concourse', 'Level', 'Apron', 'Stand']
+        }
+        self.parser = GateParser(self.mock_config)
 
     def test_parse_terminal_with_number_and_gate(self):
         """Test parsing 'Terminal 7 7' format"""
@@ -182,9 +189,9 @@ class TestGateParserExtended(unittest.TestCase):
         self.assertIn("Unknown Gate Format", result)
 
     def test_parser_pattern_is_compiled(self):
-        """Test that module has compiled regex pattern"""
-        self.assertIsNotNone(GATE_PATTERN)
-        self.assertTrue(hasattr(GATE_PATTERN, 'search'))
+        """Test that parser has compiled regex pattern"""
+        self.assertIsNotNone(self.parser.gate_pattern)
+        self.assertTrue(hasattr(self.parser.gate_pattern, 'search'))
 
 
 if __name__ == "__main__":

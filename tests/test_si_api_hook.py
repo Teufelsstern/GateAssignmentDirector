@@ -5,7 +5,13 @@ from GateAssignmentDirector.si_api_hook import GateParser, GateInfo, JSONMonitor
 
 class TestGateParser(unittest.TestCase):
     def setUp(self):
-        self.parser = GateParser()
+        self.mock_config = Mock()
+        self.mock_config.position_keywords = {
+            'gsx_gate': ['Gate', 'Dock'],
+            'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
+            'si_terminal': ['Terminal', 'International', 'Parking', 'Domestic', 'Main', 'Central', 'Pier', 'Concourse', 'Level', 'Apron', 'Stand']
+        }
+        self.parser = GateParser(self.mock_config)
 
     def test_parse_terminal_with_number(self):
         """Test parsing 'Terminal 7 7'"""

@@ -19,21 +19,6 @@ from GateAssignmentDirector.gsx_hook import GsxHook
 
 logger = logging.getLogger(__name__)
 
-# Compile regex pattern at module level for performance
-GATE_PATTERN = re.compile(
-    r"""
-        (?:terminal\s+)?
-        (?:(terminal|international|parking|domestic|main|central|pier|concourse|level|apron)\s+)?
-        (?:terminal\s+)?
-        (?:([A-Z)]|\d+)\s+)?
-        (?:(overflow|gate)\s+)?
-        (?:(gate)\s+)?
-        (?:(\d+)(?:\s*|$))?
-        (?:([A-Z])\b)?
-        """,
-    re.IGNORECASE | re.VERBOSE,
-)
-
 
 @dataclass
 class GateInfo:
@@ -62,6 +47,28 @@ class GateInfo:
 class GateParser:
     """Intelligent gate information parser"""
 
+    def __init__(self, config: gad_config.GADConfig):
+        """Initialize parser with config to build dynamic regex pattern"""
+        self.config = config
+
+        # Build terminal keywords pattern from config
+        terminal_keywords = '|'.join(self.config.position_keywords['si_terminal']).lower()
+
+        # Build regex pattern with dynamic terminal keywords
+        self.gate_pattern = re.compile(
+            rf"""
+                (?:terminal\s+)?
+                (?:({terminal_keywords})\s+)?
+                (?:terminal\s+)?
+                (?:([A-Z)]|\d+)\s+)?
+                (?:(overflow|gate)\s+)?
+                (?:(gate)\s+)?
+                (?:(\d+)(?:\s*|$))?
+                (?:([A-Z])\b)?
+                """,
+            re.IGNORECASE | re.VERBOSE,
+        )
+
     def parse_gate(self, gate_string: str) -> GateInfo:
         """
         Parse gate string into components using intelligent pattern matching
@@ -78,7 +85,7 @@ class GateParser:
             terminal_number="",
         )
 
-        match = GATE_PATTERN.search(gate_string)
+        match = self.gate_pattern.search(gate_string)
         if match:
             t_name = match.group(GateGroups.T_NAME)
             gate_info.terminal_name = t_name.capitalize() if t_name else "Terminal"
@@ -104,13 +111,15 @@ class JSONMonitor:
         enable_gsx_integration: bool = False,
         gate_callback: Optional[Callable] = None,
         flight_data_callback: Optional[Callable] = None,
+        gad_config_instance: Optional[gad_config.GADConfig] = None,
     ) -> None:
         self.file_path = Path(file_path)
         self.config_path = Path(config_path)
         self.poll_interval = poll_interval
         self.previous_data: Optional[Dict[str, Any]] = None
         self.default_log_level = default_log_level
-        self.gate_parser = GateParser()
+        self.gad_config = gad_config_instance or gad_config.config
+        self.gate_parser = GateParser(self.gad_config)
         self.current_gate_info: Optional[GateInfo] = None
         self.enable_gsx_integration = enable_gsx_integration
         self.gsx_hook = None

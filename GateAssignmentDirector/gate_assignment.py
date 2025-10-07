@@ -78,36 +78,38 @@ class GateAssignment:
                 )
             while True:
                 current_menu_state = self.menu_reader.read_menu()
+                all_options = current_menu_state.options
                 level_0_options = [
-                    opt for opt in current_menu_state.options if ("Next" not in opt and "Runway" not in opt)
+                    opt for opt in all_options if ("Next" not in opt and "Runway" not in opt)
                 ]
                 logger.debug(
                     f"Found {len(level_0_options)} options on page {level_0_page}"
                 )
                 time.sleep(self.config.sleep_short)
-                for level_0_option_index, option in enumerate(level_0_options):
+                for option in level_0_options:
+                    # Find actual index in the full menu
+                    actual_index = all_options.index(option)
                     level_1_next_clicks = 0
-                    current_menu_state = self.menu_reader.read_menu()
                     if "Previous" in option[1:].split():
                         continue
                     navigation_info = {
                         "level_0_page": level_0_page,
-                        "level_0_option_index": level_0_option_index,
+                        "level_0_option_index": actual_index,
                         "level_1_next_clicks": level_1_next_clicks,
                     }
                     self.menu_logger.log_menu_state(
                         title=current_menu_state.title,
-                        options=current_menu_state.options,
+                        options=all_options,
                         menu_depth=0,
                         navigation_info=navigation_info,
                     )
-                    self.menu_navigator.click_by_index(level_0_option_index)
+                    self.menu_navigator.click_by_index(actual_index)
                     logger.debug("Clicked on level_0 option %s", option)
                     while True:
                         current_menu_state = self.menu_reader.read_menu()
                         navigation_info = {
                             "level_0_page": level_0_page,
-                            "level_0_option_index": level_0_option_index,
+                            "level_0_option_index": actual_index,
                             "level_1_next_clicks": level_1_next_clicks,
                         }
                         self.menu_logger.log_menu_state(
@@ -120,7 +122,7 @@ class GateAssignment:
                             logger.debug("\tFor option \"%s\" logged option %s", option, opt)
                         if any("Next" in opt for opt in current_menu_state.options):
                             logger.debug(
-                                f"Clicking Next at level 1 (click #{level_1_next_clicks + 1}) for page {level_0_page}, option {level_0_option_index}"
+                                f"Clicking Next at level 1 (click #{level_1_next_clicks + 1}) for page {level_0_page}, option {actual_index}"
                             )
                             success, info = self.menu_navigator.click_next()
                             if not success:
@@ -128,7 +130,7 @@ class GateAssignment:
                             level_1_next_clicks += 1
                         else:
                             logger.debug(
-                                f"No more Next button at level 1 for page {level_0_page}, option {level_0_option_index}. Total clicks: {level_1_next_clicks}"
+                                f"No more Next button at level 1 for page {level_0_page}, option {actual_index}. Total clicks: {level_1_next_clicks}"
                             )
                             self._navigate_to_level_0_page(level_0_page)
                             break
