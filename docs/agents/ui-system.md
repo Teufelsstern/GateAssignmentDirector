@@ -212,6 +212,7 @@ class DirectorUI:
 
         # System tray
         self.tray_icon = None  # pystray.Icon
+        self.always_on_top_checkbox = None  # Always-on-top toggle
 ```
 
 **Window Constraints:**
@@ -310,15 +311,20 @@ Gate Management Window (separate toplevel)
 │   └── Scrollable
 │
 ├── Control Section
+│   ├── Radio Toggle: Gate / Terminal Mode
 │   ├── Reload Data Button (gray)
 │   ├── Save Changes Button (gray)
 │   └── Edit Gates Button (gray)
+│
+├── Bulk Operations Section (horizontal compact layout)
+│   ├── Prefix Input | Suffix Input
+│   └── Apply Bulk Changes Button
 │
 ├── Move Gate Section (horizontal compact layout)
 │   ├── Gate Input | From Input | To Input
 │   └── Move Gate Button
 │
-└── Rename Gate Section
+└── Rename Section (mode-dependent)
     ├── Gate Input | Terminal Input
     ├── New Full Text Input (wide)
     └── Rename Button

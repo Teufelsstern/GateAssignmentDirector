@@ -20,7 +20,7 @@ This document covers test suite organization, mock patterns, common fixtures, as
 ## Test Suite Organization
 
 **Test Location:** `tests/` (project root)
-**Test Count:** 250 unit tests (as of v0.8.8)
+**Test Count:** 324 unit tests (as of v0.9.2)
 **Framework:** Python `unittest` with `unittest.mock`
 
 ### Test File Naming
@@ -435,9 +435,10 @@ coverage html  # Generates htmlcov/index.html
 | Test File | Module Under Test | Test Count | Key Coverage |
 |-----------|-------------------|------------|--------------|
 | `test_config.py` | `gad_config.py` | 35+ | YAML loading, saving, defaults, computed fields, round-trip, float preservation |
-| `test_director.py` | `director.py` | ~10 | Queue processing, threading, gate callbacks |
+| `test_director.py` | `director.py` | 33 | Queue processing, threading, gate callbacks |
 | `test_gate_assignment.py` | `gate_assignment.py` | 11 | Fuzzy matching, assignment workflow, ground waiting, API calls |
-| `test_gate_management_parsing.py` | `ui/gate_management.py` | 6 | Size parsing, jetway parsing, rename/move operations |
+| `test_gate_management_window.py` | `ui/gate_management_window.py` | 28 | Size parsing, jetway parsing, rename/move operations |
+| `test_gate_matcher.py` | `gate_matcher.py` | 13 | Fuzzy gate matching, partial matches, scoring logic |
 | `test_gate_parser.py` | `si_api_hook.py` (GateParser) | 20 | Regex parsing, various gate formats, edge cases |
 | `test_gsx_hook.py` | `gsx_hook.py` | 19 | Initialization, dependency order, retry logic, cleanup |
 | `test_menu_logger.py` | `menu_logger.py` | ~15 | Gate extraction, mapping, airport data generation |
@@ -445,8 +446,9 @@ coverage html  # Generates htmlcov/index.html
 | `test_menu_reader.py` | `menu_reader.py` | ~12 | File reading, change detection, menu state parsing |
 | `test_si_api_hook.py` | `si_api_hook.py` (JSONMonitor) | ~20 | File monitoring, change detection, gate callbacks |
 | `test_simconnect_manager.py` | `simconnect_manager.py` | 12 | Connection, variable reading/writing, ground detection, disconnection edge cases |
+| `test_tooltip_reader.py` | `tooltip_reader.py` | 211 | Tooltip text extraction, position detection, retry logic, caching |
 
-**Total:** 250 tests
+**Total:** 324 tests
 
 ---
 

@@ -189,9 +189,12 @@ Gate data is stored in two formats in `gsx_menu_logs/` directory.
 
 **Purpose:** Structured, searchable gate database
 
+**Versioning (v0.9.2+):** Schema version for migration support
+
 **Structure:**
 ```json
 {
+  "version": 1,
   "airport": "KLAX",
   "last_updated": "2025-09-27T23:50:22.669505",
   "terminals": {
@@ -413,71 +416,117 @@ def parse_gate(self, gate_string: str) -> GateInfo:
 
 ---
 
-## Fuzzy Matching Algorithm
+## GateMatcher Component Scoring
 
-**File:** `GateAssignmentDirector/gate_assignment.py`
-**Method:** `find_gate()`
+**File:** `GateAssignmentDirector/gate_matcher.py`
+**Class:** `GateMatcher`
+**Added in:** v0.9.1
 
 ### Purpose
 
-Match SayIntentions gate strings to GSX menu options when exact match fails.
+Match SayIntentions gate strings to GSX menu options using component-based weighted scoring that evaluates terminal, gate number, gate prefix, and position keywords.
 
-### Algorithm
+### Architecture
+
+**Separation of Concerns:**
+- `GateMatcher`: Scoring and matching logic
+- `GateAssignment.find_gate()`: Delegates to GateMatcher
+
+### Component Scoring
+
+**Three scoring components combined:**
+
+1. **Terminal Match** (0-100 points)
+   - Exact: 100 points
+   - Fuzzy: rapidfuzz ratio
+
+2. **Gate Match** (0-100 points)
+   - Exact: 100 points
+   - Letter prefix transposition (A5 ↔ 5A): 95 points
+   - Fuzzy: rapidfuzz ratio
+
+3. **Position Keywords** (0-50 points)
+   - +10 per matching keyword (configurable)
+   - Capped at 50 points
+
+**Total Score:** Sum of all three components (max 250)
+
+### Scoring Algorithm
 
 ```python
-def find_gate(self, airport_data: Dict[str, Any], terminal: str, gate: str) -> Tuple[Optional[Dict[str, Any]], bool]:
-    # Step 1: Try exact match
-    for key_terminal, dict_terminal in airport_data["terminals"].items():
-        for key_gate, dict_gate in dict_terminal.items():
-            if key_terminal == terminal and key_gate == gate:
-                return dict_gate, True  # Direct match
+def find_best_gate_match(
+    self,
+    airport_data: Dict[str, Any],
+    si_terminal: str,
+    si_gate: str,
+    si_position_id: str
+) -> Tuple[Optional[Dict[str, Any]], int, bool]:
 
-    # Step 2: Fuzzy matching
     best_match = None
-    best_score = 0  # Changed from 10 to 0 in v0.8.6
+    best_score = -1
+    is_exact = False
 
     for key_terminal, dict_terminal in airport_data["terminals"].items():
         for key_gate, dict_gate in dict_terminal.items():
-            # Concatenate terminal + gate for comparison
-            search_string = key_terminal + key_gate
-            target_string = terminal + gate
+            # Component scores
+            terminal_score = self._score_terminal_match(si_terminal, key_terminal)
+            gate_score = self._score_gate_match(si_gate, key_gate)
+            keyword_score = self._score_position_keywords(si_position_id, dict_gate)
 
-            # Use rapidfuzz for similarity score
-            score = fuzz.ratio(search_string, target_string)
+            total_score = terminal_score + gate_score + keyword_score
 
-            if score >= best_score:  # >= instead of > for edge cases
-                best_score = score
+            # Exact match detection
+            if terminal_score == 100 and gate_score == 100:
+                return dict_gate, total_score, True
+
+            if total_score > best_score:
+                best_score = total_score
                 best_match = dict_gate
 
-    if best_match:
-        logger.debug(f"Chose best match {best_match['position_id']} with Score {best_score}")
-    else:
-        logger.warning(f"No gate match found for Terminal {terminal} Gate {gate}")
-
-    return best_match, False  # Fuzzy match (not direct)
+    return best_match, best_score, is_exact
 ```
 
-### Scoring
+### Configuration
 
-**Library:** rapidfuzz (`from rapidfuzz import fuzz`)
-**Method:** `fuzz.ratio()` (Levenshtein distance ratio)
+**Position keywords** (from config.yaml):
+```python
+position_keywords: List[str] = [
+    "parking", "remote", "cargo", "maintenance",
+    "apron", "ramp", "stand"
+]
+```
 
-**Score Range:** 0-100
-- 100 = identical strings
-- 0 = completely different
+**Matching weights** (configurable):
+```python
+matching_weights: Dict[str, float] = {
+    "gate_number": 0.6,
+    "gate_prefix": 0.3,
+    "terminal": 0.1
+}
+```
 
-**Threshold:** 0 (return best match even if score is 0)
-- Changed from 10 in v0.8.6
-- Ensures at least one gate is always returned (if any exist)
+**Minimum threshold:**
+```python
+matching_minimum_score: float = 70.0
+```
+
+### Scoring Examples
+
+| Scenario | Terminal | Gate | Keywords | Total | Match Type |
+|----------|----------|------|----------|-------|------------|
+| Perfect match | 100 | 100 | 20 | 220 | Exact |
+| Letter prefix gate | 100 | 95 | 0 | 195 | Fuzzy |
+| Keyword boost | 70 | 75 | 30 | 175 | Fuzzy |
+| Weak match | 40 | 50 | 0 | 90 | Fuzzy |
 
 ### Edge Cases
 
 | Scenario | Behavior |
 |----------|----------|
-| No gates in terminal | Returns None, False |
-| Multiple gates with same score | Returns last one found (dict iteration order) |
-| Score of 0 | Returns gate (changed in v0.8.6) |
-| Empty terminal/gate strings | Concatenates as "" + "", score likely 0 |
+| No gates in airport | Returns (None, -1, False) |
+| Empty SI terminal/gate | Component scores 0, relies on keywords |
+| Multiple gates with same score | Returns first found |
+| Score below threshold | Still returns best match (threshold advisory only) |
 
 ---
 

@@ -48,7 +48,6 @@ gsx_menu_logs/
 *.json
 !*_interpreted.json
 AGENT_KNOWLEDGE.md
-docs/agents/
 .claude/
 CLAUDE.md
 QWEN.md

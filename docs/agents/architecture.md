@@ -150,7 +150,7 @@ director.stop()                               # Cleanup
 - `find_gate()` - Fuzzy matching algorithm
 - `_wait_for_ground()` - Infinite polling until touchdown
 
-**Fuzzy Matching:** Uses rapidfuzz with threshold of 0 (changed from 10 in v0.8.6)
+**Gate Matching (v0.9.2+):** Uses `GateMatcher` for intelligent fuzzy matching with component-based weighted scoring. Replaced direct rapidfuzz usage.
 
 #### **5. SimConnect Manager**
 **File:** `GateAssignmentDirector/simconnect_manager.py`
@@ -180,6 +180,56 @@ director.stop()                               # Cleanup
 - Captures GSX menu structure
 - Extracts gates/parking
 - Generates airport mappings
+- Terminal inference from gate identifiers (v0.9.2+)
+
+#### **7. Gate Matching System**
+**File:** `GateAssignmentDirector/gate_matcher.py`
+**Role:** Intelligent fuzzy gate matching (v0.9.2+)
+
+**Algorithm:**
+Component-based weighted scoring system that parses gate identifiers into:
+- `gate_number`: Numeric component (weight: 0.6)
+- `gate_prefix`: Letter prefix/identifier like "V", "Stand" (weight: 0.3)
+- `gate_suffix`: Letter suffix like "A", "B"
+- `terminal`: Terminal name (weight: 0.1)
+
+**Matching Process:**
+1. Try exact match first (terminal + gate)
+2. If no exact match, parse both SI and GSX gates into components
+3. Calculate component similarity scores using rapidfuzz
+4. Apply weighted formula: `final_score = (num * 0.6) + (prefix * 0.3) + (terminal * 0.1)`
+5. Return best match above minimum threshold (default 70.0)
+
+**Example Parsing:**
+- "V19" → {number: "19", prefix: "V", suffix: ""}
+- "5A" → {number: "5", prefix: "", suffix: "A"}
+- "Stand 501" → {number: "501", prefix: "STAND", suffix: ""}
+
+**Integration:** Used by `GateAssignment.find_gate()` to handle mismatches between SI and GSX gate formats.
+
+#### **8. Success Confirmation**
+**File:** `GateAssignmentDirector/tooltip_reader.py`
+**Role:** GSX operation success detection (v0.9.2+)
+
+**Purpose:** Confirms gate assignment success by monitoring GSX tooltip file for success messages, eliminating unreliable menu state polling.
+
+**Mechanism:**
+1. Capture baseline tooltip file timestamp before assignment
+2. Send gate assignment command via SimConnect
+3. Poll tooltip file for updates (default 2.0s timeout, 0.2s intervals)
+4. Check updated content for success keyphrases:
+   - "marshaller has been dispatched"
+   - "follow me car"
+   - "boarding"
+   - "safedock© system activated"
+5. Return success if keyphrase found, failure on timeout
+
+**Integration:** Called by `MenuNavigator.navigate_to_gate()` after sending the final selection command. Provides definitive confirmation rather than relying on menu state changes.
+
+**Configuration:**
+- `tooltip_file_paths`: Paths to GSX tooltip file
+- `tooltip_success_keyphrases`: List of success indicators
+- Configurable timeout and check intervals
 
 ---
 
@@ -336,10 +386,11 @@ If not mapped and on ground:
 class GADConfig:
     # Paths
     menu_file_paths: List[str]           # GSX menu file search paths
+    tooltip_file_paths: List[str]        # GSX tooltip file paths (v0.9.2+)
 
     # Timing (all in seconds, changed from ms in v0.8.4)
     sleep_short: float = 0.1             # Short pause
-    sleep_long: float = 0.1              # Long pause
+    sleep_long: float = 0.3              # Long pause (changed from 0.1 in v0.9.2)
     ground_check_interval: float = 1.0   # Ground polling interval
     aircraft_request_interval: float = 2.0  # SimConnect request interval
     max_menu_check_attempts: int = 15    # Menu change retries
@@ -353,6 +404,16 @@ class GADConfig:
     SI_API_KEY: Optional[str] = None
     default_airline: str = "GSX"         # Universal compatibility
 
+    # UI Settings (v0.8.8+)
+    minimize_to_tray: bool = True
+    always_on_top: bool = False
+
+    # Gate Matching (v0.9.2+)
+    position_keywords: Dict[str, List[str]]  # Terminal/gate classification keywords
+    matching_weights: Dict[str, float]       # Component weights for fuzzy matching
+    matching_minimum_score: float = 70.0     # Minimum match score threshold
+    tooltip_success_keyphrases: List[str]    # Success confirmation phrases
+
     # Computed Fields (set at runtime)
     username: str = field(default_factory=lambda: os.getenv("USERNAME", "Unknown"))
     flight_json_path: str = field(init=False)
@@ -360,6 +421,30 @@ class GADConfig:
     def __post_init__(self):
         self.flight_json_path = f"C:\\Users\\{self.username}\\AppData\\Local\\SayIntentionsAI\\flight.json"
 ```
+
+### Configuration Field Purposes (v0.9.2+ additions)
+
+**position_keywords:**
+- `gsx_gate`: Keywords to identify gate-type positions (e.g., "Gate", "Dock")
+- `gsx_parking`: Keywords for parking/stand positions (e.g., "Parking", "Stand", "Remote")
+- `si_terminal`: Keywords that indicate terminal names from SI (used for inference)
+
+**matching_weights:**
+- Component importance in fuzzy matching algorithm
+- Default: gate_number=0.6, gate_prefix=0.3, terminal=0.1
+- Adjustable for different airport naming conventions
+
+**matching_minimum_score:**
+- Threshold for accepting fuzzy matches (0-100 scale)
+- Default 70.0 balances accuracy vs flexibility
+
+**tooltip_file_paths:**
+- Locations to search for GSX tooltip file
+- Used by TooltipReader for success confirmation
+
+**tooltip_success_keyphrases:**
+- Phrases indicating successful gate assignment
+- Checked case-insensitively in tooltip content
 
 ### Loading Configuration
 
