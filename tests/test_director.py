@@ -576,6 +576,91 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         self.assertNotIn("EDDF", self.director.mapped_airports)
 
+    def test_airport_override_persists_across_flight_data_updates(self):
+        """Test airport override persists through multiple _update_flight_data calls"""
+        # Set initial airport and override
+        self.director.airport_override = "EDDF"
+        self.director.current_airport = "EDDF"
+        self.director.departure_airport = "EDDF"
+
+        # Simulate multiple polling cycles with different airport data
+        polling_data = [
+            {'airport': 'KJFK', 'departure_airport': 'KLAX', 'airline': 'United'},
+            {'airport': 'KLAX', 'departure_airport': 'KSFO', 'airline': 'Delta'},
+            {'airport': 'KSEA', 'departure_airport': 'KPDX', 'airline': 'Alaska'},
+        ]
+
+        for flight_data in polling_data:
+            self.director._update_flight_data(flight_data)
+
+            # Verify airports remain unchanged despite different flight data
+            self.assertEqual(self.director.current_airport, "EDDF")
+            self.assertEqual(self.director.departure_airport, "EDDF")
+            # But flight data itself should still update
+            self.assertEqual(self.director.current_flight_data, flight_data)
+
+    def test_airport_override_when_cleared_allows_updates(self):
+        """Test airports update from flight data when override is cleared"""
+        # Start with override active
+        self.director.airport_override = "EDDF"
+        self.director.current_airport = "EDDF"
+        self.director.departure_airport = "EDDF"
+
+        # Update with different data - should be ignored
+        first_data = {'airport': 'KJFK', 'departure_airport': 'KLAX'}
+        self.director._update_flight_data(first_data)
+
+        self.assertEqual(self.director.current_airport, "EDDF")
+        self.assertEqual(self.director.departure_airport, "EDDF")
+
+        # Clear the override
+        self.director.airport_override = None
+
+        # Now updates should work
+        second_data = {'airport': 'KSEA', 'departure_airport': 'KPDX'}
+        self.director._update_flight_data(second_data)
+
+        self.assertEqual(self.director.current_airport, "KSEA")
+        self.assertEqual(self.director.departure_airport, "KPDX")
+
+    def test_airport_override_updates_departure_airport(self):
+        """Test both current_airport and departure_airport protected by override"""
+        self.director.airport_override = "EGLL"
+        self.director.current_airport = "EGLL"
+        self.director.departure_airport = "EGLL"
+
+        # Try to update with completely different airports
+        flight_data = {
+            'airport': 'RJTT',
+            'departure_airport': 'RJAA',
+            'airline': 'JAL',
+            'flight_number': 'JL123'
+        }
+
+        self.director._update_flight_data(flight_data)
+
+        # Both should remain unchanged
+        self.assertEqual(self.director.current_airport, "EGLL")
+        self.assertEqual(self.director.departure_airport, "EGLL")
+
+    def test_airport_override_none_allows_initial_setting(self):
+        """Test that when override is None, airports can be set from flight data"""
+        # Start with no override and no airports
+        self.director.airport_override = None
+        self.director.current_airport = None
+        self.director.departure_airport = None
+
+        flight_data = {
+            'airport': 'LFPG',
+            'departure_airport': 'LFPO',
+            'airline': 'Air France'
+        }
+
+        self.director._update_flight_data(flight_data)
+
+        self.assertEqual(self.director.current_airport, "LFPG")
+        self.assertEqual(self.director.departure_airport, "LFPO")
+
 
 if __name__ == "__main__":
     unittest.main()

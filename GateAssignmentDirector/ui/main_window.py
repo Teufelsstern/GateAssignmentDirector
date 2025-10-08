@@ -88,10 +88,13 @@ class DirectorUI:
         # Override close button behavior based on config
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
+        # Apply always on top setting
+        self.root.attributes('-topmost', self.config.always_on_top)
+
         # Setup system tray
         self._setup_tray()
 
-        # Values statement at bottom (setup first to claim bottom space)
+        # Values statement at top (setup first to claim top space)
         self._setup_values_statement()
 
         # Create tabview (will expand in remaining space)
@@ -106,7 +109,7 @@ class DirectorUI:
             text_color=c('purple_gray'),
             command=self._on_tab_change
         )
-        self.tabview.pack(fill="both", expand=True, padx=10, pady=(10, 5))
+        self.tabview.pack(fill="both", expand=True, padx=10, pady=(0, 5))
 
         # Add tabs
         self.tabview.add("Monitor")
@@ -131,9 +134,9 @@ class DirectorUI:
         """Create values statement at bottom with random word"""
         import random
 
-        # Create fixed container at bottom
-        values_container = ctk.CTkFrame(self.root, fg_color="transparent", height=30, width=150)
-        values_container.pack(side="bottom", fill="x", pady=(0, 5))
+        # Create fixed container at top
+        values_container = ctk.CTkFrame(self.root, fg_color="transparent", height=12, width=150)
+        values_container.pack(side="top", fill="x", pady=(5, 0))
         values_container.pack_propagate(False)  # Prevent shrinking
 
         # Container to center the text
@@ -156,7 +159,7 @@ class DirectorUI:
             label = ctk.CTkLabel(
                 center_frame,
                 text=word,
-                font=("Arial", 11),
+                font=("Arial", 12),
                 text_color=color
             )
             # No space between "soft" and "ware" using (left, right) padding
@@ -172,7 +175,7 @@ class DirectorUI:
         against_label = ctk.CTkLabel(
             center_frame,
             text="against",
-            font=("Arial", 11, "bold"),
+            font=("Arial", 12, "bold"),
             text_color=rainbow_colors[4]  # soft blue
         )
         against_label.pack(side="left", padx=2)
@@ -196,7 +199,7 @@ class DirectorUI:
         self.vwl = ctk.CTkLabel(
             center_frame,
             text=random_word + ".",
-            font=("Arial", 11),
+            font=("Arial", 12),
             text_color=rainbow_colors[5]  # soft purple
         )
         self.vwl.pack(side="left", padx=2)
@@ -318,6 +321,9 @@ class DirectorUI:
 
             # Save to YAML
             self.config.save_yaml()
+
+            # Apply always on top setting immediately
+            self.root.attributes('-topmost', self.config.always_on_top)
 
             messagebox.showinfo("Success", "Configuration saved successfully!")
 

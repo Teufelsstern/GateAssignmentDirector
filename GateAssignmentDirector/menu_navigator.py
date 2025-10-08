@@ -101,8 +101,10 @@ class MenuNavigator:
             if any("Next" in opt for opt in option.split()):
                 while attempts < 3:
                     logger.debug(f"Attempting to click Next at index {index}")
+                    pre_value = self.menu_choice.value
                     self.menu_choice.value = index
                     time.sleep(self.config.sleep_short)
+                    logger.debug("Menu_Choice value is now %s, was %s", self.menu_choice.value, pre_value)
                     success, info = self._wait_for_change()
                     if success:
                         return success, info

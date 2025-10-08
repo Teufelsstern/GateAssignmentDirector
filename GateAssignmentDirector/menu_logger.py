@@ -339,7 +339,7 @@ class MenuLogger:
             # Otherwise use first digit as terminal
 
         # Handle special digit length cases
-        if digits and assumed_terminal == digits[0]:
+        elif digits and assumed_terminal == digits[0]:
             if len(digits) == 3 and position_type == "parking":
                 # Three-digit parking spots are typically in "Parking" terminal (e.g., "101")
                 assumed_terminal = "Parking"

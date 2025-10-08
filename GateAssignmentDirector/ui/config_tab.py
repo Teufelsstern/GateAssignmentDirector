@@ -35,6 +35,9 @@ def setup_config_tab(parent_ui, tab):
     create_config_checkbox(
         parent_ui, scroll_frame, field_name="minimize_to_tray", label_text="Minimize to tray on close", padx=(5,0)
     )
+    create_config_checkbox(
+        parent_ui, scroll_frame, field_name="always_on_top", label_text="Always on top", padx=(5,0)
+    )
 
     _label(
         frame=scroll_frame,

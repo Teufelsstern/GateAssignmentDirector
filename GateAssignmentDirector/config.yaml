@@ -1,5 +1,6 @@
 SI_API_KEY: Test
 aircraft_request_interval: 2.0
+always_on_top: true
 default_airline: Lufthansa
 ground_check_interval: 1.0
 logging_datefmt: '%H:%M:%S'
@@ -14,14 +15,6 @@ max_menu_check_attempts: 15
 menu_file_paths:
 - C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu
 - C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu
-tooltip_file_paths:
-- C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip
-- C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip
-tooltip_success_keyphrases:
-- marshaller has been dispatched
-- follow me car
-- boarding
-- safedock© system activated
 minimize_to_tray: true
 position_keywords:
   gsx_gate:

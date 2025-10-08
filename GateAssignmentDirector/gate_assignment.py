@@ -56,25 +56,26 @@ class GateAssignment:
         _debug2_2 = os.path.exists(file2)
         logger.debug("Looking for %s at %s. Exists: %s", file1, _debug1_1, _debug1_2)
         logger.debug("Looking for %s at %s. Exists: %s", file2, _debug2_1, _debug2_2)
-        self._refresh_menu()
-        current_menu_state = self.menu_reader.read_menu()
-        icao_pattern = re.compile(r"\b([A-Z]{4})\b")
-        icao_match = icao_pattern.search(current_menu_state.title)
-        if icao_match:
-            menu_icao = icao_match.group(1)
-            if menu_icao != airport:
-                raise GsxMenuError(
-                    f"ICAO mismatch: Expected {airport}, but GSX menu shows {menu_icao}"
-                )
-            logger.info(
-                f"ICAO verified: {menu_icao} matches expected airport {airport}"
-            )
-        else:
-            logger.warning(
-                f"Could not parse ICAO from menu title: '{current_menu_state.title}'"
-            )
 
         if not os.path.exists(file1) and not os.path.exists(file2):
+            # Verify ICAO before parsing
+            self._refresh_menu()
+            current_menu_state = self.menu_reader.read_menu()
+            icao_pattern = re.compile(r"\b([A-Z]{4})\b")
+            icao_match = icao_pattern.search(current_menu_state.title)
+            if icao_match:
+                menu_icao = icao_match.group(1)
+                if menu_icao != airport:
+                    raise GsxMenuError(
+                        f"ICAO mismatch: Expected {airport}, but GSX menu shows {menu_icao}"
+                    )
+                logger.info(
+                    f"ICAO verified: {menu_icao} matches expected airport {airport}"
+                )
+            else:
+                logger.warning(
+                    f"Could not parse ICAO from menu title: '{current_menu_state.title}'"
+                )
             logger.debug("Airport %s has not been parsed yet. Starting parsing", airport)
             self.menu_logger.start_session(gate_info=GateInfo(airport=airport))
             self._refresh_menu()
@@ -235,6 +236,22 @@ class GateAssignment:
 
                 self._refresh_menu()
 
+                # Verify ICAO before navigating
+                current_menu_state = self.menu_reader.read_menu()
+                icao_pattern = re.compile(r"\b([A-Z]{4})\b")
+                icao_match = icao_pattern.search(current_menu_state.title)
+                if icao_match:
+                    menu_icao = icao_match.group(1)
+                    if menu_icao != airport:
+                        raise GsxMenuError(
+                            f"ICAO mismatch: Expected {airport}, but GSX menu shows {menu_icao}"
+                        )
+                    logger.debug(f"ICAO verified before navigation: {menu_icao}")
+                else:
+                    logger.warning(
+                        f"Could not parse ICAO from menu title before navigation: '{current_menu_state.title}'"
+                    )
+
                 # Capture baseline tooltip timestamp before action
                 baseline_timestamp = self.tooltip_reader.get_file_timestamp()
 
@@ -244,6 +261,9 @@ class GateAssignment:
                 # Check if GSX already succeeded (tooltip confirms)
                 if self.tooltip_reader.check_for_success(baseline_timestamp):
                     logger.info("Gate activated successfully (confirmed via tooltip)")
+                    if status_callback:
+                        gate_name = matching_gsx_gate.get('gate', 'Unknown')
+                        status_callback(f"Successfully assigned to gate {gate_name}")
                     self._close_menu()
                     return True, matching_gsx_gate
 
@@ -252,19 +272,38 @@ class GateAssignment:
                 self.menu_navigator.find_and_click(
                     [self.config.default_airline or "GSX"], SearchType.AIRLINE
                 )
-                logger.info("Gate assignment completed successfully")
-                self._close_menu()
-                return True, matching_gsx_gate
+
+                # Check tooltip after airline selection
+                if self.tooltip_reader.check_for_success(baseline_timestamp, timeout=2.0):
+                    logger.info("Gate assignment completed successfully (confirmed via tooltip)")
+                    if status_callback:
+                        gate_name = matching_gsx_gate.get('gate', 'Unknown')
+                        status_callback(f"Successfully assigned to gate {gate_name}")
+                    self._close_menu()
+                    return True, matching_gsx_gate
+                else:
+                    logger.warning("Gate assignment uncertain - no tooltip confirmation after airline selection")
+                    if status_callback:
+                        gate_name = matching_gsx_gate.get('gate', 'Unknown')
+                        status_callback(f"Assigned to gate {gate_name} (uncertain - verify in GSX)")
+                    self._close_menu()
+                    return True, {**matching_gsx_gate, "_uncertain": True}
 
             except GsxMenuNotChangedError as e:
                 # Check tooltip as fallback
                 if self.tooltip_reader.check_for_success(baseline_timestamp, timeout=0.5):
                     logger.info("Gate assignment succeeded (tooltip confirmation after menu error)")
+                    if status_callback:
+                        gate_name = matching_gsx_gate.get('gate', 'Unknown')
+                        status_callback(f"Successfully assigned to gate {gate_name}")
                     self._close_menu()
                     return True, matching_gsx_gate
 
                 # Menu didn't change, but action might have succeeded anyway
                 logger.warning(f"Gate assignment uncertain: {e}")
+                if status_callback:
+                    gate_name = matching_gsx_gate.get('gate', 'Unknown')
+                    status_callback(f"Assigned to gate {gate_name} (uncertain - verify in GSX)")
                 # Leave menu open so user can verify - return success with uncertain flag
                 return True, {**matching_gsx_gate, "_uncertain": True}
 
@@ -275,12 +314,18 @@ class GateAssignment:
                     time.sleep(0.5)
                 else:
                     logger.error(f"Gate assignment failed after {max_attempts} attempts: {e}")
+                    if status_callback:
+                        status_callback(f"Gate assignment failed: {e}")
                     return False, None
 
             except (OSError, IOError) as e:
                 logger.error(f"Gate assignment failed due to I/O error: {e}")
+                if status_callback:
+                    status_callback(f"Gate assignment failed: I/O error")
                 return False, None
 
+        if status_callback:
+            status_callback("Gate assignment failed after all attempts")
         return False, None
 
     def _wait_for_ground(self) -> None:

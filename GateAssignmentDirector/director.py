@@ -53,8 +53,10 @@ class GateAssignmentDirector:
     def _update_flight_data(self, flight_data: Dict[str, Any]) -> None:
         """Callback to update flight data on every poll"""
         self.current_flight_data = flight_data
-        self.current_airport = flight_data.get('airport')
-        self.departure_airport = flight_data.get('departure_airport')
+        # Don't override current_airport if manual override is active
+        if not self.airport_override:
+            self.current_airport = flight_data.get('airport')
+            self.departure_airport = flight_data.get('departure_airport')
 
     def _queue_gate_assignment(self, gate_info: Dict[str, Any]) -> None:
         """Callback when gate is detected"""
@@ -109,7 +111,7 @@ class GateAssignmentDirector:
                         except Exception as e:
                             logger.error(f"Failed to pre-map {current_airport}: {e}")
                             if self.status_callback:
-                                self.status_callback(f"Pre-mapping failed: {e}")
+                                self.status_callback(f"Pre-mapping failed")
 
                 gate_info = self.gate_queue.get(timeout=1.0)
                 logger.info(f"Processing gate assignment: {gate_info}")

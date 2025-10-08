@@ -42,6 +42,7 @@ class GADConfig:
     SI_API_KEY: str = 'YOUR_API_KEY_HERE'
     default_airline: str = 'GSX'
     minimize_to_tray: bool = True
+    always_on_top: bool = False
     position_keywords: dict[str, list[str]] = field(default_factory=lambda: {
         'gsx_gate': ['Gate', 'Dock'],
         'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
@@ -90,6 +91,7 @@ class GADConfig:
             'SI_API_KEY': 'YOUR_API_KEY_HERE',
             'default_airline': 'GSX',
             'minimize_to_tray': True,
+            'always_on_top': False,
             'position_keywords': {
                 'gsx_gate': ['Gate', 'Dock'],
                 'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
@@ -162,6 +164,7 @@ class GADConfig:
             'SI_API_KEY': self.SI_API_KEY,
             'default_airline': self.default_airline,
             'minimize_to_tray': self.minimize_to_tray,
+            'always_on_top': self.always_on_top,
             'position_keywords': self.position_keywords,
             'matching_weights': self.matching_weights,
             'matching_minimum_score': self.matching_minimum_score,

@@ -130,7 +130,6 @@ def setup_monitor_tab(parent_ui, tab):
     attach_tooltip(parent_ui.clear_override_btn, 'clear_override_btn')
 
     start_stop_btn_frame = ctk.CTkFrame(tab, fg_color="transparent")
-    start_stop_btn_frame.pack(fill="x", padx=(20, 40), pady=0)
 
     parent_ui.start_btn = _button(
         start_stop_btn_frame,
@@ -139,8 +138,8 @@ def setup_monitor_tab(parent_ui, tab):
         fg_color=c('sage'),
         hover_color=c('sage', hover=True),
         text_color=c('sage_dark'),
-        pady=(0, 5),
-        padx=(0, 10),
+        pady=(0, 0),
+        padx=(0, 5),
         side="left"
     )
     attach_tooltip(parent_ui.start_btn, 'start_monitoring_btn')
@@ -152,11 +151,12 @@ def setup_monitor_tab(parent_ui, tab):
         fg_color=c('salmon'),
         hover_color=c('salmon', hover=True),
         text_color=c('salmon_light'),
-        pady=(0, 5),
+        pady=(0, 0),
         state="disabled",
         side="right"
     )
     attach_tooltip(parent_ui.stop_btn, 'stop_monitoring_btn')
+    start_stop_btn_frame.pack(fill="x", padx=20, pady=(0,5))
 
     btn_frame = ctk.CTkFrame(tab, fg_color="transparent")
     parent_ui.assign_gate_btn = _button(
@@ -166,7 +166,7 @@ def setup_monitor_tab(parent_ui, tab):
         fg_color=c('periwinkle'),
         hover_color=c('periwinkle', hover=True),
         text_color=c('periwinkle_light'),
-        pady=(5, 5),
+        pady=(0, 5),
         state="disabled"
     )
     attach_tooltip(parent_ui.assign_gate_btn, 'assign_gate_btn')
@@ -178,7 +178,7 @@ def setup_monitor_tab(parent_ui, tab):
         fg_color=c('gray'),
         hover_color=c('gray_light'),
         height=14,
-        pady=(5, 5)
+        pady=(0, 5)
     )
     attach_tooltip(edit_gates_btn, 'edit_gates_btn')
 

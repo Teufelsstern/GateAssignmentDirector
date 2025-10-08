@@ -30,6 +30,7 @@ CONFIG_TAB = {
     'SI_API_KEY': "SayIntentions API key for enhanced gate matching (optional, contact support for key)",
     'default_airline': "Default airline to select in GSX menu (e.g., 'United_2000', 'GSX', 'Delta_4000')",
     'minimize_to_tray': "When enabled, closing the window minimizes to system tray instead of quitting",
+    'always_on_top': "Keep the application window on top of other windows",
     'sleep_short': "Short delay between GSX operations in seconds (minimum 0.1, default 0.1)",
     'sleep_long': "Longer delay for GSX menu transitions in seconds (minimum 0.2, default 0.3)",
     'ground_check_interval': "Interval between checks if aircraft is on ground in seconds (minimum 0.5)",
