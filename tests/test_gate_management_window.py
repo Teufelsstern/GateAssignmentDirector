@@ -610,33 +610,6 @@ class TestUnsavedChanges(unittest.TestCase):
 
             self.assertTrue(window.has_unsaved_changes)
 
-    def test_convert_to_parking_sets_unsaved_flag(self) -> None:
-        """Should set has_unsaved_changes=True after successful convert_to_parking()"""
-        from GateAssignmentDirector.ui.gate_management import GateManagementWindow
-
-        data = {
-            "terminals": {
-                "1": {
-                    "10": {"type": "gate", "terminal": "1", "raw_info": {"full_text": "Gate 10 - Small"}}
-                },
-                "2": {
-                    "20": {"type": "gate", "terminal": "2", "raw_info": {"full_text": "Gate 20 - Medium"}}
-                }
-            }
-        }
-
-        with patch('GateAssignmentDirector.ui.gate_management.os.path.exists', return_value=True), \
-             patch('builtins.open', unittest.mock.mock_open()), \
-             patch('GateAssignmentDirector.ui.gate_management.json.load', return_value=data):
-
-            window = GateManagementWindow(self.mock_parent, airport="EDDS")
-            window.has_unsaved_changes = False
-            window.active_terminals_entry.get = Mock(return_value="1")
-
-            window.convert_to_parking()
-
-            self.assertTrue(window.has_unsaved_changes)
-
 
 class TestAlphanumericSorting(unittest.TestCase):
     """Test _alphanumeric_key() helper and natural sorting behavior"""

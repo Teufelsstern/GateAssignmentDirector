@@ -147,39 +147,6 @@ class GateManagementWindow:
         right_frame.pack(side="right", fill="y", padx=(5, 0))
         right_frame.pack_propagate(False)
 
-        terminal_frame = ctk.CTkFrame(right_frame)
-        terminal_frame.pack(fill="x", padx=10, pady=10)
-
-        _label(terminal_frame, text="Terminal Management", size=16, pady=(10, 5))
-        _label(
-            terminal_frame,
-            text="Active terminals (comma-separated):",
-            size=16,
-            pady=(5, 0),
-            padx=(10, 0)
-        )
-
-        self.active_terminals_entry = ctk.CTkEntry(
-            terminal_frame,
-            placeholder_text="e.g., 1, 2, 3",
-            corner_radius=6,
-            border_width=1,
-            border_color=c('charcoal_lighter')
-        )
-        self.active_terminals_entry.pack(fill="x", padx=10, pady=5)
-
-        _button(
-            terminal_frame,
-            self.convert_to_parking,
-            text="Convert Others to Parking",
-            height=32,
-            fg_color=c('sage'),
-            hover_color=c('sage', hover=True),
-            text_color=c('sage_dark'),
-            padx=(10, 10),
-            pady=(5, 10)
-        )
-
         gate_frame = ctk.CTkFrame(right_frame)
         gate_frame.pack(fill="x", padx=10, pady=10)
 
@@ -243,13 +210,37 @@ class GateManagementWindow:
         rename_frame = ctk.CTkFrame(right_frame)
         rename_frame.pack(fill="x", padx=10, pady=10)
 
-        _label(rename_frame, text="Rename Gate", size=16, pady=(10, 5))
+        _label(rename_frame, text="Rename", size=16, pady=(10, 5))
 
-        gate_terminal_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
-        gate_terminal_row.pack(fill="x", padx=10, pady=0)
-        _label(gate_terminal_row, text="Gate:", size=16, padx=(0, 2), side="left")
+        # Radio button toggle for Gate vs Terminal mode
+        self.rename_mode = ctk.StringVar(value="gate")
+        radio_frame = ctk.CTkFrame(rename_frame, fg_color="transparent")
+        radio_frame.pack(fill="x", padx=10, pady=(0, 5))
+
+        ctk.CTkRadioButton(
+            radio_frame,
+            text="Gate",
+            variable=self.rename_mode,
+            value="gate",
+            command=self._on_rename_mode_change,
+            font=("Arial", 14)
+        ).pack(side="left", padx=(0, 15))
+
+        ctk.CTkRadioButton(
+            radio_frame,
+            text="Terminal",
+            variable=self.rename_mode,
+            value="terminal",
+            command=self._on_rename_mode_change,
+            font=("Arial", 14)
+        ).pack(side="left")
+
+        # Gate rename fields
+        self.gate_rename_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
+        self.gate_rename_row.pack(fill="x", padx=10, pady=0)
+        self.gate_label = _label(self.gate_rename_row, text="Gate:", size=16, padx=(0, 2), side="left")
         self.rename_gate_entry = ctk.CTkEntry(
-            gate_terminal_row,
+            self.gate_rename_row,
             placeholder_text="71",
             corner_radius=6,
             border_width=1,
@@ -257,9 +248,9 @@ class GateManagementWindow:
             width=50
         )
         self.rename_gate_entry.pack(side="left", padx=(0, 15))
-        _label(gate_terminal_row, text="Terminal:", size=16, padx=(0, 2), side="left")
+        self.terminal_label = _label(self.gate_rename_row, text="Terminal:", size=16, padx=(0, 2), side="left")
         self.rename_terminal_entry = ctk.CTkEntry(
-            gate_terminal_row,
+            self.gate_rename_row,
             placeholder_text="3",
             corner_radius=6,
             border_width=1,
@@ -268,7 +259,31 @@ class GateManagementWindow:
         )
         self.rename_terminal_entry.pack(side="left")
 
-        _label(rename_frame, text="New gate key:", size=16, pady=(5, 0), padx=(10, 0))
+        # Terminal rename fields
+        self.terminal_rename_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
+        self.current_terminal_label = _label(self.terminal_rename_row, text="Current:", size=16, padx=(0, 2), side="left")
+        self.rename_current_terminal_entry = ctk.CTkEntry(
+            self.terminal_rename_row,
+            placeholder_text="1",
+            corner_radius=6,
+            border_width=1,
+            border_color=c('charcoal_lighter'),
+            width=80
+        )
+        self.rename_current_terminal_entry.pack(side="left", padx=(0, 15))
+        self.new_terminal_label = _label(self.terminal_rename_row, text="New:", size=16, padx=(0, 2), side="left")
+        self.rename_new_terminal_entry = ctk.CTkEntry(
+            self.terminal_rename_row,
+            placeholder_text="A",
+            corner_radius=6,
+            border_width=1,
+            border_color=c('charcoal_lighter'),
+            width=80
+        )
+        self.rename_new_terminal_entry.pack(side="left")
+
+        # New gate key field (only for gate mode)
+        self.new_key_label_widget = _label(rename_frame, text="New gate key:", size=16, pady=(5, 0), padx=(10, 0))
         self.new_gate_key_entry = ctk.CTkEntry(
             rename_frame,
             placeholder_text="B28A",
@@ -278,9 +293,9 @@ class GateManagementWindow:
         )
         self.new_gate_key_entry.pack(fill="x", padx=10, pady=(0, 5))
 
-        _button(
+        self.rename_button = _button(
             rename_frame,
-            self.rename_gate,
+            self._on_rename_click,
             text="Rename Gate",
             height=32,
             fg_color=c('sage'),
@@ -288,6 +303,57 @@ class GateManagementWindow:
             text_color=c('sage_dark'),
             padx=(10, 10),
             pady=(0, 10)
+        )
+
+        # Initialize UI to gate mode
+        self._on_rename_mode_change()
+
+        # Prefix/Suffix section
+        prefix_suffix_frame = ctk.CTkFrame(right_frame)
+        prefix_suffix_frame.pack(fill="x", padx=10, pady=10)
+
+        _label(prefix_suffix_frame, text="Add Prefix/Suffix to Gate(s)", size=16, pady=(10, 5))
+        _label(
+            prefix_suffix_frame,
+            text="Select gate(s) or terminal in tree:",
+            size=12,
+            pady=(0, 5),
+            padx=(10, 0)
+        )
+
+        prefix_suffix_row = ctk.CTkFrame(prefix_suffix_frame, fg_color="transparent")
+        prefix_suffix_row.pack(fill="x", padx=10, pady=0)
+        _label(prefix_suffix_row, text="Prefix:", size=16, padx=(0, 2), side="left")
+        self.prefix_entry = ctk.CTkEntry(
+            prefix_suffix_row,
+            placeholder_text="",
+            corner_radius=6,
+            border_width=1,
+            border_color=c('charcoal_lighter'),
+            width=80
+        )
+        self.prefix_entry.pack(side="left", padx=(0, 15))
+        _label(prefix_suffix_row, text="Suffix:", size=16, padx=(0, 2), side="left")
+        self.suffix_entry = ctk.CTkEntry(
+            prefix_suffix_row,
+            placeholder_text="",
+            corner_radius=6,
+            border_width=1,
+            border_color=c('charcoal_lighter'),
+            width=80
+        )
+        self.suffix_entry.pack(side="left")
+
+        _button(
+            prefix_suffix_frame,
+            self.add_prefix_suffix,
+            text="Apply to Selected Gate(s)",
+            height=32,
+            fg_color=c('sage'),
+            hover_color=c('sage', hover=True),
+            text_color=c('sage_dark'),
+            padx=(10, 10),
+            pady=(5, 10)
         )
 
         if airport:
@@ -470,48 +536,41 @@ class GateManagementWindow:
 
                 self.log_status(f"Selected {len(gate_items)} gates from Terminal {terminal}")
 
-    def convert_to_parking(self):
-        """Convert non-active terminals to parking"""
-        try:
-            self.log_status("Starting conversion...")
+    def _on_rename_mode_change(self):
+        """Toggle UI fields based on rename mode (gate vs terminal)"""
+        mode = self.rename_mode.get()
 
-            if not self.data:
-                self.log_status("ERROR: Please load data first")
-                return
+        if mode == "gate":
+            # Show gate fields
+            self.gate_rename_row.pack(fill="x", padx=10, pady=0)
+            self.new_key_label_widget.pack(fill="x", padx=(10, 0), pady=(5, 0))
+            self.new_gate_key_entry.pack(fill="x", padx=10, pady=(0, 5))
 
-            active_str = self.active_terminals_entry.get().strip()
-            if not active_str:
-                self.log_status("ERROR: Please specify active terminals")
-                return
+            # Hide terminal fields
+            self.terminal_rename_row.pack_forget()
 
-            active_terminals = [t.strip() for t in active_str.split(",")]
-            self.log_status(f"Active terminals: {active_terminals}")
+            # Update button text
+            self.rename_button.configure(text="Rename Gate")
 
-            terminals = self.data.get("terminals", {})
-            converted_count = 0
+        else:  # terminal mode
+            # Hide gate fields
+            self.gate_rename_row.pack_forget()
+            self.new_key_label_widget.pack_forget()
+            self.new_gate_key_entry.pack_forget()
 
-            for terminal_name in list(terminals.keys()):
-                if terminal_name not in active_terminals:
-                    for gate_num, gate_info in list(terminals[terminal_name].items()):
-                        gate_info["type"] = "parking"
-                        converted_count += 1
-                        gate_data = terminals[terminal_name].pop(gate_num)
-                        gate_data["terminal"] = "Parking"
+            # Show terminal fields
+            self.terminal_rename_row.pack(fill="x", padx=10, pady=0)
 
-                        if "Parking" not in terminals:
-                            terminals["Parking"] = {}
+            # Update button text
+            self.rename_button.configure(text="Rename Terminal")
 
-                        terminals["Parking"][gate_num] = gate_data
-                    if len(terminals[terminal_name]) == 0:
-                        terminals.pop(terminal_name)
-
-            self.log_status(f"Converted {converted_count} gates to parking")
-            self.has_unsaved_changes = True
-            self.refresh_tree()
-
-        except Exception as e:
-            self.log_status(f"ERROR: {str(e)}")
-            logging.error(f"Conversion error: {e}", exc_info=True)
+    def _on_rename_click(self):
+        """Call appropriate rename method based on mode"""
+        mode = self.rename_mode.get()
+        if mode == "gate":
+            self.rename_gate()
+        else:
+            self.rename_terminal()
 
     def move_gate(self):
         """Move selected gate(s) from one terminal to another"""
@@ -625,6 +684,205 @@ class GateManagementWindow:
             self.log_status(f"ERROR: {str(e)}")
             logging.error(f"Move gate error: {e}", exc_info=True)
 
+    def rename_terminal(self):
+        """Rename a terminal and update all gates within it"""
+        try:
+            logging.debug("Starting terminal rename...")
+
+            if not self.data:
+                self.log_status("ERROR: Please load data first")
+                return
+
+            old_terminal = self.rename_current_terminal_entry.get().strip()
+            new_terminal = self.rename_new_terminal_entry.get().strip()
+
+            if not all([old_terminal, new_terminal]):
+                self.log_status("ERROR: Please fill all fields")
+                return
+
+            if old_terminal == new_terminal:
+                self.log_status("ERROR: Old and new terminal names are the same")
+                return
+
+            terminals = self.data.get("terminals", {})
+
+            # Check if old terminal exists
+            if old_terminal not in terminals:
+                self.log_status(f"ERROR: Terminal {old_terminal} not found")
+                return
+
+            # Check if new terminal already exists
+            if new_terminal in terminals:
+                proceed = messagebox.askyesno(
+                    "Terminal Already Exists",
+                    f"Terminal {new_terminal} already exists.\n\n"
+                    f"Renaming will merge Terminal {old_terminal} into Terminal {new_terminal}.\n"
+                    f"Gates with the same number will be overwritten.\n\n"
+                    f"Do you want to continue?",
+                    icon='warning'
+                )
+                if not proceed:
+                    self.log_status("Rename cancelled")
+                    return
+
+                # Merge terminals
+                old_gates = terminals[old_terminal]
+                for gate_num, gate_data in old_gates.items():
+                    gate_data["terminal"] = new_terminal
+                    gate_data["position_id"] = f"Terminal {new_terminal} Gate {gate_num}"
+                    terminals[new_terminal][gate_num] = gate_data
+
+                # Remove old terminal
+                terminals.pop(old_terminal)
+                self.log_status(
+                    f"SUCCESS: Merged Terminal {old_terminal} into Terminal {new_terminal}"
+                )
+
+            else:
+                # Simple rename - move all gates to new terminal key
+                terminals[new_terminal] = {}
+                for gate_num, gate_data in terminals[old_terminal].items():
+                    gate_data["terminal"] = new_terminal
+                    gate_data["position_id"] = f"Terminal {new_terminal} Gate {gate_num}"
+                    terminals[new_terminal][gate_num] = gate_data
+
+                # Remove old terminal
+                terminals.pop(old_terminal)
+                self.log_status(
+                    f"SUCCESS: Renamed Terminal {old_terminal} to {new_terminal}"
+                )
+
+            self.has_unsaved_changes = True
+            self.refresh_tree()
+
+        except Exception as e:
+            self.log_status(f"ERROR: {str(e)}")
+            logging.error(f"Rename terminal error: {e}", exc_info=True)
+
+    def add_prefix_suffix(self):
+        """Add prefix and/or suffix to selected gate(s)"""
+        try:
+            logging.debug("Starting prefix/suffix addition...")
+
+            if not self.data:
+                self.log_status("ERROR: Please load data first")
+                return
+
+            prefix = self.prefix_entry.get()  # Allow empty string
+            suffix = self.suffix_entry.get()  # Allow empty string
+
+            if not prefix and not suffix:
+                self.log_status("ERROR: Please specify at least a prefix or suffix")
+                return
+
+            # Get selected items from tree
+            selection = self.tree.selection()
+            if not selection:
+                self.log_status("ERROR: Please select gate(s) to modify")
+                return
+
+            terminals = self.data.get("terminals", {})
+
+            # Collect gates to modify
+            gates_to_modify = []
+            gates_with_existing = []
+
+            for item in selection:
+                item_text = self.tree.item(item, 'text')
+                if not item_text.startswith("Gate "):
+                    continue  # Skip terminal nodes
+
+                values = self.tree.item(item, 'values')
+                gate_num = item_text.replace("Gate ", "")
+                terminal = values[2]
+
+                new_gate_key = f"{prefix}{gate_num}{suffix}"
+
+                # Check if this gate already appears to have a prefix/suffix
+                # (Simple heuristic: if adding prefix/suffix makes it longer or changes letters)
+                has_existing = (prefix and gate_num.startswith(prefix)) or (suffix and gate_num.endswith(suffix))
+
+                gates_to_modify.append((item, gate_num, terminal, new_gate_key))
+                if has_existing:
+                    gates_with_existing.append(gate_num)
+
+            # If gates with existing prefix/suffix found, ask user
+            mode = "skip"  # default
+            if gates_with_existing:
+                # Custom dialog with 3 buttons
+                from tkinter import messagebox
+                response = messagebox.askquestion(
+                    "Gates with Existing Prefix/Suffix",
+                    f"Some gates may already have prefix/suffix:\n\n"
+                    f"{', '.join(gates_with_existing)}\n\n"
+                    f"Click 'Yes' to apply to all (including those with existing)\n"
+                    f"Click 'No' to skip those gates and only apply to others\n"
+                    f"(Click Cancel in the next dialog to cancel entirely)",
+                    icon='warning',
+                    type='yesno'
+                )
+
+                if response == 'yes':
+                    mode = "apply_all"
+                else:
+                    mode = "skip"
+
+            # Apply prefix/suffix
+            modified_count = 0
+            skipped_count = 0
+            conflicts = []
+
+            for item, gate_num, terminal, new_gate_key in gates_to_modify:
+                # Skip if gate has existing prefix/suffix and mode is skip
+                has_existing = (prefix and gate_num.startswith(prefix)) or (suffix and gate_num.endswith(suffix))
+                if mode == "skip" and has_existing:
+                    skipped_count += 1
+                    continue
+
+                # Check if terminal exists
+                if terminal not in terminals:
+                    self.log_status(f"ERROR: Terminal {terminal} not found")
+                    continue
+
+                # Check if gate exists
+                if gate_num not in terminals[terminal]:
+                    self.log_status(f"ERROR: Gate {gate_num} not found in Terminal {terminal}")
+                    continue
+
+                # Check if new key already exists
+                if new_gate_key != gate_num and new_gate_key in terminals[terminal]:
+                    conflicts.append((terminal, gate_num, new_gate_key))
+                    continue
+
+                # Apply prefix/suffix
+                gate_data = terminals[terminal].pop(gate_num)
+                gate_data["gate"] = new_gate_key
+                gate_data["position_id"] = f"Terminal {terminal} Gate {new_gate_key}"
+                terminals[terminal][new_gate_key] = gate_data
+                modified_count += 1
+
+            # Report results
+            if modified_count > 0:
+                self.log_status(
+                    f"SUCCESS: Modified {modified_count} gate(s) with prefix='{prefix}' suffix='{suffix}'"
+                )
+                self.has_unsaved_changes = True
+                self.refresh_tree()
+
+            if skipped_count > 0:
+                self.log_status(f"Skipped {skipped_count} gate(s) with existing prefix/suffix")
+
+            if conflicts:
+                conflict_msg = ", ".join([f"{t}:{old}→{new}" for t, old, new in conflicts])
+                self.log_status(f"Conflicts (gates already exist): {conflict_msg}")
+
+            if modified_count == 0:
+                self.log_status("No gates were modified")
+
+        except Exception as e:
+            self.log_status(f"ERROR: {str(e)}")
+            logging.error(f"Add prefix/suffix error: {e}", exc_info=True)
+
     def rename_gate(self):
         """Rename a gate's full_text information"""
         try:
@@ -697,11 +955,14 @@ class GateManagementWindow:
             return
 
         try:
-            # Sort gates alphanumerically under each terminal
+            # Sort terminals and gates alphanumerically
             sorted_data = {"terminals": {}}
             terminals = self.data.get("terminals", {})
 
-            for terminal_name, gates in terminals.items():
+            # Sort terminals first
+            sorted_terminals = sorted(terminals.items(), key=lambda x: self._alphanumeric_key(x[0]))
+
+            for terminal_name, gates in sorted_terminals:
                 # Sort gates by their gate number/name
                 sorted_gates = dict(sorted(gates.items(), key=lambda x: self._alphanumeric_key(x[0])))
                 sorted_data["terminals"][terminal_name] = sorted_gates

@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.4] - 2025-10-08
+
+### Added
+- Rename Terminal feature with radio button toggle (Gate/Terminal mode)
+- Add Prefix/Suffix function for bulk gate renaming with conflict detection
+- Alphanumeric sorting for terminals in gate management window
+- Smart conflict handling in prefix/suffix with user choice dialog
+
+### Removed
+- Active Terminal function (UI and convert_to_parking method)
+- Removed obsolete convert_to_parking test
+
+### Changed
+- Gate management UI now toggles between Gate and Terminal rename modes
+- Terminal sorting now uses natural alphanumeric order (1, 2, 3, 10 instead of 1, 10, 2, 3)
+- Rename section supports both individual gates and entire terminals
+- Prefix/suffix application supports multi-select with "Apply to All" or "Skip Existing" options
+
+### Technical
+- New methods: `rename_terminal()`, `add_prefix_suffix()`, `_on_rename_mode_change()`, `_on_rename_click()`
+- Terminal renaming updates all child gates' terminal references and position_ids
+- Prefix/suffix detects existing modifications and prompts user for action
+- All 28 gate management tests passing
+
+## [0.9.3] - 2025-10-08
+
+### Added
+- Always on top window option (configurable via UI checkbox)
+- Airport override persistence across flight data polling
+- Enhanced gate assignment status callbacks with specific gate names
+- ICAO verification before gate navigation
+- Tooltip for always_on_top config option
+- 4 new unit tests for airport override persistence
+
+### Fixed
+- Airport override being overwritten by flight data updates
+- Values statement moved from bottom to top of main window
+- Gate suffix letters restored to ["A", "B", "L", "R", "C"]
+- Pre-mapping error messages simplified (removed exception details from UI)
+
+### Changed
+- _update_flight_data() now respects airport_override
+- Gate assignment provides better uncertainty feedback via tooltips
+- ICAO check moved to only run during initial parsing
+- Second ICAO verification added before navigation
+- Status callbacks now include specific gate identifiers
+- UI button padding adjustments in monitor tab
+
+All 33 tests passing (29 existing + 4 new override tests)
+
 ## [0.9.2] - 2025-10-08
 
 ### Added

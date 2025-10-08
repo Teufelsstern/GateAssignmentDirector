@@ -24,6 +24,12 @@ class TestGADConfigDefaults(unittest.TestCase):
             'logging_datefmt',
             'SI_API_KEY',
             'default_airline',
+            'minimize_to_tray',
+            'always_on_top',
+            'position_keywords',
+            'matching_weights',
+            'matching_minimum_score',
+            'tooltip_file_paths',
         }
 
         self.assertEqual(set(defaults.keys()), expected_keys)
@@ -116,10 +122,12 @@ class TestGADConfigInitialization(unittest.TestCase):
         self.assertEqual(config.sleep_long, 0.3)
         self.assertEqual(config.ground_check_interval, 1.0)
         self.assertEqual(config.aircraft_request_interval, 2.0)
-        self.assertEqual(config.max_menu_check_attempts, 4)
+        self.assertEqual(config.max_menu_check_attempts, 15)
         self.assertEqual(config.logging_level, 'DEBUG')
         self.assertEqual(config.SI_API_KEY, 'YOUR_API_KEY_HERE')
         self.assertEqual(config.default_airline, 'GSX')
+        self.assertEqual(config.minimize_to_tray, True)
+        self.assertEqual(config.always_on_top, False)
 
     def test_username_field_populated(self):
         """Test username field is populated from getpass.getuser"""
@@ -384,16 +392,18 @@ class TestGADConfigSaveYaml(unittest.TestCase):
 
     @patch('builtins.open', new_callable=mock_open)
     @patch('GateAssignmentDirector.gad_config.yaml.dump')
-    def test_save_yaml_excludes_default_airline(self, mock_yaml_dump, mock_file):
-        """Test save_yaml does not save default_airline field"""
+    def test_save_yaml_includes_configurable_fields(self, mock_yaml_dump, mock_file):
+        """Test save_yaml includes configurable fields like default_airline, always_on_top, minimize_to_tray"""
 
-        config = GADConfig(default_airline='TEST')
+        config = GADConfig(default_airline='TEST', always_on_top=True, minimize_to_tray=False)
         config.save_yaml("output.yaml")
 
         saved_data = mock_yaml_dump.call_args[0][0]
 
-        # default_airline should not be saved (not in save_yaml method)
-        self.assertNotIn('default_airline', saved_data)
+        # Configurable fields should be saved
+        self.assertIn('default_airline', saved_data)
+        self.assertIn('always_on_top', saved_data)
+        self.assertIn('minimize_to_tray', saved_data)
 
     @patch('builtins.open', new_callable=mock_open)
     @patch('GateAssignmentDirector.gad_config.yaml.dump')
