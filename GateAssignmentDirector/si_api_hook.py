@@ -63,7 +63,7 @@ class GateParser:
                 (?:([A-Z)]|\d+)\s+)?
                 (?:(overflow|gate)\s+)?
                 (?:(gate)\s+)?
-                (?:(\d+)(?:\s*|$))?
+                (?:([A-Z]?\d+)(?:\s*|$))?
                 (?:([A-Z])\b)?
                 """,
             re.IGNORECASE | re.VERBOSE,
@@ -88,16 +88,23 @@ class GateParser:
         match = self.gate_pattern.search(gate_string)
         if match:
             t_name = match.group(GateGroups.T_NAME)
-            gate_info.terminal_name = t_name.capitalize() if t_name else "Terminal"
-
             t_number = match.group(GateGroups.T_NUMBER)
+            g_number = match.group(GateGroups.G_NUMBER)
+            g_letter = match.group(GateGroups.G_LETTER)
+
+            gate_info.gate_number = g_number or ""
+            gate_info.gate_letter = g_letter.capitalize() if g_letter else ""
             gate_info.terminal_number = t_number.capitalize() if t_number else ""
 
-            g_number = match.group(GateGroups.G_NUMBER)
-            gate_info.gate_number = g_number or ""
+            # Extract terminal from explicit keyword or from gate prefix
+            if t_name:
+                gate_info.terminal_name = t_name.capitalize()
+            elif gate_info.gate_number and gate_info.gate_number[0].isalpha():
+                # Gate has letter prefix (e.g., "V118"), extract it as terminal
+                gate_info.terminal_name = gate_info.gate_number[0].upper()
+            else:
+                gate_info.terminal_name = "Terminal"
 
-            g_letter = match.group(GateGroups.G_LETTER)
-            gate_info.gate_letter = g_letter.capitalize() if g_letter else ""
         return gate_info
 
 

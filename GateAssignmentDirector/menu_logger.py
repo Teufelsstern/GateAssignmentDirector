@@ -249,6 +249,14 @@ class MenuLogger:
             # If specific name exists and looks reasonable (not empty, not too weird)
             if specific_name and len(specific_name) > 0 and len(specific_name) < 50:
                 return specific_name
+        else:
+            # Try "All X Positions" pattern (e.g., "All Gate A Positions")
+            match = re.search(r'All (Gate|Ramp|Stand)\s*([A-Za-z0-9]?) Positions', menu_title, re.IGNORECASE)
+            if match:
+                extracted = match.group(2) or ""
+                # Only return if we got something meaningful, otherwise continue to fallback
+                if extracted:
+                    return extracted
 
         # No specific terminal name found, check if menu is about parking using config keywords
         for keyword in self.config.position_keywords.get('gsx_parking', []):
@@ -274,6 +282,79 @@ class MenuLogger:
 
         return clean_id.strip()
 
+    def _infer_terminal_from_gate(self, gate_id: str, position_type: str) -> Optional[str]:
+        """
+        Infer terminal from gate identifier using heuristic rules.
+        This is used as fallback when menu title doesn't provide specific terminal info.
+
+        Examples:
+            "V19" → "V" (letter prefix becomes terminal)
+            "52H" → "5" (first digit becomes terminal)
+            "101" → "Parking" (3 digits, parking type)
+            "205" → "Miscellaneous" (3 digits, gate type, no prefix)
+            "K205" → "K" (3 digits with prefix)
+
+        Args:
+            gate_id: Clean gate identifier (e.g., "V19", "52H", "5A")
+            position_type: "gate" or "parking"
+
+        Returns:
+            Inferred terminal or None if unable to infer
+        """
+        gate_id_no_spaces = gate_id.replace(" ", "")
+
+        # Parse gate components
+        pattern = re.compile(
+            r"""
+                ([A-Z]+)?       # Optional letter prefix (group 1)
+                (\d+)?          # Optional digits (group 2)
+                ([A-Z]\b)?      # Optional letter suffix (group 3)
+            """,
+            re.IGNORECASE | re.VERBOSE,
+        )
+
+        match = pattern.search(gate_id_no_spaces)
+        if not match:
+            return None
+
+        letter_prefix = (match.group(1) or "").upper()
+        digits = match.group(2) or ""
+        letter_suffix = (match.group(3) or "").upper()
+
+        # Gate letters that are typically suffixes, not terminals
+        gate_suffix_letters = ["A", "B", "L", "R", "C"]
+
+        # Start with first digit as default terminal
+        assumed_terminal = digits[0] if digits else None
+
+        # Letter prefix logic
+        if letter_prefix and letter_prefix not in gate_suffix_letters:
+            # Non-gate-suffix letter becomes terminal (e.g., "V19" → terminal="V")
+            assumed_terminal = letter_prefix
+        elif letter_prefix in gate_suffix_letters and not letter_suffix:
+            # Gate suffix letter with no trailing letter (e.g., "A16" could be terminal)
+            if digits and len(digits) == 1:
+                # Too short to be terminal+gate, assume it's generic
+                assumed_terminal = "Terminal"
+            # Otherwise use first digit as terminal
+
+        # Handle special digit length cases
+        if digits and assumed_terminal == digits[0]:
+            if len(digits) == 3 and position_type == "parking":
+                # Three-digit parking spots are typically in "Parking" terminal (e.g., "101")
+                assumed_terminal = "Parking"
+            elif len(digits) == 3 and position_type == "gate":
+                # Three-digit gates without letter prefix go to "Miscellaneous" (e.g., "205")
+                # Those with letter prefix already have assumed_terminal set above
+                if not letter_prefix:
+                    assumed_terminal = "Miscellaneous"
+                # Otherwise keep the prefix as terminal (e.g., "K205" → "K")
+            elif len(digits) == 1:
+                # Single digit positions default to terminal "1"
+                assumed_terminal = "1"
+
+        return assumed_terminal
+
     def _interpret_position(
         self, position_id: str, position_info: Dict, position_type: str
     ) -> Dict:
@@ -288,17 +369,29 @@ class MenuLogger:
         """
         menu_title = position_info.get("found_in_menu", "")
 
-        # Extract terminal from menu title, fallback to type
+        # Extract gate identifier first (needed for fallback)
+        gate = self._extract_gate_identifier(position_id)
+
+        # Extract terminal from menu title
         terminal = self._extract_terminal_from_menu(menu_title)
 
-        # Extract gate identifier
-        gate = self._extract_gate_identifier(position_id)
+        # If we got a generic fallback or empty terminal, use gate identifier heuristic
+        if terminal in ["Terminal 1", "Parking", "1", ""]:
+            inferred = self._infer_terminal_from_gate(gate, position_type)
+            if inferred:
+                logger.debug(
+                    f"Generic menu fallback '{terminal}' overridden with inferred terminal '{inferred}' from gate '{gate}'"
+                )
+                terminal = inferred
 
         # Use appropriate label based on position type
         position_label = "Stand" if position_type == "parking" else "Gate"
 
         # Build position_id - avoid duplicating "Terminal" or adding it to "Parking"
-        if terminal.startswith("Terminal") or terminal == "Parking":
+        if terminal == "Parking":
+            # Parking is a valid terminal name, use it as-is
+            position_id = f"{terminal} {position_label} {gate}"
+        elif terminal.startswith("Terminal"):
             position_id = f"{terminal} {position_label} {gate}"
         else:
             position_id = f"Terminal {terminal} {position_label} {gate}"

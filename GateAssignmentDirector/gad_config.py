@@ -25,6 +25,12 @@ class GADConfig:
         r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
         r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
     ])
+    tooltip_success_keyphrases: list[str] = field(default_factory=lambda: [
+        'marshaller has been dispatched',
+        'follow me car',
+        'boarding',
+        'safedock© system activated'
+    ])
     sleep_short: float = 0.1
     sleep_long: float = 0.3
     ground_check_interval: float = 1.0

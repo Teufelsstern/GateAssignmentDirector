@@ -20,6 +20,7 @@ from GateAssignmentDirector.exceptions import (
 from GateAssignmentDirector.gsx_enums import SearchType, GsxVariable
 from GateAssignmentDirector.menu_logger import GateInfo
 from GateAssignmentDirector.gate_matcher import GateMatcher
+from GateAssignmentDirector.tooltip_reader import TooltipReader
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class GateAssignment:
         self.menu_logger = menu_logger
         self.menu_reader = menu_reader
         self.gate_matcher = GateMatcher(config)
+        self.tooltip_reader = TooltipReader(config)
 
         logging.basicConfig(
             level=config.logging_level,
@@ -88,7 +90,6 @@ class GateAssignment:
                 )
                 time.sleep(self.config.sleep_short)
                 for option in level_0_options:
-                    # Find actual index in the full menu
                     actual_index = all_options.index(option)
                     level_1_next_clicks = 0
                     if "Previous" in option[1:].split():
@@ -223,29 +224,64 @@ class GateAssignment:
                 logger.info(
                     "Requested matching gate, assuming it has been set for now."
                 )
-        try:
-            if wait_for_ground:
-                self._wait_for_ground()
-            elif not self.sim_manager.is_on_ground():
-                logger.warning("Aircraft not on ground - GSX may fail")
-            self._refresh_menu()
-            self.menu_navigator.click_planned(matching_gsx_gate)
-            self.menu_navigator.find_and_click(["activate"], SearchType.KEYWORD)
-            self.menu_navigator.find_and_click(
-                [self.config.default_airline or "GSX"], SearchType.AIRLINE
-            )
-            logger.info("Gate assignment completed successfully")
-            return True, matching_gsx_gate
+        # Retry clicking up to 2 times (GSX navigation can be unreliable)
+        max_attempts = 2
+        for attempt in range(max_attempts):
+            try:
+                if wait_for_ground:
+                    self._wait_for_ground()
+                elif not self.sim_manager.is_on_ground():
+                    logger.warning("Aircraft not on ground - GSX may fail")
 
-        except GsxMenuNotChangedError as e:
-            # Menu didn't change, but action might have succeeded anyway
-            logger.warning(f"Gate assignment uncertain: {e}")
-            # Return success with a flag that it's uncertain
-            return True, {**matching_gsx_gate, "_uncertain": True}
+                self._refresh_menu()
 
-        except (GsxMenuError, GsxTimeoutError, OSError, IOError) as e:
-            logger.error(f"Gate assignment failed: {e}")
-            return False, None
+                # Capture baseline tooltip timestamp before action
+                baseline_timestamp = self.tooltip_reader.get_file_timestamp()
+
+                self.menu_navigator.click_planned(matching_gsx_gate)
+                self.menu_navigator.find_and_click(["activate"], SearchType.KEYWORD)
+
+                # Check if GSX already succeeded (tooltip confirms)
+                if self.tooltip_reader.check_for_success(baseline_timestamp):
+                    logger.info("Gate activated successfully (confirmed via tooltip)")
+                    self._close_menu()
+                    return True, matching_gsx_gate
+
+                # Tooltip didn't confirm - try airline selection
+                logger.debug("No tooltip confirmation, attempting airline selection")
+                self.menu_navigator.find_and_click(
+                    [self.config.default_airline or "GSX"], SearchType.AIRLINE
+                )
+                logger.info("Gate assignment completed successfully")
+                self._close_menu()
+                return True, matching_gsx_gate
+
+            except GsxMenuNotChangedError as e:
+                # Check tooltip as fallback
+                if self.tooltip_reader.check_for_success(baseline_timestamp, timeout=0.5):
+                    logger.info("Gate assignment succeeded (tooltip confirmation after menu error)")
+                    self._close_menu()
+                    return True, matching_gsx_gate
+
+                # Menu didn't change, but action might have succeeded anyway
+                logger.warning(f"Gate assignment uncertain: {e}")
+                # Leave menu open so user can verify - return success with uncertain flag
+                return True, {**matching_gsx_gate, "_uncertain": True}
+
+            except (GsxMenuError, GsxTimeoutError) as e:
+                if attempt < max_attempts - 1:
+                    logger.warning(f"Gate clicking failed (attempt {attempt + 1}/{max_attempts}): {e}")
+                    logger.info("Retrying gate assignment (already matched gate, skipping re-match)...")
+                    time.sleep(0.5)
+                else:
+                    logger.error(f"Gate assignment failed after {max_attempts} attempts: {e}")
+                    return False, None
+
+            except (OSError, IOError) as e:
+                logger.error(f"Gate assignment failed due to I/O error: {e}")
+                return False, None
+
+        return False, None
 
     def _wait_for_ground(self) -> None:
         """Wait indefinitely for aircraft to be on ground"""
@@ -267,6 +303,11 @@ class GateAssignment:
         self.sim_manager.set_variable(GsxVariable.MENU_CHOICE.value, -2)
         time.sleep(0.1)
         self.menu_reader.read_menu()
+
+    def _close_menu(self) -> None:
+        """Close GSX menu"""
+        self.sim_manager.set_variable(GsxVariable.MENU_OPEN.value, 0)
+        time.sleep(0.1)
 
     def _navigate_to_level_0_page(self, target_page: int) -> None:
         """Navigate to specific level 0 page"""

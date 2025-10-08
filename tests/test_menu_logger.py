@@ -106,9 +106,10 @@ class TestMenuLogger(unittest.TestCase):
 
         result = self.logger._interpret_position("Gate Z52H", position_info, "gate")
 
-        self.assertEqual(result["terminal"], "Terminal 1")  # Falls back to Terminal 1
+        # Generic menu triggers heuristic: "Z52H" → terminal="Z" (letter prefix)
+        self.assertEqual(result["terminal"], "Z")
         self.assertEqual(result["gate"], "Z52H")
-        self.assertEqual(result["position_id"], "Terminal 1 Gate Z52H")
+        self.assertEqual(result["position_id"], "Terminal Z Gate Z52H")
 
     def test_interpret_position_without_found_in_menu(self):
         """Test interpreting position when found_in_menu is missing"""
@@ -119,10 +120,10 @@ class TestMenuLogger(unittest.TestCase):
 
         result = self.logger._interpret_position("Gate A42B", position_info, "gate")
 
-        # Should fallback to "Terminal 1" when no menu context is available
-        self.assertEqual(result["terminal"], "Terminal 1")
+        # Generic menu triggers heuristic: "A42B" → terminal="4" (first digit, A is gate suffix letter)
+        self.assertEqual(result["terminal"], "4")
         self.assertEqual(result["gate"], "A42B")
-        self.assertEqual(result["position_id"], "Terminal 1 Gate A42B")
+        self.assertEqual(result["position_id"], "Terminal 4 Gate A42B")
 
     def test_add_to_terminals(self):
         """Test adding position to terminal structure"""

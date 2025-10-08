@@ -65,10 +65,32 @@ class MenuNavigator:
         raise GsxMenuError(f"Could not find {keywords} after {attempts} attempts")
 
     def click_by_index(self, index: int) -> None:
+        """Click menu option by index with GSX refresh retry on failure"""
         time.sleep(self.config.sleep_short)
         self.menu_choice.value = index
         time.sleep(self.config.sleep_short)
-        self._wait_for_change()
+
+        # First attempt to wait for change
+        success, _ = self._wait_for_change()
+        if success:
+            return
+
+        # If first attempt failed, try GSX refresh command and check again
+        logger.warning(f"Menu did not change after clicking index {index}, attempting GSX refresh...")
+        self.menu_choice.value = -2  # GSX refresh command
+        time.sleep(self.config.sleep_short)
+
+        # Try again after refresh
+        success, info = self._wait_for_change()
+        if success:
+            logger.info(f"Menu changed after GSX refresh for index {index}")
+            return
+
+        # Both attempts failed
+        raise GsxMenuNotChangedError(
+            f"Menu did not change after clicking index {index} (tried refresh). "
+            f"Last menu was: '{info[0]}' with options {info[1]}"
+        )
 
     def click_next(self) -> Tuple[bool, tuple]:
         """Click Next button if available. Returns True if clicked, False if no Next button found."""
@@ -94,12 +116,15 @@ class MenuNavigator:
         level_0_option_index = raw_info["level_0_option_index"]
         level_1_next_clicks = raw_info["level_1_next_clicks"]
         second_index = raw_info["menu_index"]
-        for _ in range(level_0_page - 1):
-            if not self.click_next():
+        # level_0_page is 0-indexed, so we need exactly level_0_page Next clicks
+        for _ in range(level_0_page):
+            success, _ = self.click_next()
+            if not success:
                 raise GsxMenuError(f"Expected Next button to reach page {level_0_page}")
         self.click_by_index(level_0_option_index)
         for i in range(level_1_next_clicks):
-            if not self.click_next() and i < level_1_next_clicks - 1:
+            success, _ = self.click_next()
+            if not success and i < level_1_next_clicks - 1:
                 raise GsxMenuError(f"Expected Next button at level 1 click {i+1}")
         self.click_by_index(second_index)
 

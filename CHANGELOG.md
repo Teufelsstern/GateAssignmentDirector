@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2025-10-08
+
+### Added
+- TooltipReader module for GSX success confirmation via tooltip monitoring
+- Tooltip-based success detection (marshaller dispatched, follow me car, boarding, safedock activated)
+- Automatic menu closing on successful gate assignment
+- Terminal inference from gate identifiers using heuristic fallback (_infer_terminal_from_gate)
+- GSX refresh retry logic in click_by_index() for improved reliability
+- Internal retry loop in assign_gate() that avoids wasteful re-matching on navigation failures
+- _close_menu() method in gate_assignment.py
+
+### Changed
+- Terminal extraction now combines menu context with gate identifier heuristics
+- Generic menu fallbacks ("All Gate positions") now trigger intelligent terminal inference
+- 3-digit gates without prefix go to "Miscellaneous" terminal (e.g., "Gate 205")
+- 3-digit gates with prefix use prefix as terminal (e.g., "Gate K205" → terminal="K")
+- SI gate parser now handles letter-prefixed gates (V118, A20, etc.)
+- SI terminal extraction from gate prefix (e.g., "Gate V118" → terminal="V", gate="V118")
+- level_0_page navigation fixed: now uses range(level_0_page) instead of range(level_0_page - 1)
+- Gate assignment retries navigation failures without re-matching (2 attempts)
+- Menu closes automatically on confirmed success, stays open on uncertain/failure
+- SI airport extraction fixed: now reads from flight_details.current_airport (not nested in current_flight)
+
+### Fixed
+- Empty terminal bug in "All X Positions" menus (was returning "" instead of triggering heuristics)
+- SI gate parser missing letter prefixes in gate numbers (V118 was parsed as "" instead of "V118")
+- Terminal extraction mismatch between GSX (terminal="V") and SI (terminal="Terminal")
+- level_0_page off-by-one error causing wrong page navigation in multi-page menus
+- GSX navigation failures causing full re-match including expensive gate matching
+- Airport detection stuck in infinite "not yet detected" loop due to wrong JSON path
+
+### Technical
+- New tooltip_reader.py module with polling-based file monitoring
+- tooltip_success_keyphrases and tooltip_file_paths in config.yaml
+- Tooltip checks after "activate" click and in exception handlers
+- GSX refresh command (-2) restored in click_by_index() for stuck menu recovery
+- Terminal inference uses letter prefix detection, digit analysis, and position type
+- SI gate parser regex updated to capture [A-Z]?\d+ instead of just \d+
+- click_planned() now correctly navigates multi-page menus with 0-indexed pages
+
 ## [0.9.1] - 2025-10-07
 
 ### Added

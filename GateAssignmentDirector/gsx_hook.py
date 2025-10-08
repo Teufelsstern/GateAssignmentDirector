@@ -96,20 +96,8 @@ class GsxHook:
             logger.error("GSX Hook not initialized")
             return False, None
 
-        # First attempt
+        # assign_gate now handles retries internally (without re-matching)
         success, gate_info = self.gate_assignment.assign_gate(airport=airport, status_callback=status_callback, **kwargs)
-
-        # Retry once if failed (GSX can be unreliable)
-        if not success:
-            logger.warning("Gate assignment failed, closing menu and retrying...")
-            self._close_menu()
-            time.sleep(0.5)
-            success, gate_info = self.gate_assignment.assign_gate(airport=airport, status_callback=status_callback, **kwargs)
-            if success:
-                logger.info("Gate assignment succeeded on retry")
-            else:
-                logger.error("Gate assignment failed after retry")
-
         return success, gate_info
 
     def is_on_ground(self) -> bool:

@@ -17,6 +17,11 @@ menu_file_paths:
 tooltip_file_paths:
 - C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip
 - C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip
+tooltip_success_keyphrases:
+- marshaller has been dispatched
+- follow me car
+- boarding
+- safedock© system activated
 minimize_to_tray: true
 position_keywords:
   gsx_gate:
