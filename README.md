@@ -107,6 +107,21 @@ Available configuration options:
   - Dark/light theme support
 - **Full test suite** with 230+ unit tests ensuring reliability
 
+## Documentation
+
+📚 **[Complete Documentation](docs/README.md)**
+
+### User Manual
+- **[Gate Management Window](docs/user-manual/gate-management-window.md)** - Edit and reorganize airport gates
+
+*More guides coming soon: Installation, Configuration, Basic Usage, Troubleshooting*
+
+### Developer Documentation
+- **[Architecture](docs/agents/architecture.md)** - System design and components
+- **[Data Structures](docs/agents/data-structures.md)** - JSON formats and parsing
+- **[Testing Guide](docs/agents/testing.md)** - Test patterns and fixtures
+- **[UI System](docs/agents/ui-system.md)** - Color palette and styling
+
 ## Testing
 
 Run the test suite (developers only):
