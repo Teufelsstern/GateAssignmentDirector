@@ -446,7 +446,7 @@ coverage html  # Generates htmlcov/index.html
 | `test_menu_reader.py` | `menu_reader.py` | ~12 | File reading, change detection, menu state parsing |
 | `test_si_api_hook.py` | `si_api_hook.py` (JSONMonitor) | ~20 | File monitoring, change detection, gate callbacks |
 | `test_simconnect_manager.py` | `simconnect_manager.py` | 12 | Connection, variable reading/writing, ground detection, disconnection edge cases |
-| `test_tooltip_reader.py` | `tooltip_reader.py` | 211 | Tooltip text extraction, position detection, retry logic, caching |
+| `test_tooltip_reader.py` | `tooltip_reader.py` | 18 | Tooltip file reading, timestamp checking, success detection, error handling |
 
 **Total:** 324 tests
 
