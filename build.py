@@ -34,7 +34,7 @@ else:
     icon_arg = ""
 
 # Find SimConnect DLL
-print("\n[3/5] Locating SimConnect.dll...")
+print("\n[3/6] Locating SimConnect.dll...")
 simconnect_dll = None
 try:
     import SimConnect
@@ -49,8 +49,16 @@ try:
 except ImportError:
     print("[WARN] SimConnect package not installed")
 
+# Copy LICENSE to LICENSE.txt for build
+print("\n[4/6] Preparing LICENSE file...")
+if os.path.exists('LICENSE'):
+    shutil.copy('LICENSE', 'LICENSE.txt')
+    print("[OK] Copied LICENSE to LICENSE.txt")
+else:
+    print("[WARN] LICENSE file not found, build may fail")
+
 # Build with PyInstaller
-print("\n[4/5] Building executable...")
+print("\n[5/6] Building executable...")
 args = [
     'GateAssignmentDirector/ui.py',
     '--onedir',
@@ -89,7 +97,7 @@ if icon_arg:
 PyInstaller.__main__.run(args)
 
 # Summary
-print("\n[5/5] Build complete!")
+print("\n[6/6] Build complete!")
 print("=" * 50)
 print("\nOutput location: dist/GateAssignmentDirector/")
 print("Main executable: dist/GateAssignmentDirector/GateAssignmentDirector.exe")
