@@ -1,7 +1,7 @@
 # Agent Documentation - GateAssignmentDirector
 
-**Version:** 0.9.4
-**Last Updated:** 2025-10-08
+**Version:** 1.0.0
+**Last Updated:** 2025-10-09
 
 Welcome to the modular agent documentation for the SayIntentionsBridge (GateAssignmentDirector) project. This documentation is split by domain to help specialized AI agents quickly find relevant information.
 
@@ -9,7 +9,7 @@ Welcome to the modular agent documentation for the SayIntentionsBridge (GateAssi
 
 **Project Purpose:** Bridge between SayIntentions AI and GSX (Ground Services X) for automatic gate assignment in Microsoft Flight Simulator 2020.
 
-**Language:** Python 3.11+
+**Language:** Python 3.8+
 **License:** GPL-3.0
 
 ## Documentation Structure
@@ -136,13 +136,14 @@ with open(file_path, 'r', encoding='utf-8') as f:
 
 ## Version-Specific Notes
 
-### v0.9.4 (Current)
+### v1.0.0 (Current)
+- First stable release
 - Gate management window: Rename terminal, prefix/suffix bulk ops, alphanumeric sorting
 - GateMatcher module for intelligent fuzzy matching with weighted scoring
 - TooltipReader module for GSX success confirmation
 - Airport override persistence fixes
 - Always-on-top UI option
-- Test count: 324 tests (was 250 at v0.8.8)
+- Test count: 342 tests (was 324 at v0.9.4, 250 at v0.8.8)
 
 ### v0.8.8
 - Status callback system for director → UI updates
@@ -216,6 +217,8 @@ with open(file_path, 'r', encoding='utf-8') as f:
 | requests | Apache 2.0 | HTTP (SI API) |
 | Python-SimConnect | AGPL-3.0 | MSFS interface |
 | CustomTkinter | MIT | UI framework |
+| CTkToolTip | CC0-1.0 | UI tooltips |
+| Pillow | HPND | Image processing |
 | pystray | GPL-3.0 | System tray |
 
 ## Need More Detail?

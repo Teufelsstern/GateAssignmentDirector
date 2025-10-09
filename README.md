@@ -96,16 +96,23 @@ Available configuration options:
 ## Features
 
 - **Automatic gate parsing** from SayIntentions flight data
-- **Fuzzy matching** for gate assignments to handle variations in gate naming
+- **Intelligent fuzzy matching** with component-based weighted scoring to handle variations in gate naming formats
 - **Menu navigation automation** for hands-free GSX gate selection
 - **Airport gate mapping and caching** for improved performance
+- **Gate management window** for manual gate editing
+  - Rename terminals and reorganize gate assignments
+  - Bulk prefix/suffix operations for gate identifiers
+  - Alphanumeric sorting and filtering
+- **Success confirmation** via GSX tooltip monitoring for reliable assignment verification
 - **Comprehensive logging** with configurable verbosity levels
 - **Modern GUI with system tray integration**
   - Real-time flight monitoring display
-  - Live configuration editing
+  - Live configuration editing with save/reload
   - Status indicators and event logging
   - Dark/light theme support
-- **Full test suite** with 230+ unit tests ensuring reliability
+  - Always-on-top window option
+  - Airport override for manual control
+- **Full test suite** with 340+ unit tests ensuring reliability
 
 ## Documentation
 
