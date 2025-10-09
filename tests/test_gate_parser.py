@@ -22,7 +22,8 @@ class TestGateParserExtended(unittest.TestCase):
         expected = GateInfo(
             terminal_name="Terminal",
             terminal_number="7",
-            gate_letter="",
+            gate_prefix="",
+            gate_suffix="",
             gate_number="7",
             raw_value="Terminal 7 7",
         )
@@ -34,7 +35,8 @@ class TestGateParserExtended(unittest.TestCase):
         expected = GateInfo(
             terminal_name="Terminal",
             terminal_number="",
-            gate_letter="",
+            gate_prefix="",
+            gate_suffix="",
             gate_number="5",
             raw_value="Gate 5",
         )
@@ -46,8 +48,9 @@ class TestGateParserExtended(unittest.TestCase):
         expected = GateInfo(
             terminal_name="International",
             terminal_number="",
+            gate_prefix="",
             gate_number="25",
-            gate_letter="A",
+            gate_suffix="A",
             raw_value="International Gate 25A",
         )
         self.assertEqual(result, expected)
@@ -58,8 +61,9 @@ class TestGateParserExtended(unittest.TestCase):
         expected = GateInfo(
             terminal_name="Pier",
             terminal_number="C",
+            gate_prefix="",
             gate_number="14",
-            gate_letter="R",
+            gate_suffix="R",
             raw_value="Pier C Gate 14 R",
         )
         self.assertEqual(result, expected)
@@ -69,7 +73,7 @@ class TestGateParserExtended(unittest.TestCase):
         result = self.parser.parse_gate("")
         self.assertEqual(result.terminal_name, None)
         self.assertEqual(result.gate_number, None)
-        self.assertEqual(result.gate_letter, None)
+        self.assertEqual(result.gate_suffix, None)
 
     def test_parse_whitespace_only(self):
         """Test parsing whitespace-only string"""
@@ -81,7 +85,7 @@ class TestGateParserExtended(unittest.TestCase):
         """Test parsing handles lowercase input"""
         result = self.parser.parse_gate("gate 12b")
         self.assertEqual(result.gate_number, "12")
-        self.assertEqual(result.gate_letter, "B")  # Should be capitalized
+        self.assertEqual(result.gate_suffix, "B")  # Should be capitalized
 
     def test_parse_concourse_format(self):
         """Test parsing 'Concourse A Gate 5' format"""
@@ -102,7 +106,7 @@ class TestGateParserExtended(unittest.TestCase):
         result = self.parser.parse_gate("Domestic Gate 7B")
         self.assertEqual(result.terminal_name, "Domestic")
         self.assertEqual(result.gate_number, "7")
-        self.assertEqual(result.gate_letter, "B")
+        self.assertEqual(result.gate_suffix, "B")
 
     def test_parse_main_terminal(self):
         """Test parsing 'Main Terminal Gate 15' format"""
@@ -141,14 +145,14 @@ class TestGateParserExtended(unittest.TestCase):
             terminal_name="Terminal",
             terminal_number="1",
             gate_number="5",
-            gate_letter="A",
+            gate_suffix="A",
             raw_value="Test"
         )
         gate2 = GateInfo(
             terminal_name="Terminal",
             terminal_number="1",
             gate_number="5",
-            gate_letter="A",
+            gate_suffix="A",
             raw_value="Test"
         )
         self.assertEqual(gate1, gate2)
@@ -173,7 +177,7 @@ class TestGateParserExtended(unittest.TestCase):
             terminal_name="Terminal",
             terminal_number="1",
             gate_number="5",
-            gate_letter="A",
+            gate_suffix="A",
             raw_value="Terminal 1 Gate 5A"
         )
         result = str(gate_info)

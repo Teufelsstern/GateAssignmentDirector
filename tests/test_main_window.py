@@ -522,7 +522,10 @@ class TestDirectorUIGateManagement(unittest.TestCase):
 
         self.ui.edit_gates()
 
-        mock_gate_window.assert_called_once_with(self.ui.root, "EDDF")
+        self.assertEqual(mock_gate_window.call_count, 1)
+        call_args = mock_gate_window.call_args[0]
+        self.assertEqual(call_args[0], self.ui.root)
+        self.assertEqual(call_args[1], "EDDF")
 
     @patch('GateAssignmentDirector.ui.main_window.GateManagementWindow')
     @patch('GateAssignmentDirector.ui.main_window.messagebox.showwarning')
@@ -536,7 +539,10 @@ class TestDirectorUIGateManagement(unittest.TestCase):
         warning_msg = mock_warning.call_args[0][1]
         self.assertIn("No airport has been detected", warning_msg)
 
-        mock_gate_window.assert_called_once_with(self.ui.root, None)
+        self.assertEqual(mock_gate_window.call_count, 1)
+        call_args = mock_gate_window.call_args[0]
+        self.assertEqual(call_args[0], self.ui.root)
+        self.assertEqual(call_args[1], None)
 
     @patch('GateAssignmentDirector.ui.main_window.messagebox.showerror')
     def test_assign_gate_manual_no_airport(self, mock_error):

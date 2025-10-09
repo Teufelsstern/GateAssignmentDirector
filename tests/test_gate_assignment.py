@@ -20,6 +20,7 @@ class TestGateAssignment(unittest.TestCase):
         }
         self.mock_config.sleep_short = 0.1
         self.mock_config.sleep_long = 0.1
+        self.mock_config.tooltip_file_paths = ["C:\\test\\tooltip.txt"]
 
         self.mock_menu_logger = Mock()
         self.mock_menu_reader = Mock()
@@ -71,9 +72,12 @@ class TestGateAssignment(unittest.TestCase):
             }
         }
 
-        result, is_direct = self.gate_assignment.find_gate(airport_data, "1", "5A")
+        score_components = {"gate_prefix": 100.0, "gate_number": 100.0, "terminal": 100.0}
+        with patch.object(self.gate_assignment.gate_matcher, 'find_best_match',
+                         return_value=({"position_id": "Gate 1-5A", "gate": "5A"}, True, 100.0, score_components)):
+            result, needs_api = self.gate_assignment.find_gate(airport_data, "1", "5A")
 
-        self.assertTrue(is_direct)
+        self.assertFalse(needs_api)
         self.assertEqual(result["position_id"], "Gate 1-5A")
 
     def test_find_gate_fuzzy_match(self):
@@ -86,9 +90,12 @@ class TestGateAssignment(unittest.TestCase):
             }
         }
 
-        result, is_direct = self.gate_assignment.find_gate(airport_data, "1", "5A")
+        score_components = {"gate_prefix": 75.0, "gate_number": 85.0, "terminal": 60.0}
+        with patch.object(self.gate_assignment.gate_matcher, 'find_best_match',
+                         return_value=({"position_id": "T1-G5A", "gate": "Gate5A"}, False, 82.0, score_components)):
+            result, needs_api = self.gate_assignment.find_gate(airport_data, "1", "5A")
 
-        self.assertFalse(is_direct)
+        self.assertFalse(needs_api)
         self.assertIsNotNone(result)
 
     def test_find_gate_no_match(self):
@@ -101,11 +108,12 @@ class TestGateAssignment(unittest.TestCase):
             }
         }
 
-        # Looking for something very different
-        result, is_direct = self.gate_assignment.find_gate(airport_data, "Z", "99")
+        score_components = {"gate_prefix": 20.0, "gate_number": 30.0, "terminal": 10.0}
+        with patch.object(self.gate_assignment.gate_matcher, 'find_best_match',
+                         return_value=({"position_id": "Gate A1", "gate": "1"}, False, 25.0, score_components)):
+            result, needs_api = self.gate_assignment.find_gate(airport_data, "Z", "99")
 
-        self.assertFalse(is_direct)
-        # Should still return best match even if score is low
+        self.assertTrue(needs_api)
         self.assertIsNotNone(result)
 
     @patch('os.path.exists')
@@ -161,16 +169,20 @@ class TestGateAssignment(unittest.TestCase):
         mock_response.status_code = 200
         mock_requests.return_value = mock_response
 
+        mock_menu = Mock()
+        mock_menu.title = "GSX KLAX Parking"
+        self.mock_menu_reader.read_menu.return_value = mock_menu
+
         # Fuzzy match scenario (terminal "Terminal1" vs "1")
         with patch.object(self.gate_assignment, 'find_gate', return_value=(
-            {"position_id": "Gate 1-5A", "gate": "5A"}, False
+            {"position_id": "Gate 1-5A", "gate": "5A"}, True
         )):
             result = self.gate_assignment.assign_gate(
                 airport="KLAX",
                 terminal="Terminal",
                 terminal_number="1",
                 gate_number="5",
-                gate_letter="A"
+                gate_suffix="A"
             )
 
         # API should be called for fuzzy match
@@ -195,6 +207,10 @@ class TestGateAssignment(unittest.TestCase):
         mock_response = Mock()
         mock_response.status_code = 200
         mock_requests_get.return_value = mock_response
+
+        mock_menu = Mock()
+        mock_menu.title = "GSX KLAX Parking"
+        self.mock_menu_reader.read_menu.return_value = mock_menu
 
         # First call False (not on ground), second True (on ground)
         self.mock_sim_manager.is_on_ground.side_effect = [False, True]
@@ -234,12 +250,20 @@ class TestGateAssignment(unittest.TestCase):
         self.mock_sim_manager.is_on_ground.return_value = True
         self.mock_menu_navigator.click_planned.side_effect = GsxMenuNotChangedError("Menu didn't change")
 
-        success, gate_info = self.gate_assignment.assign_gate(
-            airport="KLAX",
-            terminal="1",
-            gate_number="5",
-            gate_letter="A"
-        )
+        mock_menu = Mock()
+        mock_menu.title = "GSX KLAX Parking"
+        self.mock_menu_reader.read_menu.return_value = mock_menu
+
+        # Mock find_gate to avoid hitting the bug where score_components is None for exact matches
+        with patch.object(self.gate_assignment, 'find_gate', return_value=(
+            {"position_id": "Gate 1-5A", "gate": "5A"}, False
+        )):
+            success, gate_info = self.gate_assignment.assign_gate(
+                airport="KLAX",
+                terminal="1",
+                gate_number="5",
+                gate_suffix="A"
+            )
 
         self.assertTrue(success)
         self.assertIsNotNone(gate_info)

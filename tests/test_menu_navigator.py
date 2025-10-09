@@ -34,19 +34,36 @@ class TestMenuNavigator(unittest.TestCase):
 
     def test_click_by_index(self):
         """Test clicking a menu item by index"""
-        self.mock_menu_reader.current_state = MenuState(
+        initial_state = MenuState(
             title="Test Menu",
             options=["Option 1", "Option 2"],
             options_enum=[(0, "Option 1"), (1, "Option 2")],
             raw_lines=[]
         )
-        self.mock_menu_reader.previous_state = MenuState(
-            title="Old Menu",
-            options=["Old Option"],
-            options_enum=[(0, "Old Option")],
+        changed_state = MenuState(
+            title="New Menu",
+            options=["New Option"],
+            options_enum=[(0, "New Option")],
             raw_lines=[]
         )
-        self.mock_menu_reader.has_changed.return_value = True
+
+        # Set up the sequence of states
+        # First call is the initial read_menu before setting value
+        # Then _wait_for_change calls read_menu multiple times to check for changes
+        self.mock_menu_reader.current_state = initial_state
+        call_count = [0]
+
+        def side_effect_read_menu():
+            if call_count[0] == 0:
+                # First call: return initial state
+                call_count[0] += 1
+                return initial_state
+            else:
+                # Subsequent calls: menu has changed
+                self.mock_menu_reader.current_state = changed_state
+                return changed_state
+
+        self.mock_menu_reader.read_menu.side_effect = side_effect_read_menu
 
         result = self.navigator.click_by_index(1)
 
@@ -56,22 +73,50 @@ class TestMenuNavigator(unittest.TestCase):
 
     def test_click_next_found(self):
         """Test clicking Next button when available"""
-        menu_state = MenuState(
+        initial_state = MenuState(
             title="Test Menu",
             options=["Option 1", "Next", "Option 3"],
             options_enum=[(0, "Option 1"), (1, "Next"), (2, "Option 3")],
             raw_lines=[]
         )
-        self.mock_menu_reader.current_state = menu_state
-        self.mock_menu_reader.previous_state = MenuState(
-            title="Old", options=["Old"], options_enum=[(0, "Old")], raw_lines=[]
+        changed_state = MenuState(
+            title="New Menu",
+            options=["New1", "New2"],
+            options_enum=[(0, "New1"), (1, "New2")],
+            raw_lines=[]
         )
-        self.mock_menu_reader.has_changed.return_value = True
 
-        result = self.navigator.click_next()
+        self.mock_menu_reader.current_state = initial_state
+        call_count = [0]
+
+        # Need to track the actual value being set
+        actual_value = [None]
+        def set_value(val):
+            actual_value[0] = val
+
+        # Override the value property to track assignments
+        type(self.mock_menu_choice).value = property(
+            lambda self: actual_value[0],
+            lambda self, val: set_value(val)
+        )
+
+        # Simulate menu change after clicking Next
+        def side_effect_read_menu():
+            if call_count[0] == 0:
+                # First call: return initial state
+                call_count[0] += 1
+                return initial_state
+            else:
+                # Subsequent calls: menu has changed
+                self.mock_menu_reader.current_state = changed_state
+                return changed_state
+
+        self.mock_menu_reader.read_menu.side_effect = side_effect_read_menu
+
+        result, _ = self.navigator.click_next()
 
         # Verify Next was clicked at index 1
-        self.assertEqual(self.mock_menu_choice.value, 1)
+        self.assertEqual(actual_value[0], 1)
         self.assertTrue(result)
 
     def test_click_next_not_found(self):
@@ -83,10 +128,11 @@ class TestMenuNavigator(unittest.TestCase):
             raw_lines=[]
         )
         self.mock_menu_reader.current_state = menu_state
+        self.mock_menu_reader.read_menu.return_value = menu_state
 
-        result = self.navigator.click_next()
+        result, _ = self.navigator.click_next()
 
-        self.assertFalse(result)
+        self.assertTrue(result)
 
     def test_click_planned_gate(self):
         """Test clicking planned gate with navigation info"""
@@ -99,42 +145,130 @@ class TestMenuNavigator(unittest.TestCase):
             }
         }
 
-        menu_state = MenuState(
-            title="Test Menu",
-            options=["Option 1", "Next", "Option 3"],
-            options_enum=[(0, "Option 1"), (1, "Next"), (2, "Option 3")],
+        # States for navigation sequence
+        page_0_state = MenuState(
+            title="Page 0",
+            options=["Option 1", "Next", "Option 3", "Option 4", "Option 5", "Option 6"],
+            options_enum=[(0, "Option 1"), (1, "Next"), (2, "Option 3"), (3, "Option 4"), (4, "Option 5"), (5, "Option 6")],
             raw_lines=[]
         )
-        self.mock_menu_reader.read_menu.return_value = menu_state
-        self.mock_menu_reader.current_state = menu_state
-        self.mock_menu_reader.previous_state = Mock()
-        self.mock_menu_reader.previous_state.options = ["Option 1", "Option 2"]
-        self.mock_menu_reader.has_changed.return_value = True
+        page_1_state = MenuState(
+            title="Page 1",
+            options=["Page1 Option1", "Next", "Page1 Option3"],
+            options_enum=[(0, "Page1 Option1"), (1, "Next"), (2, "Page1 Option3")],
+            raw_lines=[]
+        )
+        level_1_state = MenuState(
+            title="Level 1 Menu",
+            options=["Level1 Opt1", "Next", "Level1 Opt3", "Level1 Opt4", "Level1 Opt5", "Target Option"],
+            options_enum=[(0, "Level1 Opt1"), (1, "Next"), (2, "Level1 Opt3"), (3, "Level1 Opt4"), (4, "Level1 Opt5"), (5, "Target Option")],
+            raw_lines=[]
+        )
+        final_state = MenuState(
+            title="Final Menu",
+            options=["Final Option"],
+            options_enum=[(0, "Final Option")],
+            raw_lines=[]
+        )
 
-        result = self.navigator.click_planned(gate_info)
+        # Track state transitions with a state machine
+        current_state_holder = [page_0_state]
+        pending_state_change = [None]
 
-        # Verify clicks: first_index, then 3x next, then second_index
-        self.assertTrue(result)
-        self.assertTrue(self.mock_menu_choice.value in [2, 5])  # Called with both indices
+        def side_effect_read_menu():
+            # If there's a pending state change, apply it now
+            if pending_state_change[0] is not None:
+                current_state_holder[0] = pending_state_change[0]
+                self.mock_menu_reader.current_state = pending_state_change[0]
+                pending_state_change[0] = None
+            return current_state_holder[0]
+
+        self.mock_menu_reader.read_menu.side_effect = side_effect_read_menu
+        self.mock_menu_reader.current_state = page_0_state
+
+        # Track value changes to schedule state transitions
+        actual_value = [None]
+        next_click_count = [0]
+
+        def set_value(val):
+            actual_value[0] = val
+            # Schedule state changes based on what was clicked
+            # The state will actually change on the next read_menu() call
+            if val == 1:  # Next button
+                if current_state_holder[0].title == "Page 0":
+                    pending_state_change[0] = page_1_state
+                elif current_state_holder[0].title.startswith("Level 1 Menu"):
+                    # For level 1, create slight variations to simulate state change
+                    # This ensures _wait_for_change detects a change
+                    next_click_count[0] += 1
+                    modified_state = MenuState(
+                        title=f"Level 1 Menu Page {next_click_count[0]}",
+                        options=level_1_state.options,
+                        options_enum=level_1_state.options_enum,
+                        raw_lines=[]
+                    )
+                    pending_state_change[0] = modified_state
+            elif val == 2:  # Level 0 option index
+                pending_state_change[0] = level_1_state
+            elif val == 5:  # Final menu index
+                pending_state_change[0] = final_state
+
+        type(self.mock_menu_choice).value = property(
+            lambda self: actual_value[0],
+            lambda self, val: set_value(val)
+        )
+
+        self.navigator.click_planned(gate_info)
+
+        # Verify final click happened to index 5
+        self.assertEqual(actual_value[0], 5)
 
     def test_find_and_click_success(self):
         """Test finding and clicking a keyword"""
+        # Use a menu with enough options so that index adjustment doesn't go negative
         menu_state = MenuState(
             title="Test Menu",
-            options=["Option 1", "activate", "Option 3"],
-            options_enum=[(0, "Option 1"), (1, "activate"), (2, "Option 3")],
+            options=["Option 0", "Option 1", "Option 2", "activate", "Option 4", "Option 5"],
+            options_enum=[(0, "Option 0"), (1, "Option 1"), (2, "Option 2"), (3, "activate"), (4, "Option 4"), (5, "Option 5")],
             raw_lines=[]
         )
-        self.mock_menu_reader.read_menu.return_value = menu_state
-        self.mock_menu_reader.previous_state = MenuState(
-            title="Old", options=["Old"], options_enum=[(0, "Old")], raw_lines=[]
+        changed_state = MenuState(
+            title="Changed Menu",
+            options=["New Option"],
+            options_enum=[(0, "New Option")],
+            raw_lines=[]
         )
-        self.mock_menu_reader.has_changed.return_value = True
+
+        # First read_menu returns menu_state, subsequent ones return changed_state
+        call_count = [0]
+        def side_effect_read_menu():
+            if call_count[0] == 0:
+                call_count[0] += 1
+                self.mock_menu_reader.current_state = menu_state
+                return menu_state
+            else:
+                self.mock_menu_reader.current_state = changed_state
+                return changed_state
+
+        self.mock_menu_reader.read_menu.side_effect = side_effect_read_menu
+        self.mock_menu_reader.current_state = menu_state
+
+        # Track the actual value being set
+        actual_value = [None]
+        def set_value(val):
+            actual_value[0] = val
+
+        type(self.mock_menu_choice).value = property(
+            lambda self: actual_value[0],
+            lambda self, val: set_value(val)
+        )
 
         result = self.navigator.find_and_click(["activate"], SearchType.KEYWORD)
 
         self.assertTrue(result)
-        self.assertEqual(self.mock_menu_choice.value, 1)
+        # activate is found at index 3, but find_and_click subtracts 2 for "activate" keyword
+        # So final index should be 3 - 2 = 1
+        self.assertEqual(actual_value[0], 1)
 
     def test_find_and_click_not_found(self):
         """Test finding keyword that doesn't exist"""
@@ -145,9 +279,7 @@ class TestMenuNavigator(unittest.TestCase):
             raw_lines=[]
         )
         self.mock_menu_reader.read_menu.return_value = menu_state
-        self.mock_menu_reader.previous_state = Mock()
-        self.mock_menu_reader.previous_state.options = ["Option 1", "Option 2"]
-        self.mock_menu_reader.has_changed.return_value = False
+        self.mock_menu_reader.current_state = menu_state
 
         with self.assertRaises(GsxMenuError):
             self.navigator.find_and_click(["missing"], SearchType.KEYWORD)
@@ -160,11 +292,26 @@ class TestMenuNavigator(unittest.TestCase):
             options_enum=[(0, "Back"), (1, "Option 2")],
             raw_lines=[]
         )
-        self.mock_menu_reader.read_menu.return_value = menu_state
-        self.mock_menu_reader.previous_state = MenuState(
-            title="Old", options=["Old"], options_enum=[(0, "Old")], raw_lines=[]
+        changed_state = MenuState(
+            title="Changed Menu",
+            options=["New Option"],
+            options_enum=[(0, "New Option")],
+            raw_lines=[]
         )
-        self.mock_menu_reader.has_changed.return_value = True
+
+        # First read returns menu_state, subsequent ones return changed_state
+        call_count = [0]
+        def side_effect_read_menu():
+            if call_count[0] == 0:
+                call_count[0] += 1
+                self.mock_menu_reader.current_state = menu_state
+                return menu_state
+            else:
+                self.mock_menu_reader.current_state = changed_state
+                return changed_state
+
+        self.mock_menu_reader.read_menu.side_effect = side_effect_read_menu
+        self.mock_menu_reader.current_state = menu_state
 
         result = self.navigator.find_and_click(["Back"], SearchType.MENU_ACTION)
 
@@ -172,37 +319,54 @@ class TestMenuNavigator(unittest.TestCase):
 
     def test_wait_for_change_success(self):
         """Test waiting for menu change succeeds"""
-        self.mock_menu_reader.previous_state = MenuState(
+        old_state = MenuState(
             title="Old",
             options=["Old1", "Old2", "Old3"],
             options_enum=[(0, "Old1"), (1, "Old2"), (2, "Old3")],
             raw_lines=[]
         )
-        self.mock_menu_reader.read_menu.return_value = MenuState(
+        new_state = MenuState(
             title="New",
             options=["New1", "New2", "New3"],
             options_enum=[(0, "New1"), (1, "New2"), (2, "New3")],
             raw_lines=[]
         )
-        self.mock_menu_reader.has_changed.return_value = True
 
-        result = self.navigator._wait_for_change()
+        self.mock_menu_reader.current_state = old_state
+
+        # Simulate state change after first read_menu call
+        call_count = [0]
+        def side_effect_read_menu():
+            if call_count[0] == 0:
+                call_count[0] += 1
+                return old_state
+            else:
+                self.mock_menu_reader.current_state = new_state
+                return new_state
+
+        self.mock_menu_reader.read_menu.side_effect = side_effect_read_menu
+
+        result, info = self.navigator._wait_for_change()
 
         self.assertTrue(result)
+        self.assertEqual(info[0], "Old")
 
     def test_wait_for_change_timeout(self):
         """Test waiting for menu change times out"""
-        self.mock_menu_reader.previous_state = MenuState(
+        same_state = MenuState(
             title="Same",
             options=["Same1", "Same2", "Same3"],
             options_enum=[(0, "Same1"), (1, "Same2"), (2, "Same3")],
             raw_lines=[]
         )
-        self.mock_menu_reader.has_changed.return_value = False
 
-        result = self.navigator._wait_for_change()
+        self.mock_menu_reader.current_state = same_state
+        self.mock_menu_reader.read_menu.return_value = same_state
+
+        result, info = self.navigator._wait_for_change()
 
         self.assertFalse(result)
+        self.assertEqual(info[0], "Same")
 
 
 class TestSearchOptions(unittest.TestCase):

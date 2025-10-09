@@ -20,6 +20,7 @@ from GateAssignmentDirector.ui.gate_management import GateManagementWindow
 from GateAssignmentDirector.ui.monitor_tab import setup_monitor_tab
 from GateAssignmentDirector.ui.logs_tab import setup_logs_tab
 from GateAssignmentDirector.ui.config_tab import setup_config_tab
+from GateAssignmentDirector.ui.disclaimer_dialog import DisclaimerDialog
 from GateAssignmentDirector.ui.ui_helpers import c
 
 
@@ -60,13 +61,31 @@ class DirectorUI:
         self._last_known_departure = None
         self._last_known_destination = None
 
+        # Check if disclaimer needs to be shown
+        if self.config.disclaimer_version < 1:
+            # Setup minimal window for disclaimer dialog
+            ctk.set_appearance_mode("dark")
+            ctk.set_default_color_theme("blue")
+            temp_root = ctk.CTk()
+            temp_root.withdraw()  # Hide the temporary root window
+
+            def on_disclaimer_accept():
+                """Called when user accepts disclaimer"""
+                self.config.disclaimer_version = 1
+                self.config.save_yaml()
+                temp_root.destroy()
+
+            # Show disclaimer dialog
+            disclaimer = DisclaimerDialog(temp_root, on_disclaimer_accept)
+            disclaimer.wait_window()
+
         # Setup main window
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
         self.root = ctk.CTk()
         self.root.title("Gate Assignment Director")
-        self.root.geometry("500x500")
+        self.root.geometry("350x430")
 
         # Set window icon
         import sys
@@ -449,7 +468,7 @@ class DirectorUI:
         # Schedule airport update with debouncing
         self._schedule_airport_update(
             self.director.departure_airport,
-            self.director.current_airport
+            self.director.destination_airport
         )
 
     def _report_director_status(self, message: str):
@@ -549,7 +568,7 @@ class DirectorUI:
         self.current_airport = self.director.current_airport
         self._schedule_airport_update(
             self.director.departure_airport,
-            self.director.current_airport
+            self.director.destination_airport
         )
 
         self._append_activity("Manual override cleared.\n")
@@ -724,7 +743,7 @@ class DirectorUI:
                 self.current_airport = self.director.current_airport
                 self._schedule_airport_update(
                     self.director.departure_airport,
-                    self.director.current_airport
+                    self.director.destination_airport
                 )
 
         # Enable/disable Assign Gate button based on available data

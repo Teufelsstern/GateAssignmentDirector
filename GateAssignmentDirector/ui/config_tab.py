@@ -91,6 +91,17 @@ def setup_config_tab(parent_ui, tab):
         color="#808080",
     )
 
+    # Show config file location
+    from GateAssignmentDirector.gad_config import GADConfig
+    config_path = str(GADConfig.get_config_path())
+    _label(
+        frame=scroll_frame,
+        text=f"Config file location: {config_path}",
+        size=9,
+        pady=(5, 5),
+        color="#808080",
+    )
+
     btn_frame = ctk.CTkFrame(tab, fg_color="transparent")
     btn_frame.pack(fill="x", padx=20, pady=(0, 20))
 

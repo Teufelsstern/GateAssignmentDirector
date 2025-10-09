@@ -19,20 +19,20 @@ class TestGateParser(unittest.TestCase):
         self.assertEqual(result.terminal_name, "Terminal")
         self.assertEqual(result.terminal_number, "7")
         self.assertEqual(result.gate_number, "7")
-        self.assertEqual(result.gate_letter, "")
+        self.assertEqual(result.gate_suffix, "")
 
     def test_parse_simple_gate(self):
         """Test parsing 'Gate 5'"""
         result = self.parser.parse_gate("Gate 5")
         self.assertEqual(result.gate_number, "5")
-        self.assertEqual(result.gate_letter, "")
+        self.assertEqual(result.gate_suffix, "")
 
     def test_parse_international_gate_with_letter(self):
         """Test parsing 'International Gate 25A'"""
         result = self.parser.parse_gate("International Gate 25A")
         self.assertEqual(result.terminal_name, "International")
         self.assertEqual(result.gate_number, "25")
-        self.assertEqual(result.gate_letter, "A")
+        self.assertEqual(result.gate_suffix, "A")
 
     def test_parse_pier_with_terminal_and_gate_letter(self):
         """Test parsing 'Pier C Gate 14 R'"""
@@ -40,7 +40,7 @@ class TestGateParser(unittest.TestCase):
         self.assertEqual(result.terminal_name, "Pier")
         self.assertEqual(result.terminal_number, "C")
         self.assertEqual(result.gate_number, "14")
-        self.assertEqual(result.gate_letter, "R")
+        self.assertEqual(result.gate_suffix, "R")
 
     def test_parse_empty_string(self):
         """Test parsing empty string"""
@@ -59,7 +59,7 @@ class TestGateParser(unittest.TestCase):
             terminal_name="Terminal",
             terminal_number="1",
             gate_number="5",
-            gate_letter="A",
+            gate_suffix="A",
             raw_value="Test"
         )
         result = str(gate_info)
@@ -99,7 +99,7 @@ class TestJSONMonitor(unittest.TestCase):
         callback_mock.assert_called_once()
         call_args = callback_mock.call_args[0][0]
         self.assertEqual(call_args['gate_number'], "12")
-        self.assertEqual(call_args['gate_letter'], "A")
+        self.assertEqual(call_args['gate_suffix'], "A")
         self.assertEqual(call_args['airport'], "KLAX")
 
     @patch('GateAssignmentDirector.si_api_hook.Path')
@@ -248,7 +248,7 @@ class TestJSONMonitor(unittest.TestCase):
 
         result = monitor.extract_flight_data(test_data)
 
-        self.assertEqual(result['airport'], "KLAX")
+        self.assertEqual(result['destination_airport'], "KLAX")
         self.assertEqual(result['departure_airport'], "KJFK")
         self.assertEqual(result['airline'], "United")
         self.assertEqual(result['flight_number'], "UA123")
@@ -270,7 +270,7 @@ class TestJSONMonitor(unittest.TestCase):
 
         result = monitor.extract_flight_data(test_data)
 
-        self.assertEqual(result['airport'], "KLAX")
+        self.assertEqual(result['destination_airport'], "KLAX")
         self.assertIsNone(result['airline'])
         self.assertIsNone(result['flight_number'])
         self.assertIsNone(result['assigned_gate'])
@@ -286,9 +286,12 @@ class TestJSONMonitor(unittest.TestCase):
         result = monitor.extract_flight_data(test_data)
 
         # Should return dict with None values when structure is malformed
-        self.assertIsNone(result['airport'])
-        self.assertIsNone(result['airline'])
-        self.assertIsNone(result['flight_number'])
+        self.assertIsNone(result.get('current_airport'))
+        self.assertIsNone(result.get('destination_airport'))
+        self.assertIsNone(result.get('departure_airport'))
+        self.assertIsNone(result.get('airline'))
+        self.assertIsNone(result.get('flight_number'))
+        self.assertIsNone(result.get('assigned_gate'))
 
     @patch('GateAssignmentDirector.si_api_hook.Path')
     @patch('GateAssignmentDirector.si_api_hook.configparser.ConfigParser')
@@ -317,7 +320,7 @@ class TestJSONMonitor(unittest.TestCase):
 
         flight_callback_mock.assert_called_once()
         call_args = flight_callback_mock.call_args[0][0]
-        self.assertEqual(call_args['airport'], "KLAX")
+        self.assertEqual(call_args['destination_airport'], "KLAX")
         self.assertEqual(call_args['airline'], "Delta")
         self.assertEqual(call_args['flight_number'], "DL456")
 

@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025-10-09
+
+### Major Release
+First stable release with production-ready features, comprehensive test coverage, and proper distribution packaging.
+
+### Added
+- First-run disclaimer dialog requiring user acceptance
+  - Displays project values statement ("This software stands against discrimination")
+  - AGPL-3.0 license notice and usage terms
+  - Solo developer disclaimer with realistic expectations
+  - Version tracking via `disclaimer_version` in config
+- Config file persistence to `%APPDATA%\GateAssignmentDirector\config.yaml`
+  - Configuration survives application updates
+  - Config location displayed in Config tab
+- LICENSE.txt for exe distribution (separate from LICENSE for development)
+- Comprehensive gate management test coverage
+  - 27 new unit tests for rename_gate(), rename_terminal(), add_prefix_suffix()
+  - Total: 55 gate management window tests (100% passing)
+  - MockGateManagementWindow pattern for data transformation testing
+- Terminal rename auto-fill on selection
+  - Clicking a terminal node now fills the "Current:" terminal rename field
+  - Streamlined terminal renaming workflow
+
+### Fixed
+- Duplicate log messages when selecting terminal nodes
+  - Implemented guard flag pattern to prevent recursive event handling
+  - Changed from N loop-based selection_add() calls to atomic selection_set()
+  - Terminal selection now logs once instead of N times per child gate
+- Config persistence across exe updates
+  - Config stored in %APPDATA% instead of temporary _MEIPASS folder
+  - Development uses project directory, exe uses persistent location
+
+### Changed
+- Removed placeholder text from all gate management entry fields
+  - Cleaner UI without confusing gray hints
+  - 10 entry fields updated (gate, terminal, prefix, suffix, rename fields)
+- Generic paths in GateAssignmentDirector.spec
+  - Dynamic SimConnect.dll location instead of hardcoded user path
+  - Spec file now portable across development machines
+- Build system improvements
+  - LICENSE.txt explicitly included in exe bundle
+  - Dynamic path resolution for cross-platform compatibility
+
+### Technical
+- Gate management `on_tree_select()` event optimization
+  - Guard flag `_updating_selection` prevents recursive calls
+  - Skip flag `_skip_next_gate_selection` prevents double-processing
+  - Atomic `selection_set()` instead of loop-based selection manipulation
+- New module: `ui/disclaimer_dialog.py` with modal window pattern
+- Config class enhancements: `get_config_path()` for platform-aware storage
+- Test infrastructure: MockGateManagementWindow extended with 3 new methods
+
+### Test Results
+- Gate management window: 55/55 tests passing
+- Total test suite: 315 tests passing
+- Zero test failures, zero timeouts
+
 ## [0.9.4] - 2025-10-08
 
 ### Added

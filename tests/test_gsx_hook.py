@@ -215,7 +215,7 @@ class TestGsxHookMethods(unittest.TestCase):
         result = hook.assign_gate_when_ready(
             airport="KLAX",
             gate_number="5",
-            gate_letter="A"
+            gate_suffix="A"
         )
 
         # Should delegate to gate_assignment
@@ -223,7 +223,7 @@ class TestGsxHookMethods(unittest.TestCase):
         call_kwargs = mock_gate_instance.assign_gate.call_args[1]
         self.assertEqual(call_kwargs["airport"], "KLAX")
         self.assertEqual(call_kwargs["gate_number"], "5")
-        self.assertEqual(call_kwargs["gate_letter"], "A")
+        self.assertEqual(call_kwargs["gate_suffix"], "A")
         self.assertEqual(result, (True, {'gate': '5A'}))
 
     @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
@@ -358,64 +358,6 @@ class TestGsxHookMethods(unittest.TestCase):
         mock_sim_instance.set_variable.assert_called()
         calls = mock_sim_instance.set_variable.call_args_list
         self.assertTrue(any(call[0][1] == 0 for call in calls))
-
-    @patch('GateAssignmentDirector.gsx_hook.time.sleep')
-    @patch('GateAssignmentDirector.gsx_hook.GateAssignment')
-    @patch('GateAssignmentDirector.gsx_hook.MenuNavigator')
-    @patch('GateAssignmentDirector.gsx_hook.MenuReader')
-    @patch('GateAssignmentDirector.gsx_hook.MenuLogger')
-    @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
-    def test_assign_gate_when_ready_retries_once_on_failure(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate, mock_sleep):
-        """Test assign_gate_when_ready retries once after first failure"""
-        mock_config = create_mock_config()
-        mock_config.from_yaml.return_value = mock_config
-
-        mock_sim_instance = Mock()
-        mock_sim.return_value = mock_sim_instance
-
-        # First call fails, second succeeds
-        mock_gate_instance = Mock()
-        mock_gate_instance.assign_gate.side_effect = [(False, None), (True, {'gate': 'A5'})]
-        mock_gate.return_value = mock_gate_instance
-
-        hook = GsxHook(config=mock_config)
-        result = hook.assign_gate_when_ready(airport="KLAX")
-
-        # Should call assign_gate twice
-        self.assertEqual(mock_gate_instance.assign_gate.call_count, 2)
-        # Should close menu between attempts
-        mock_sim_instance.set_variable.assert_called()
-        # Final result should be (True, dict) (success on retry)
-        self.assertEqual(result, (True, {'gate': 'A5'}))
-
-    @patch('GateAssignmentDirector.gsx_hook.time.sleep')
-    @patch('GateAssignmentDirector.gsx_hook.GateAssignment')
-    @patch('GateAssignmentDirector.gsx_hook.MenuNavigator')
-    @patch('GateAssignmentDirector.gsx_hook.MenuReader')
-    @patch('GateAssignmentDirector.gsx_hook.MenuLogger')
-    @patch('GateAssignmentDirector.gsx_hook.SimConnectManager')
-    def test_assign_gate_when_ready_fails_after_retry(self, mock_sim, mock_logger, mock_reader, mock_nav, mock_gate, mock_sleep):
-        """Test assign_gate_when_ready fails when both attempts fail"""
-        mock_config = create_mock_config()
-        mock_config.from_yaml.return_value = mock_config
-
-        mock_sim_instance = Mock()
-        mock_sim.return_value = mock_sim_instance
-
-        # Both calls fail
-        mock_gate_instance = Mock()
-        mock_gate_instance.assign_gate.return_value = (False, None)
-        mock_gate.return_value = mock_gate_instance
-
-        hook = GsxHook(config=mock_config)
-        result = hook.assign_gate_when_ready(airport="KLAX")
-
-        # Should call assign_gate twice
-        self.assertEqual(mock_gate_instance.assign_gate.call_count, 2)
-        # Should close menu between attempts
-        mock_sim_instance.set_variable.assert_called()
-        # Final result should be (False, None)
-        self.assertEqual(result, (False, None))
 
     @patch('GateAssignmentDirector.gsx_hook.GateAssignment')
     @patch('GateAssignmentDirector.gsx_hook.MenuNavigator')

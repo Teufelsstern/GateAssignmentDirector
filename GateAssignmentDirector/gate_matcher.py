@@ -77,8 +77,8 @@ class GateMatcher:
         scores = {}
 
         # Gate number match (exact match for digits is critical)
-        si_num = si_parsed.get("gate_number", "")
-        gsx_num = gsx_parsed.get("gate_number", "")
+        si_num = str(int(si_parsed.get("gate_number", "")))
+        gsx_num = str(int(gsx_parsed.get("gate_number", "")))
         if si_num and gsx_num:
             scores["gate_number"] = 100.0 if si_num == gsx_num else fuzz.ratio(si_num, gsx_num)
         else:
@@ -110,8 +110,10 @@ class GateMatcher:
         )
 
         logger.debug(
-            f"Match score: number={scores['gate_number']:.1f} "
-            f"prefix={scores['gate_prefix']:.1f} terminal={scores['terminal']:.1f} "
+            f"Match score of {str(gsx_prefix) + str(gsx_num) + str(gsx_suffix)}: "
+            f"number={scores['gate_number']:.1f} (SI:{si_num} vs GSX:{gsx_num}) "
+            f"prefix={scores['gate_prefix']:.1f} (SI:'{si_prefix}' vs GSX:'{gsx_prefix}') "
+            f"terminal={scores['terminal']:.1f} (SI:'{si_term}' vs GSX:'{gsx_term}') "
             f"→ final={final_score:.1f}"
         )
 

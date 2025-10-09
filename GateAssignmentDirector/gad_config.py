@@ -7,6 +7,7 @@ import getpass
 import yaml
 import logging
 import sys
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -54,6 +55,7 @@ class GADConfig:
         'terminal': 0.1
     })
     matching_minimum_score: float = 70.0
+    disclaimer_version: int = 0
 
     logging.basicConfig(
         level=logging_level,
@@ -102,21 +104,28 @@ class GADConfig:
                 'gate_prefix': 0.3,
                 'terminal': 0.1
             },
-            'matching_minimum_score': 70.0
+            'matching_minimum_score': 70.0,
+            'disclaimer_version': 0
         }
+
+    @classmethod
+    def get_config_path(cls) -> Path:
+        """Get the path to the config file (persistent location for EXE)"""
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller bundle - use AppData for persistence
+            appdata = Path(os.getenv('APPDATA'))
+            config_dir = appdata / "GateAssignmentDirector"
+            config_dir.mkdir(parents=True, exist_ok=True)
+            return config_dir / "config.yaml"
+        else:
+            # Running as normal Python script - use project directory
+            return Path(".") / "GateAssignmentDirector" / "config.yaml"
 
     @classmethod
     def from_yaml(cls, yaml_path: str = None):
         """Load configuration from YAML file"""
         if yaml_path is None:
-            # Determine config path based on whether we're bundled or not
-            if getattr(sys, 'frozen', False):
-                # Running as PyInstaller bundle
-                base_path = Path(sys._MEIPASS)
-                yaml_path = base_path / "GateAssignmentDirector" / "config.yaml"
-            else:
-                # Running as normal Python script
-                yaml_path = Path(".") / "GateAssignmentDirector" / "config.yaml"
+            yaml_path = cls.get_config_path()
 
         config_file = Path(yaml_path)
 
@@ -144,15 +153,12 @@ class GADConfig:
     def save_yaml(self, yaml_path: str = None):
         """Save configuration to YAML file"""
         if yaml_path is None:
-            # Use same logic as from_yaml for consistency
-            if getattr(sys, 'frozen', False):
-                base_path = Path(sys._MEIPASS)
-                yaml_path = base_path / "GateAssignmentDirector" / "config.yaml"
-            else:
-                yaml_path = Path(".") / "GateAssignmentDirector" / "config.yaml"
+            yaml_path = self.get_config_path()
         # Only save the configurable fields (exclude computed ones)
         data = {
             'menu_file_paths': self.menu_file_paths,
+            'tooltip_file_paths': self.tooltip_file_paths,
+            'tooltip_success_keyphrases': self.tooltip_success_keyphrases,
             'sleep_short': self.sleep_short,
             'sleep_long': self.sleep_long,
             'ground_check_interval': self.ground_check_interval,
@@ -168,6 +174,7 @@ class GADConfig:
             'position_keywords': self.position_keywords,
             'matching_weights': self.matching_weights,
             'matching_minimum_score': self.matching_minimum_score,
+            'disclaimer_version': self.disclaimer_version,
         }
 
         with open(yaml_path, 'w', encoding='utf-8') as f:

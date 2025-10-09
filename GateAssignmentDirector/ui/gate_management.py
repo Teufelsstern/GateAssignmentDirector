@@ -135,7 +135,7 @@ class GateManagementWindow:
         _button(
             buttons_frame,
             self.save_data,
-            text="Save Changes",
+            text="Sort & Save",
             height=28,
             fg_color=c('sage'),
             hover_color=c('sage', hover=True),
@@ -164,7 +164,6 @@ class GateManagementWindow:
         _label(gate_row, text="Selected:", size=16, padx=(0, 2), side="left")
         self.gate_entry = ctk.CTkEntry(
             gate_row,
-            placeholder_text="Select from tree",
             corner_radius=6,
             border_width=1,
             border_color=c('charcoal_lighter'),
@@ -177,7 +176,6 @@ class GateManagementWindow:
         _label(from_to_row, text="From:", size=16, padx=(0, 2), side="left")
         self.from_terminal_entry = ctk.CTkEntry(
             from_to_row,
-            placeholder_text="Auto",
             corner_radius=6,
             border_width=1,
             border_color=c('charcoal_lighter'),
@@ -187,7 +185,6 @@ class GateManagementWindow:
         _label(from_to_row, text="To:", size=16, padx=(0, 2), side="left")
         self.to_terminal_entry = ctk.CTkEntry(
             from_to_row,
-            placeholder_text="8",
             corner_radius=6,
             border_width=1,
             border_color=c('charcoal_lighter'),
@@ -241,7 +238,6 @@ class GateManagementWindow:
         self.gate_label = _label(self.gate_rename_row, text="Gate:", size=16, padx=(0, 2), side="left")
         self.rename_gate_entry = ctk.CTkEntry(
             self.gate_rename_row,
-            placeholder_text="71",
             corner_radius=6,
             border_width=1,
             border_color=c('charcoal_lighter'),
@@ -251,7 +247,6 @@ class GateManagementWindow:
         self.terminal_label = _label(self.gate_rename_row, text="Terminal:", size=16, padx=(0, 2), side="left")
         self.rename_terminal_entry = ctk.CTkEntry(
             self.gate_rename_row,
-            placeholder_text="3",
             corner_radius=6,
             border_width=1,
             border_color=c('charcoal_lighter'),
@@ -264,7 +259,6 @@ class GateManagementWindow:
         self.current_terminal_label = _label(self.terminal_rename_row, text="Current:", size=16, padx=(0, 2), side="left")
         self.rename_current_terminal_entry = ctk.CTkEntry(
             self.terminal_rename_row,
-            placeholder_text="1",
             corner_radius=6,
             border_width=1,
             border_color=c('charcoal_lighter'),
@@ -274,7 +268,6 @@ class GateManagementWindow:
         self.new_terminal_label = _label(self.terminal_rename_row, text="New:", size=16, padx=(0, 2), side="left")
         self.rename_new_terminal_entry = ctk.CTkEntry(
             self.terminal_rename_row,
-            placeholder_text="A",
             corner_radius=6,
             border_width=1,
             border_color=c('charcoal_lighter'),
@@ -286,7 +279,6 @@ class GateManagementWindow:
         self.new_key_label_widget = _label(rename_frame, text="New gate key:", size=16, pady=(5, 0), padx=(10, 0))
         self.new_gate_key_entry = ctk.CTkEntry(
             rename_frame,
-            placeholder_text="B28A",
             corner_radius=6,
             border_width=1,
             border_color=c('charcoal_lighter')
@@ -315,7 +307,7 @@ class GateManagementWindow:
         _label(prefix_suffix_frame, text="Add Prefix/Suffix to Gate(s)", size=16, pady=(10, 5))
         _label(
             prefix_suffix_frame,
-            text="Select gate(s) or terminal in tree:",
+            text="Select gate(s) or terminal in tree",
             size=12,
             pady=(0, 5),
             padx=(10, 0)
@@ -326,7 +318,6 @@ class GateManagementWindow:
         _label(prefix_suffix_row, text="Prefix:", size=16, padx=(0, 2), side="left")
         self.prefix_entry = ctk.CTkEntry(
             prefix_suffix_row,
-            placeholder_text="",
             corner_radius=6,
             border_width=1,
             border_color=c('charcoal_lighter'),
@@ -336,7 +327,6 @@ class GateManagementWindow:
         _label(prefix_suffix_row, text="Suffix:", size=16, padx=(0, 2), side="left")
         self.suffix_entry = ctk.CTkEntry(
             prefix_suffix_row,
-            placeholder_text="",
             corner_radius=6,
             border_width=1,
             border_color=c('charcoal_lighter'),
@@ -498,8 +488,12 @@ class GateManagementWindow:
                     self.tree.selection_add(child)
 
                 terminal_name = self.tree.item(terminal_item, 'values')[2]
+
+                # Also fill terminal rename field
+                self.rename_current_terminal_entry.delete(0, 'end')
+                self.rename_current_terminal_entry.insert(0, terminal_name)
+
                 self.log_status(f"Selected {len(children)} gates from Terminal {terminal_name}")
-                return self.on_tree_select(event)
 
         if gate_items:
             if len(gate_items) == 1:

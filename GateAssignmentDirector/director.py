@@ -24,11 +24,13 @@ class GateAssignmentDirector:
         self.monitor_thread: Optional[threading.Thread] = None
         self.running = False
         self.current_airport: Optional[str] = None
+        self.destination_airport: Optional[str] = None
         self.departure_airport: Optional[str] = None
         self.current_flight_data: Dict[str, Any] = {}
         self.status_callback = None
         self.airport_override: Optional[str] = None
         self.mapped_airports: set = set()
+        self._notified_waiting_for_arrival = False
 
     def start_monitoring(self, json_file_path: str) -> None:
         """Start the JSON monitor in a separate thread"""
@@ -55,14 +57,15 @@ class GateAssignmentDirector:
         self.current_flight_data = flight_data
         # Don't override current_airport if manual override is active
         if not self.airport_override:
-            self.current_airport = flight_data.get('airport')
+            self.current_airport = flight_data.get('current_airport')
+            self.destination_airport = flight_data.get('destination_airport')
             self.departure_airport = flight_data.get('departure_airport')
 
     def _queue_gate_assignment(self, gate_info: Dict[str, Any]) -> None:
         """Callback when gate is detected"""
-        # Store current airport
+        # Store destination airport from gate assignment
         if 'airport' in gate_info:
-            self.current_airport = gate_info['airport']
+            self.destination_airport = gate_info['airport']
         self.gate_queue.put(gate_info)
         logger.info(f"Gate detected: {gate_info}")
 
@@ -77,7 +80,7 @@ class GateAssignmentDirector:
 
         while self.running:
             try:
-                current_airport = self.airport_override if self.airport_override else self.current_airport
+                current_airport = self.airport_override if self.airport_override else self.destination_airport
 
                 if (current_airport and current_airport not in self.mapped_airports):
 
@@ -98,7 +101,28 @@ class GateAssignmentDirector:
                                 self.status_callback("GSX connection established")
                             time.sleep(0.5)
 
-                    if self.gsx and self.gsx.is_initialized and self.gsx.sim_manager.is_on_ground():
+                    # Check if we've arrived at destination (skip if override is active)
+                    if not self.airport_override:
+                        if self.current_airport != self.destination_airport:
+                            if not self._notified_waiting_for_arrival and self.current_airport and self.destination_airport:
+                                if self.status_callback:
+                                    self.status_callback(f"Waiting to arrive at {self.destination_airport} (currently at {self.current_airport})")
+                                self._notified_waiting_for_arrival = True
+                            time.sleep(1.0)
+                            continue
+
+                    # Check if we're on ground
+                    if self.gsx and self.gsx.is_initialized:
+                        if not self.gsx.sim_manager.is_on_ground():
+                            if not self._notified_waiting_for_arrival and self.destination_airport:
+                                if self.status_callback:
+                                    self.status_callback(f"Waiting to land at {self.destination_airport}")
+                                self._notified_waiting_for_arrival = True
+                            time.sleep(1.0)
+                            continue
+
+                        # Both conditions met - ready for pre-mapping
+                        self._notified_waiting_for_arrival = False
                         if self.status_callback:
                             self.status_callback(f"Pre-mapping {current_airport} parking layout...")
 
@@ -140,9 +164,10 @@ class GateAssignmentDirector:
 
                 success, assigned_gate = self.gsx.assign_gate_when_ready(
                     airport=airport,
-                    gate_letter=gate_info.get('gate_letter', ""),
+                    gate_prefix=gate_info.get('gate_prefix', ""),
+                    gate_suffix=gate_info.get('gate_suffix', ""),
                     gate_number=gate_info.get('gate_number', ""),
-                    terminal=gate_info.get('terminal', ""),
+                    terminal=gate_info.get('terminal_name', ""),
                     terminal_number=gate_info.get('terminal_number', ""),
                     airline=gate_info.get('airline', 'GSX'),
                     wait_for_ground=True,

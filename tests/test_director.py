@@ -23,7 +23,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
         """Test queueing gate assignment puts item in queue"""
         gate_info = {
             "gate_number": "5",
-            "gate_letter": "A",
+            "gate_suffix": "A",
             "terminal": "1",
             "airport": "KLAX"
         }
@@ -36,7 +36,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.assertEqual(queued_item["airport"], "KLAX")
 
     def test_queue_gate_assignment_stores_airport(self):
-        """Test queueing gate assignment stores current airport"""
+        """Test queueing gate assignment stores destination airport"""
         gate_info = {
             "gate_number": "5",
             "airport": "KJFK"
@@ -44,7 +44,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         self.director._queue_gate_assignment(gate_info)
 
-        self.assertEqual(self.director.current_airport, "KJFK")
+        self.assertEqual(self.director.destination_airport, "KJFK")
 
     def test_queue_multiple_gates(self):
         """Test queueing multiple gate assignments"""
@@ -58,7 +58,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
             self.director._queue_gate_assignment(gate)
 
         self.assertEqual(self.director.gate_queue.qsize(), 3)
-        self.assertEqual(self.director.current_airport, "KJFK")  # Last one
+        self.assertEqual(self.director.destination_airport, "KJFK")
 
     @patch('GateAssignmentDirector.director.time.sleep')
     @patch('GateAssignmentDirector.director.JSONMonitor')
@@ -106,7 +106,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
         # Add gate to queue
         self.director.gate_queue.put({
             "gate_number": "5",
-            "gate_letter": "A",
+            "gate_suffix": "A",
             "airport": "KLAX"
         })
 
@@ -133,7 +133,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         gate_info = {
             "gate_number": "5",
-            "gate_letter": "A",
+            "gate_suffix": "A",
             "terminal": "1",
             "terminal_number": "2",
             "airport": "KLAX",
@@ -149,7 +149,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
         call_kwargs = mock_gsx_instance.assign_gate_when_ready.call_args[1]
         self.assertEqual(call_kwargs["airport"], "KLAX")
         self.assertEqual(call_kwargs["gate_number"], "5")
-        self.assertEqual(call_kwargs["gate_letter"], "A")
+        self.assertEqual(call_kwargs["gate_suffix"], "A")
 
     @patch('GateAssignmentDirector.director.time.sleep')
     @patch('GateAssignmentDirector.director.GsxHook')
@@ -257,7 +257,8 @@ class TestGateAssignmentDirector(unittest.TestCase):
     def test_update_flight_data_stores_data(self):
         """Test _update_flight_data stores complete flight data dict"""
         flight_data = {
-            'airport': 'KLAX',
+            'current_airport': 'KLAX',
+            'destination_airport': 'KLAX',
             'departure_airport': 'KJFK',
             'airline': 'Delta',
             'flight_number': 'DL456',
@@ -271,7 +272,8 @@ class TestGateAssignmentDirector(unittest.TestCase):
     def test_update_flight_data_updates_current_airport(self):
         """Test _update_flight_data updates current_airport from flight data"""
         flight_data = {
-            'airport': 'EDDS',
+            'current_airport': 'EDDS',
+            'destination_airport': 'EDDL',
             'airline': 'Lufthansa',
             'flight_number': 'LH123'
         }
@@ -312,7 +314,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         gate_info = {
             "gate_number": "5",
-            "gate_letter": "A",
+            "gate_suffix": "A",
             "airport": "KLAX"
         }
         self.director.gate_queue.put(gate_info)
@@ -340,7 +342,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         gate_info = {
             "gate_number": "5",
-            "gate_letter": "A",
+            "gate_suffix": "A",
             "airport": "KLAX"
         }
         self.director.gate_queue.put(gate_info)
@@ -402,7 +404,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         gate_info = {
             "gate_number": "5",
-            "gate_letter": "A",
+            "gate_suffix": "A",
             "airport": "KLAX"
         }
         self.director.gate_queue.put(gate_info)
@@ -427,7 +429,9 @@ class TestGateAssignmentDirector(unittest.TestCase):
         mock_gsx_instance.gate_assignment.map_available_spots.side_effect = stop_after_mapping
         mock_gsx_hook.return_value = mock_gsx_instance
 
+        self.director.gsx = mock_gsx_instance
         self.director.current_airport = "EDDF"
+        self.director.destination_airport = "EDDF"
         self.director.running = True
         self.director.process_gate_assignments()
 
@@ -523,7 +527,9 @@ class TestGateAssignmentDirector(unittest.TestCase):
         mock_gsx_instance.gate_assignment.map_available_spots.side_effect = count_calls
         mock_gsx_hook.return_value = mock_gsx_instance
 
+        self.director.gsx = mock_gsx_instance
         self.director.current_airport = "EDDF"
+        self.director.destination_airport = "EDDF"
         self.director.running = True
         self.director.process_gate_assignments()
 
@@ -546,6 +552,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         self.director.gsx = None
         self.director.current_airport = "EDDF"
+        self.director.destination_airport = "EDDF"
         self.director.running = True
         self.director.process_gate_assignments()
 
@@ -585,9 +592,9 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         # Simulate multiple polling cycles with different airport data
         polling_data = [
-            {'airport': 'KJFK', 'departure_airport': 'KLAX', 'airline': 'United'},
-            {'airport': 'KLAX', 'departure_airport': 'KSFO', 'airline': 'Delta'},
-            {'airport': 'KSEA', 'departure_airport': 'KPDX', 'airline': 'Alaska'},
+            {'current_airport': 'KJFK', 'destination_airport': 'KJFK', 'departure_airport': 'KLAX', 'airline': 'United'},
+            {'current_airport': 'KLAX', 'destination_airport': 'KLAX', 'departure_airport': 'KSFO', 'airline': 'Delta'},
+            {'current_airport': 'KSEA', 'destination_airport': 'KSEA', 'departure_airport': 'KPDX', 'airline': 'Alaska'},
         ]
 
         for flight_data in polling_data:
@@ -607,7 +614,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.director.departure_airport = "EDDF"
 
         # Update with different data - should be ignored
-        first_data = {'airport': 'KJFK', 'departure_airport': 'KLAX'}
+        first_data = {'current_airport': 'KJFK', 'destination_airport': 'KJFK', 'departure_airport': 'KLAX'}
         self.director._update_flight_data(first_data)
 
         self.assertEqual(self.director.current_airport, "EDDF")
@@ -617,7 +624,7 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.director.airport_override = None
 
         # Now updates should work
-        second_data = {'airport': 'KSEA', 'departure_airport': 'KPDX'}
+        second_data = {'current_airport': 'KSEA', 'destination_airport': 'KSEA', 'departure_airport': 'KPDX'}
         self.director._update_flight_data(second_data)
 
         self.assertEqual(self.director.current_airport, "KSEA")
@@ -631,7 +638,8 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
         # Try to update with completely different airports
         flight_data = {
-            'airport': 'RJTT',
+            'current_airport': 'RJTT',
+            'destination_airport': 'RJTT',
             'departure_airport': 'RJAA',
             'airline': 'JAL',
             'flight_number': 'JL123'
@@ -651,7 +659,8 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.director.departure_airport = None
 
         flight_data = {
-            'airport': 'LFPG',
+            'current_airport': 'LFPG',
+            'destination_airport': 'LFPG',
             'departure_airport': 'LFPO',
             'airline': 'Air France'
         }

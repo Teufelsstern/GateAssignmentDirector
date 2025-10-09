@@ -313,7 +313,7 @@ class TestMenuLogger(unittest.TestCase):
             airport="KLAX",
             terminal="1",
             gate_number="5",
-            gate_letter="A"
+            gate_suffix="A"
         )
 
         result = gate_info.to_dict()
@@ -321,7 +321,7 @@ class TestMenuLogger(unittest.TestCase):
         self.assertEqual(result["airport"], "KLAX")
         self.assertEqual(result["terminal"], "1")
         self.assertEqual(result["gate_number"], "5")
-        self.assertEqual(result["gate_letter"], "A")
+        self.assertEqual(result["gate_suffix"], "A")
 
     def test_extract_terminal_from_menu_with_specific_name(self):
         """Test extracting specific terminal name from menu title"""

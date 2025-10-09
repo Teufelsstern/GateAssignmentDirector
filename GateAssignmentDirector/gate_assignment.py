@@ -106,8 +106,11 @@ class GateAssignment:
                         menu_depth=0,
                         navigation_info=navigation_info,
                     )
-                    self.menu_navigator.click_by_index(actual_index)
-                    logger.debug("Clicked on level_0 option %s", option)
+                    success = self.menu_navigator.click_by_index(actual_index)
+                    if success:
+                        logger.debug("Clicked on level_0 option %s", option)
+                    else:
+                        logger.debug("Failed to click on level_0 option %s", option)
                     while True:
                         current_menu_state = self.menu_reader.read_menu()
                         navigation_info = {
@@ -167,7 +170,8 @@ class GateAssignment:
         airport: str,
         terminal: str = "",
         terminal_number: str = "",
-        gate_letter: Optional[str] = None,
+        gate_prefix: Optional[str] = None,
+        gate_suffix: Optional[str] = None,
         gate_number: str = "",
         airline: str = "GSX",
         wait_for_ground: bool = True,
@@ -180,7 +184,8 @@ class GateAssignment:
             airport: ICAO code of the airport (e.g., "KLAX")
             terminal: Terminal identifier
             terminal_number: Terminal number (if applicable)
-            gate_letter: Gate letter (e.g., "B")
+            gate_prefix: Gate prefix letter (e.g., "V" in "V5")
+            gate_suffix: Gate suffix letter (e.g., "A" in "5A")
             gate_number: Gate number (e.g., 102)
             airline: Airline code (e.g., "United_2000")
             wait_for_ground: Wait for aircraft on ground
@@ -205,10 +210,17 @@ class GateAssignment:
             time.sleep(0.5)
 
         airport_data = self.map_available_spots(airport)
+
+        # Reconstruct terminal with proper spacing
+        terminal_full = " ".join(filter(None, [terminal, terminal_number]))
+
+        # Reconstruct gate with prefix + number + suffix
+        gate_full = (gate_prefix or "") + (gate_number or "") + (gate_suffix or "")
+
         matching_gsx_gate, needs_api_call = self.find_gate(
             airport_data,
-            (terminal or "") + (terminal_number or ""),
-            (gate_number or "") + (gate_letter or ""),
+            terminal_full,
+            gate_full,
         )
         if needs_api_call:
             response = requests.get(
@@ -253,8 +265,9 @@ class GateAssignment:
                     )
 
                 # Capture baseline tooltip timestamp before action
+                time.sleep(self.config.sleep_short)
                 baseline_timestamp = self.tooltip_reader.get_file_timestamp()
-
+                time.sleep(self.config.sleep_short)
                 self.menu_navigator.click_planned(matching_gsx_gate)
                 self.menu_navigator.find_and_click(["activate"], SearchType.KEYWORD)
 
@@ -358,6 +371,7 @@ class GateAssignment:
         """Navigate to specific level 0 page"""
         self._refresh_menu()
         clicks_needed = target_page
+        time.sleep(self.config.sleep_short)
         for click_num in range(clicks_needed):
             if not self.menu_navigator.click_next():
                 raise GsxMenuError(
@@ -376,7 +390,11 @@ class GateAssignment:
             airport_data, terminal, gate
         )
         if gate_data:
-            if score_components["gate_prefix"] > 50.0 and score_components["gate_number"] > 80.0:
+            # Exact matches don't need API call
+            if is_exact:
+                needs_api_call = False
+            # For fuzzy matches, check score components if available
+            elif score_components and score_components["gate_prefix"] > 50.0 and score_components["gate_number"] > 80.0:
                 needs_api_call = False
             else:
                 needs_api_call = True

@@ -21,7 +21,9 @@ def main():
     parser.add_argument("airport", type=str, help="Airport ICAO code (e.g., KLAX)")
 
     # Gate parameters
-    parser.add_argument("--gate-letter", type=str, help="Gate letter (e.g., 'C')")
+    parser.add_argument("--gate-prefix", type=str, help="Gate prefix letter (e.g., 'V' for V5)")
+    parser.add_argument("--gate-letter", type=str, help="Gate suffix letter (e.g., 'C' for 5C) - deprecated, use --gate-suffix")
+    parser.add_argument("--gate-suffix", type=str, help="Gate suffix letter (e.g., 'C' for 5C)")
     parser.add_argument(
         "--gate-number", type=int, required=True, help="Gate number (e.g., 102)"
     )
@@ -66,11 +68,15 @@ def main():
             logger.error("Failed to initialize GSX Hook")
             return 1
 
+        # Handle backwards compatibility: gate_letter → gate_suffix
+        gate_suffix = args.gate_suffix or args.gate_letter
+
         success = gsx.assign_gate_when_ready(
             airport=args.airport.upper(),
             terminal=args.terminal,
             terminal_number=args.terminal_number,
-            gate_letter=args.gate_letter,
+            gate_prefix=args.gate_prefix,
+            gate_suffix=gate_suffix,
             gate_number=args.gate_number,
             airline=args.airline,
             wait_for_ground=not args.no_wait_ground,

@@ -8,6 +8,25 @@ except ImportError:
     import logging
     logging.warning("CTkToolTip not available - tooltips will be disabled")
 
+
+class TopMostToolTip(CTkToolTip):
+    """Custom tooltip that inherits topmost status from parent window"""
+
+    def on_enter(self, event=None):
+        """Override to apply topmost attribute when tooltip appears"""
+        super().on_enter(event)
+
+        # Check if tooltip window was created and apply topmost if parent has it
+        if hasattr(self, 'tip_window') and self.tip_window:
+            try:
+                parent_toplevel = self.widget.winfo_toplevel()
+                parent_topmost = parent_toplevel.attributes('-topmost')
+                if parent_topmost:
+                    self.tip_window.attributes('-topmost', True)
+            except (AttributeError, RuntimeError):
+                pass  # Fallback if check fails
+
+
 # Monitor Tab Tooltips
 MONITOR_TAB = {
     'airport_label': "Shows departure → destination airport (yellow=estimating, green=confirmed)",
@@ -65,7 +84,7 @@ def attach_tooltip(widget, tooltip_key: str, delay: float = 0.6):
     # Search all tooltip dictionaries
     for tooltip_dict in [MONITOR_TAB, CONFIG_TAB, LOGS_TAB]:
         if tooltip_key in tooltip_dict:
-            CTkToolTip(widget, message=tooltip_dict[tooltip_key], delay=delay)
+            TopMostToolTip(widget, message=tooltip_dict[tooltip_key], delay=delay)
             return
 
     # If not found, warn developer

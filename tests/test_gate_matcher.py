@@ -94,11 +94,12 @@ class TestGateMatcher(unittest.TestCase):
             }
         }
 
-        result, is_exact, score = self.matcher.find_best_match(airport_data, "1", "5A")
+        result, is_exact, score, components = self.matcher.find_best_match(airport_data, "1", "5A")
 
         self.assertTrue(is_exact)
         self.assertEqual(result["position_id"], "Gate 1-5A")
         self.assertEqual(score, 100.0)
+        self.assertIsNone(components)
 
     def test_find_best_match_fuzzy(self):
         """Test finding fuzzy match"""
@@ -115,11 +116,12 @@ class TestGateMatcher(unittest.TestCase):
         }
 
         # SI says "Apron V" + "Spot 19"
-        result, is_exact, score = self.matcher.find_best_match(airport_data, "Apron V", "Spot 19")
+        result, is_exact, score, components = self.matcher.find_best_match(airport_data, "Apron V", "Spot 19")
 
         self.assertFalse(is_exact)
         self.assertIsNotNone(result)
-        self.assertGreater(score, 50)  # Should match reasonably well
+        self.assertGreater(score, 50)
+        self.assertIsNotNone(components)
 
     def test_find_best_match_no_match(self):
         """Test that completely different gates don't match well"""
@@ -135,11 +137,11 @@ class TestGateMatcher(unittest.TestCase):
             }
         }
 
-        result, is_exact, score = self.matcher.find_best_match(airport_data, "Z", "99")
+        result, is_exact, score, components = self.matcher.find_best_match(airport_data, "Z", "99")
 
         self.assertFalse(is_exact)
-        # May still return something but with very low score
         self.assertLess(score, 50)
+        self.assertIsNotNone(components)
 
 
 if __name__ == "__main__":

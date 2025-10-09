@@ -64,8 +64,9 @@ class MenuNavigator:
 
         raise GsxMenuError(f"Could not find {keywords} after {attempts} attempts")
 
-    def click_by_index(self, index: int) -> None:
+    def click_by_index(self, index: int) -> bool:
         """Click menu option by index with GSX refresh retry on failure"""
+        self.menu_reader.read_menu()
         time.sleep(self.config.sleep_short)
         self.menu_choice.value = index
         time.sleep(self.config.sleep_short)
@@ -73,7 +74,7 @@ class MenuNavigator:
         # First attempt to wait for change
         success, _ = self._wait_for_change()
         if success:
-            return
+            return success
 
         # If first attempt failed, try GSX refresh command and check again
         logger.warning(f"Menu did not change after clicking index {index}, attempting GSX refresh...")
@@ -84,7 +85,7 @@ class MenuNavigator:
         success, info = self._wait_for_change()
         if success:
             logger.info(f"Menu changed after GSX refresh for index {index}")
-            return
+            return success
 
         # Both attempts failed
         raise GsxMenuNotChangedError(
@@ -94,6 +95,7 @@ class MenuNavigator:
 
     def click_next(self) -> Tuple[bool, tuple]:
         """Click Next button if available. Returns True if clicked, False if no Next button found."""
+        self.menu_reader.read_menu()
         menu = self.menu_reader.current_state
         attempts = 0
         info = (None, None)
@@ -113,6 +115,7 @@ class MenuNavigator:
         return True, info
 
     def click_planned(self, gate_info: Dict[str, Any]) -> None:
+        self.menu_reader.read_menu()
         raw_info = gate_info["raw_info"]
         level_0_page = raw_info["level_0_page"]
         level_0_option_index = raw_info["level_0_option_index"]
@@ -140,10 +143,17 @@ class MenuNavigator:
             attempts += 1
             time.sleep(0.1)
             self.menu_reader.read_menu()
+            new_title = self.menu_reader.current_state.title
+            new_options = self.menu_reader.current_state.options
             if (
-                self.menu_reader.current_state.title != old_title
-                or self.menu_reader.current_state.options != old_options
+                new_title != old_title
             ):
+                logger.debug("Title changed from %s to %s. Change detected.", old_title, new_title)
+                return True, (old_title, old_options)
+            elif (
+                new_options != old_options
+            ):
+                logger.debug("Options changed from %s to %s. Change detected.", old_options, new_options)
                 return True, (old_title, old_options)
         return False, (old_title, old_options)
 

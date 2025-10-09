@@ -57,7 +57,7 @@ args = [
     '--windowed',  # No console window
     '--name=GateAssignmentDirector',
     '-y',  # Overwrite output directory without confirmation
-    '--add-data=LICENSE;.',
+    '--add-data=LICENSE.txt;.',
     '--add-data=README.md;.',
     '--add-data=GateAssignmentDirector/config.yaml;GateAssignmentDirector',
     '--add-data=GateAssignmentDirector/monitor_config.ini;GateAssignmentDirector',

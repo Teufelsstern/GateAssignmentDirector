@@ -47,7 +47,8 @@ class GateInfo:
     terminal: Optional[str] = None
     terminal_number: Optional[str] = None
     gate_number: Optional[str] = None
-    gate_letter: Optional[str] = None
+    gate_prefix: Optional[str] = None  # V in "V5"
+    gate_suffix: Optional[str] = None  # A in "5A"
     airline: Optional[str] = None
 
     def to_dict(self) -> dict:

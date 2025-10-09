@@ -27,7 +27,8 @@ class GateInfo:
     terminal_name: Optional[str] = None
     terminal_number: Optional[str] = None
     gate_number: Optional[str] = None
-    gate_letter: Optional[str] = None
+    gate_prefix: Optional[str] = None  # V in "V5"
+    gate_suffix: Optional[str] = None  # A in "5A"
     raw_value: str = ""
 
     def __str__(self) -> str:
@@ -37,41 +38,34 @@ class GateInfo:
         if self.terminal_number:
             parts.append(self.terminal_number)
         if self.gate_number:
-            gate_str = f"Gate: {self.gate_number}"
-            if self.gate_letter:
-                gate_str += self.gate_letter
+            gate_str = f"Gate: {self.gate_prefix or ''}{self.gate_number}{self.gate_suffix or ''}"
             parts.append(gate_str)
         return " | ".join(parts) if parts else f"Raw: {self.raw_value}"
 
 
 class GateParser:
-    """Intelligent gate information parser"""
+    """Intelligent gate information parser using three-step strategy"""
 
     def __init__(self, config: gad_config.GADConfig):
-        """Initialize parser with config to build dynamic regex pattern"""
+        """Initialize parser with config to build patterns"""
         self.config = config
 
         # Build terminal keywords pattern from config
-        terminal_keywords = '|'.join(self.config.position_keywords['si_terminal']).lower()
+        terminal_keywords = '|'.join(self.config.position_keywords['si_terminal'])
+        self.terminal_pattern = re.compile(rf'\b({terminal_keywords})\b', re.IGNORECASE)
 
-        # Build regex pattern with dynamic terminal keywords
-        self.gate_pattern = re.compile(
-            rf"""
-                (?:terminal\s+)?
-                (?:({terminal_keywords})\s+)?
-                (?:terminal\s+)?
-                (?:([A-Z)]|\d+)\s+)?
-                (?:(overflow|gate)\s+)?
-                (?:(gate)\s+)?
-                (?:([A-Z]?\d+)(?:\s*|$))?
-                (?:([A-Z])\b)?
-                """,
-            re.IGNORECASE | re.VERBOSE,
-        )
+        # Gate identifier at end: optional letter + digits + optional letter (with optional space)
+        self.gate_pattern = re.compile(r'([A-Z])?(\d+)\s*([A-Z])?\s*$', re.IGNORECASE)
+
+        # Noise keywords to filter out from terminal descriptors
+        self.noise_keywords = ['overflow', 'gate', 'remote', 'stand', 'parking', 'terminal']
 
     def parse_gate(self, gate_string: str) -> GateInfo:
         """
-        Parse gate string into components using intelligent pattern matching
+        Parse gate string using three-step strategy:
+        1. Extract gate identifier from end
+        2. Find terminal keyword at start
+        3. Extract and clean middle section for full terminal name
         """
         if not gate_string or not gate_string.strip():
             return GateInfo()
@@ -79,30 +73,78 @@ class GateParser:
         gate_string = gate_string.strip()
         gate_info = GateInfo(
             raw_value=gate_string,
-            gate_letter="",
+            gate_prefix="",
+            gate_suffix="",
             gate_number="",
             terminal_name="",
             terminal_number="",
         )
 
-        match = self.gate_pattern.search(gate_string)
-        if match:
-            t_name = match.group(GateGroups.T_NAME)
-            t_number = match.group(GateGroups.T_NUMBER)
-            g_number = match.group(GateGroups.G_NUMBER)
-            g_letter = match.group(GateGroups.G_LETTER)
+        # Step 1: Extract gate from end
+        gate_match = self.gate_pattern.search(gate_string)
+        if gate_match:
+            gate_prefix = gate_match.group(1) or ""
+            gate_number = gate_match.group(2) or ""
+            gate_suffix = gate_match.group(3) or ""
 
-            gate_info.gate_number = g_number or ""
-            gate_info.gate_letter = g_letter.capitalize() if g_letter else ""
-            gate_info.terminal_number = t_number.capitalize() if t_number else ""
+            # Normalize gate number by removing leading zeros
+            gate_number_normalized = gate_number.lstrip('0') or '0'
 
-            # Extract terminal from explicit keyword or from gate prefix
-            if t_name:
-                gate_info.terminal_name = t_name.capitalize()
-            elif gate_info.gate_number and gate_info.gate_number[0].isalpha():
-                # Gate has letter prefix (e.g., "V118"), extract it as terminal
-                gate_info.terminal_name = gate_info.gate_number[0].upper()
+            # Store gate components
+            if gate_prefix:
+                # Prefix letter (e.g., V05 → prefix=V, number=5)
+                gate_info.gate_prefix = gate_prefix.upper()
+                gate_info.gate_number = gate_number_normalized
+            elif gate_suffix:
+                # Suffix letter (e.g., 05A → number=5, suffix=A)
+                gate_info.gate_number = gate_number_normalized
+                gate_info.gate_suffix = gate_suffix.upper()
             else:
+                # Just a number (e.g., 05 → 5)
+                gate_info.gate_number = gate_number_normalized
+
+            # Remove gate from string for terminal extraction
+            gate_string_without_gate = gate_string[:gate_match.start()].strip()
+        else:
+            # No gate found
+            gate_string_without_gate = gate_string
+
+        # Step 2: Find terminal keyword
+        terminal_match = self.terminal_pattern.search(gate_string_without_gate)
+        if terminal_match:
+            terminal_keyword = terminal_match.group(1)
+            terminal_start = terminal_match.end()
+
+            # Step 3: Extract middle section and clean noise keywords
+            middle_text = gate_string_without_gate[terminal_start:].strip()
+
+            # Filter out noise keywords
+            for keyword in self.noise_keywords:
+                middle_text = re.sub(rf'\b{keyword}\b', '', middle_text, flags=re.IGNORECASE)
+
+            # Clean up extra whitespace
+            middle_text = ' '.join(middle_text.split())
+
+            # Check if first word is a single letter/digit (terminal number)
+            if middle_text:
+                first_word = middle_text.split()[0] if middle_text else ""
+                if len(first_word) == 1 and (first_word.isalpha() or first_word.isdigit()):
+                    # Single letter/digit is terminal number
+                    gate_info.terminal_number = first_word.upper()
+                    # Rest is descriptor
+                    remaining = ' '.join(middle_text.split()[1:])
+                    if remaining:
+                        gate_info.terminal_name = f"{terminal_keyword.capitalize()} {remaining}"
+                    else:
+                        gate_info.terminal_name = terminal_keyword.capitalize()
+                else:
+                    # Multi-word descriptor, keep it all
+                    gate_info.terminal_name = f"{terminal_keyword.capitalize()} {middle_text}"
+            else:
+                gate_info.terminal_name = terminal_keyword.capitalize()
+        else:
+            # No terminal keyword found - check if we have "gate" keyword
+            if 'gate' in gate_string.lower():
                 gate_info.terminal_name = "Terminal"
 
         return gate_info
@@ -155,10 +197,12 @@ class JSONMonitor:
     def extract_flight_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Extract relevant flight data from JSON"""
         try:
-            current_flight = data.get("flight_details", {}).get("current_flight", {})
+            flight_details = data.get("flight_details", {})
+            current_flight = flight_details.get("current_flight", {})
 
             flight_data = {
-                'airport': current_flight.get('flight_destination'),
+                'current_airport': flight_details.get('current_airport'),
+                'destination_airport': current_flight.get('flight_destination'),
                 'departure_airport': current_flight.get('flight_origin'),
                 'airline': current_flight.get('airline'),
                 'flight_number': current_flight.get('flight_number'),
@@ -179,7 +223,7 @@ class JSONMonitor:
                 .get("assigned_gate")
             )
 
-            airport = (
+            destination_airport = (
                 data.get("flight_details", {})
                 .get("current_flight", {})
                 .get("flight_destination")
@@ -195,7 +239,7 @@ class JSONMonitor:
                     logger.info(f"GATE ASSIGNED: {gate_info}")
                     if self.gate_callback:
                         gate_data = asdict(gate_info)
-                        gate_data['airport'] = airport
+                        gate_data['airport'] = destination_airport
                         self.gate_callback(gate_data)
                     elif self.enable_gsx_integration:
                         self.call_gsx_gate_finder(gate_info)
@@ -231,7 +275,8 @@ class JSONMonitor:
             gsx_params = {
                 "terminal_name": gate_info.terminal_name,
                 "gate_number": gate_info.gate_number or -1,
-                "gate_letter": gate_info.gate_letter or None,
+                "gate_prefix": gate_info.gate_prefix or None,
+                "gate_suffix": gate_info.gate_suffix or None,
                 "airline": airline,
             }
 
