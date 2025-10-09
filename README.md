@@ -44,9 +44,9 @@ Automatically assigns gates in GSX based on gate information from SayIntentions 
 ### Initial Setup
 
 1. **Configure your SayIntentions API Key:**
-   - **For .exe users:** Open the application, go to the "Config" tab, and enter your API key there (recommended method)
-   - **For developers:** Edit `GateAssignmentDirector/config.yaml` directly and replace `YOUR_API_KEY_HERE` with your actual SayIntentions API key
-   - If you don't have an API key, contact SayIntentions AI for access
+   - Open the application, go to the "Config" tab, and enter your API key there (recommended for both .exe users and developers)
+   - Alternatively, developers can edit `GateAssignmentDirector/config.yaml` directly and replace `YOUR_API_KEY_HERE` with your actual SayIntentions API key
+   - If you don't have an API key, get it from the SayIntentions pilot portal
 
 2. **Verify GSX Installation:**
    - The default GSX menu paths should work automatically:
@@ -60,11 +60,10 @@ Automatically assigns gates in GSX based on gate information from SayIntentions 
 
 **Using the GUI (Recommended)**
 1. Run `GateAssignmentDirector.exe` (or `python main.py` for developers)
-2. The application will start in the system tray
-3. Open the main window by clicking the system tray icon
-4. Go to the "Config" tab to verify settings and enter your API key
-5. Go to the "Monitor" tab and click "Start Monitoring"
-6. The application will now automatically assign gates when SayIntentions flight data is detected
+2. The application will start with the main window visible. You can configure it to minimize to system tray and/or stay always on top via the Config tab
+3. Go to the "Config" tab to verify settings and enter your API key
+4. Go to the "Monitor" tab and click "Start Monitoring"
+5. The application will now automatically assign gates when SayIntentions flight data is detected
 
 ### Configuration Options
 
@@ -88,10 +87,8 @@ Available configuration options:
 
 - **Gates aren't being assigned:** Make sure the GSX toolbar button is active/turned on in MSFS (the GSX window can be minimized, but the add-on must be enabled)
 - **SayIntentions data not detected:** Check that the flight data file exists at `C:\Users\[YourUsername]\AppData\Local\SayIntentionsAI\flight.json`
-- **Persistent issues:** Try restarting SayIntentions AI first before other components
-- **Ground detection fails:** Ensure the aircraft is on the ground when gate assignment is attempted
-- **Need more information:** Check log files for error messages and detailed operation information
-- **Menu navigation fails repeatedly:** After trying the above steps, try restarting the flight simulator
+- **Persistent issues:** Try restarting GSX (use "Restart Couatl" from GSX menu). If that doesn't help, restart the flight simulator. If problems persist and it has worked before, restart your computer
+- **Reporting bugs:** Always save the log file and attach it when reporting issues (use the "Save Logs" button in the Logs tab)
 
 ## Features
 
@@ -109,10 +106,9 @@ Available configuration options:
   - Real-time flight monitoring display
   - Live configuration editing with save/reload
   - Status indicators and event logging
-  - Dark/light theme support
   - Always-on-top window option
   - Airport override for manual control
-- **Full test suite** with 340+ unit tests ensuring reliability
+- **Full test suite** with 340+ unit tests ensuring reliability (dev only)
 
 ## Documentation
 
@@ -151,11 +147,11 @@ For licensing compliance and transparency, below are the open-source libraries u
 | Pillow | HPND | https://pillow.readthedocs.io/ |
 | pystray | GPL-3.0 | https://github.com/moses-palmer/pystray |
 
-All dependencies are compatible with GPL-3.0.
+All dependencies are compatible with AGPL-3.0.
 
 ## Project Status
 
-This is a foundation project meant to be built upon and extended by the community. It's provided as-is with no commitment to ongoing maintenance, support, or pull request reviews. Feel free to fork and adapt it to your needs, adhering to the principles of free software under GPL-3.0.
+This is a foundation project meant to be built upon and extended by the community. It's provided as-is with no commitment to ongoing maintenance, support, or pull request reviews. Feel free to fork and adapt it to your needs, adhering to the principles of free software under AGPL-3.0 (including added terms).
 
 ## Disclaimer
 
@@ -163,4 +159,4 @@ This project is an independent bridge/integration tool. No ownership or affiliat
 
 ## License
 
-GPL-3.0 - Free to use, modify, and redistribute.
+AGPL-3.0 (including added terms) - Free to use, modify, and redistribute.
