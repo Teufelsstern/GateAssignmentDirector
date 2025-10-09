@@ -1,7 +1,7 @@
 # Agent Documentation - GateAssignmentDirector
 
-**Version:** 0.8.8+
-**Last Updated:** 2025-10-02
+**Version:** 0.9.4
+**Last Updated:** 2025-10-08
 
 Welcome to the modular agent documentation for the SayIntentionsBridge (GateAssignmentDirector) project. This documentation is split by domain to help specialized AI agents quickly find relevant information.
 
@@ -136,7 +136,15 @@ with open(file_path, 'r', encoding='utf-8') as f:
 
 ## Version-Specific Notes
 
-### v0.8.8 (Current)
+### v0.9.4 (Current)
+- Gate management window: Rename terminal, prefix/suffix bulk ops, alphanumeric sorting
+- GateMatcher module for intelligent fuzzy matching with weighted scoring
+- TooltipReader module for GSX success confirmation
+- Airport override persistence fixes
+- Always-on-top UI option
+- Test count: 324 tests (was 250 at v0.8.8)
+
+### v0.8.8
 - Status callback system for director → UI updates
 - Airport pre-mapping functionality
 - Progressive startup with informative messages
