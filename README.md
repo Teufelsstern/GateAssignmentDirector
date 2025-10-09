@@ -140,6 +140,7 @@ For licensing compliance and transparency, below are the open-source libraries u
 | requests | Apache 2.0 | https://requests.readthedocs.io/ |
 | Python-SimConnect | AGPL-3.0 | https://github.com/odwdinc/Python-SimConnect |
 | CustomTkinter | MIT | https://github.com/TomSchimansky/CustomTkinter |
+| CTkToolTip | CC0-1.0 | https://github.com/Akascape/CTkToolTip |
 | Pillow | HPND | https://pillow.readthedocs.io/ |
 | pystray | GPL-3.0 | https://github.com/moses-palmer/pystray |
 
