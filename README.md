@@ -20,7 +20,7 @@ Automatically assigns gates in GSX based on gate information from SayIntentions 
 ### For End Users (Recommended)
 
 1. Download the latest `GateAssignmentDirector.exe` from the [Releases page](https://github.com/Teufelsstern/GateAssignmentDirector/releases)
-2. Extract the executable to a folder of your choice (e.g., `C:\GateAssignmentDirector\`)
+2. Extract the zip-file to a folder of your choice (e.g., `C:\GateAssignmentDirector\`)
 3. Run `GateAssignmentDirector.exe` - the application will create a default `config.yaml` file on first launch
 4. Ensure Microsoft Flight Simulator 2020, GSX Pro, and SayIntentions AI are installed and running
 
