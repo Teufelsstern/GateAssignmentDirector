@@ -1,6 +1,7 @@
 # GateAssignmentDirector
 
 A bridge between [SayIntentions AI](https://sayintentions.ai) and [GSX](https://www.fsdreamteam.com/products_gsxpro.html) gate assignment for Microsoft Flight Simulator 2020.  
+  
 A shoutout is given to [Fenix2GSX](https://github.com/Fragtality/Fenix2GSX). Although zero source code or internal algorithms have been taken or appropriated from Fenix2GSX, the project was helpful to garner initial understanding of controling GSX through LVAR.
 
 ## What it does
