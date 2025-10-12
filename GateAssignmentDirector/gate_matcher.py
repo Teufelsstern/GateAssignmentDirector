@@ -22,7 +22,7 @@ class GateMatcher:
             "gate_prefix": 0.3,
             "terminal": 0.1,
         }
-        if config and hasattr(config, 'matching_weights'):
+        if config and hasattr(config, "matching_weights"):
             self.weights.update(config.matching_weights)
 
     @staticmethod
@@ -42,8 +42,7 @@ class GateMatcher:
         """
         gate_id = gate_id.strip()
 
-        # Extract trailing digits and optional letter suffix
-        number_match = re.search(r'(\d+)([A-Z])?$', gate_id, re.IGNORECASE)
+        number_match = re.search(r"(\d+)([A-Z])?$", gate_id, re.IGNORECASE)
         if number_match:
             gate_number = number_match.group(1)
             gate_suffix = (number_match.group(2) or "").upper()
@@ -51,8 +50,9 @@ class GateMatcher:
             gate_number = ""
             gate_suffix = ""
 
-        # Everything before number is prefix
-        gate_prefix = re.sub(r'\d+[A-Z]?$', '', gate_id, flags=re.IGNORECASE).strip().upper()
+        gate_prefix = (
+            re.sub(r"\d+[A-Z]?$", "", gate_id, flags=re.IGNORECASE).strip().upper()
+        )
 
         return {
             "gate_number": gate_number,
@@ -61,9 +61,7 @@ class GateMatcher:
         }
 
     def calculate_match_score(
-        self,
-        si_parsed: Dict[str, str],
-        gsx_parsed: Dict[str, str]
+        self, si_parsed: Dict[str, str], gsx_parsed: Dict[str, str]
     ) -> Tuple[float, Dict[str, float]]:
         """Calculate weighted similarity score between parsed gate components.
 
@@ -80,16 +78,19 @@ class GateMatcher:
         si_num = str(int(si_parsed.get("gate_number", "")))
         gsx_num = str(int(gsx_parsed.get("gate_number", "")))
         if si_num and gsx_num:
-            scores["gate_number"] = 100.0 if si_num == gsx_num else fuzz.ratio(si_num, gsx_num)
+            scores["gate_number"] = (
+                100.0 if si_num == gsx_num else fuzz.ratio(si_num, gsx_num)
+            )
         else:
             scores["gate_number"] = 0.0
 
         # Gate prefix match (letters/identifiers like "V", "Stand", etc.)
         si_prefix = si_parsed.get("gate_prefix", "")
         gsx_prefix = gsx_parsed.get("gate_prefix", "")
-        scores["gate_prefix"] = fuzz.ratio(si_prefix, gsx_prefix) if (si_prefix or gsx_prefix) else 0.0
+        scores["gate_prefix"] = (
+            fuzz.ratio(si_prefix, gsx_prefix) if (si_prefix or gsx_prefix) else 0.0
+        )
 
-        # Gate suffix match (A, B, etc.)
         si_suffix = si_parsed.get("gate_suffix", "")
         gsx_suffix = gsx_parsed.get("gate_suffix", "")
         if si_suffix or gsx_suffix:
@@ -102,11 +103,10 @@ class GateMatcher:
         gsx_term = gsx_parsed.get("terminal", "").lower()
         scores["terminal"] = fuzz.token_set_ratio(si_term, gsx_term)
 
-        # Calculate weighted final score
         final_score = (
-            scores["gate_number"] * self.weights["gate_number"] +
-            scores["gate_prefix"] * self.weights["gate_prefix"] +
-            scores["terminal"] * self.weights["terminal"]
+            scores["gate_number"] * self.weights["gate_number"]
+            + scores["gate_prefix"] * self.weights["gate_prefix"]
+            + scores["terminal"] * self.weights["terminal"]
         )
 
         logger.debug(
@@ -120,10 +120,7 @@ class GateMatcher:
         return final_score, scores
 
     def find_best_match(
-        self,
-        airport_data: Dict[str, Any],
-        si_terminal: str,
-        si_gate: str
+        self, airport_data: Dict[str, Any], si_terminal: str, si_gate: str
     ) -> Tuple[Optional[Dict[str, Any]], bool, float, Optional[Dict[str, float]]]:
         """Find best matching gate using fuzzy matching.
 
@@ -135,18 +132,15 @@ class GateMatcher:
         Returns:
             Tuple of (gate_data, is_exact_match, score)
         """
-        # Try exact match first
         for key_terminal, dict_terminal in airport_data["terminals"].items():
             for key_gate, dict_gate in dict_terminal.items():
                 if key_terminal == si_terminal and key_gate == si_gate:
                     logger.info(f"Exact match found: {key_terminal} {key_gate}")
                     return dict_gate, True, 100.0, None
 
-        # Parse SI input once
         si_parsed = self.parse_gate_components(si_gate)
         si_parsed["terminal"] = si_terminal
 
-        # Fuzzy matching
         best_match = None
         best_score = -1.0  # Initialize to -1 so any score >= 0 will be accepted
         best_components = {}
@@ -154,11 +148,14 @@ class GateMatcher:
         for key_terminal, dict_terminal in airport_data["terminals"].items():
             for key_gate, dict_gate in dict_terminal.items():
                 # Get pre-parsed GSX data (or parse on-the-fly if not available)
-                gsx_parsed = dict_gate.get("_parsed", self.parse_gate_components(key_gate))
+                gsx_parsed = dict_gate.get(
+                    "_parsed", self.parse_gate_components(key_gate)
+                )
                 gsx_parsed["terminal"] = key_terminal
 
-                # Calculate weighted score
-                score, component_scores = self.calculate_match_score(si_parsed, gsx_parsed)
+                score, component_scores = self.calculate_match_score(
+                    si_parsed, gsx_parsed
+                )
 
                 if score > best_score:
                     best_score = score

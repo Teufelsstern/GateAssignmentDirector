@@ -15,11 +15,12 @@ logging.getLogger("PIL").setLevel(logging.WARNING)
 # Import from new structure
 from GateAssignmentDirector.ui import DirectorUI, GateManagementWindow
 
-__all__ = ['DirectorUI', 'GateManagementWindow']
+__all__ = ["DirectorUI", "GateManagementWindow"]
 
 
 if __name__ == "__main__":
     from GateAssignmentDirector.gad_config import GADConfig
+
     config = GADConfig()
     app = DirectorUI()
     app.run()

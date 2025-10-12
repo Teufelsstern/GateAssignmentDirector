@@ -1,21 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 from PyInstaller.utils.hooks import copy_metadata
-import os
-import sys
 
 datas = [('LICENSE.txt', '.'), ('README.md', '.'), ('GateAssignmentDirector/config.yaml', 'GateAssignmentDirector'), ('GateAssignmentDirector/monitor_config.ini', 'GateAssignmentDirector'), ('GateAssignmentDirector/icon.ico', 'GateAssignmentDirector')]
-
-# Dynamically locate SimConnect.dll
-binaries = []
-try:
-    import SimConnect
-    simconnect_path = os.path.dirname(SimConnect.__file__)
-    dll_path = os.path.join(simconnect_path, 'SimConnect.dll')
-    if os.path.exists(dll_path):
-        binaries.append((dll_path, 'SimConnect'))
-except ImportError:
-    pass
+binaries = [('C:\\Users\\mariu\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\SimConnect\\SimConnect.dll', 'SimConnect')]
 hiddenimports = ['customtkinter', 'CTkToolTip', 'PIL', 'PIL._tkinter_finder', 'pystray', 'tkinter', '_tkinter', 'yaml', 'rapidfuzz', 'requests']
 datas += copy_metadata('CTkToolTip')
 tmp_ret = collect_all('customtkinter')

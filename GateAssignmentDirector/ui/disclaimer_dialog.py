@@ -63,7 +63,7 @@ class DisclaimerDialog:
             text=DISCLAIMER_TEXT,
             font=("Arial", 12),
             justify="left",
-            anchor="w"
+            anchor="w",
         )
         text_label.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -79,7 +79,7 @@ class DisclaimerDialog:
             font=("Arial", 12),
             command=self._on_checkbox_toggle,
             corner_radius=6,
-            border_width=2
+            border_width=2,
         )
         self.checkbox.pack(anchor="w")
 
@@ -96,7 +96,7 @@ class DisclaimerDialog:
             font=("Arial", 13, "bold"),
             corner_radius=6,
             height=35,
-            width=120
+            width=120,
         )
         self.decline_btn.pack(side="left")
 
@@ -110,7 +110,7 @@ class DisclaimerDialog:
             corner_radius=6,
             height=35,
             width=120,
-            state="disabled"
+            state="disabled",
         )
         self.accept_btn.pack(side="right")
 

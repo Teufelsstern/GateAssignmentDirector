@@ -223,19 +223,14 @@ class TestGateAssignmentDirector(unittest.TestCase):
 
     @patch('GateAssignmentDirector.director.time.sleep')
     def test_multiple_gate_assignments_in_sequence(self, mock_sleep):
-        """Test processing multiple gate assignments sequentially"""
+        """Test processing stops after first successful gate assignment"""
         mock_gsx = Mock()
         mock_gsx.is_initialized = True
 
-        call_count = [0]
-
-        def assign_gate_and_stop(*args, **kwargs):
-            call_count[0] += 1
-            if call_count[0] >= 3:
-                self.director.running = False
+        def assign_gate_success(*args, **kwargs):
             return (True, {'gate': 'A5'})
 
-        mock_gsx.assign_gate_when_ready.side_effect = assign_gate_and_stop
+        mock_gsx.assign_gate_when_ready.side_effect = assign_gate_success
         self.director.gsx = mock_gsx
 
         # Queue multiple gates
@@ -251,8 +246,9 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.director.running = True
         self.director.process_gate_assignments()
 
-        # Should have processed all 3 gates
-        self.assertEqual(mock_gsx.assign_gate_when_ready.call_count, 3)
+        # Should have processed only the first gate before auto-stopping
+        self.assertEqual(mock_gsx.assign_gate_when_ready.call_count, 1)
+        self.assertFalse(self.director.running)
 
     def test_update_flight_data_stores_data(self):
         """Test _update_flight_data stores complete flight data dict"""
@@ -357,19 +353,14 @@ class TestGateAssignmentDirector(unittest.TestCase):
     @patch('GateAssignmentDirector.director.time.sleep')
     @patch('GateAssignmentDirector.director.GsxHook')
     def test_airport_override_with_automatic_detection(self, mock_gsx_hook, mock_sleep):
-        """Test override works with automatic gate detection through queue"""
+        """Test override airport is used and monitoring stops after first success"""
         mock_gsx_instance = Mock()
         mock_gsx_instance.is_initialized = True
 
-        call_count = [0]
-
-        def assign_gate_and_stop(*args, **kwargs):
-            call_count[0] += 1
-            if call_count[0] >= 2:
-                self.director.running = False
+        def assign_gate_success(*args, **kwargs):
             return (True, {'gate': 'A5'})
 
-        mock_gsx_instance.assign_gate_when_ready.side_effect = assign_gate_and_stop
+        mock_gsx_instance.assign_gate_when_ready.side_effect = assign_gate_success
         mock_gsx_hook.return_value = mock_gsx_instance
 
         gates = [
@@ -384,9 +375,10 @@ class TestGateAssignmentDirector(unittest.TestCase):
         self.director.running = True
         self.director.process_gate_assignments()
 
-        self.assertEqual(mock_gsx_instance.assign_gate_when_ready.call_count, 2)
-        for call in mock_gsx_instance.assign_gate_when_ready.call_args_list:
-            self.assertEqual(call[1]["airport"], "KJFK")
+        # Should process only first gate with override airport, then auto-stop
+        self.assertEqual(mock_gsx_instance.assign_gate_when_ready.call_count, 1)
+        self.assertEqual(mock_gsx_instance.assign_gate_when_ready.call_args[1]["airport"], "KJFK")
+        self.assertFalse(self.director.running)
 
     @patch('GateAssignmentDirector.director.time.sleep')
     @patch('GateAssignmentDirector.director.GsxHook')

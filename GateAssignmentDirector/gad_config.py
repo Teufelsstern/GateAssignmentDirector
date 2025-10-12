@@ -14,46 +14,69 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class GADConfig:
     """Configuration for Gate Assignment Director"""
-    # All configurable fields - loaded from YAML
-    menu_file_paths: list[str] = field(default_factory=lambda: [
-        r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
-        r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
-    ])
-    tooltip_file_paths: list[str] = field(default_factory=lambda: [
-        r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
-        r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
-    ])
-    tooltip_success_keyphrases: list[str] = field(default_factory=lambda: [
-        'marshaller has been dispatched',
-        'follow me car',
-        'boarding',
-        'safedock© system activated'
-    ])
+
+    menu_file_paths: list[str] = field(
+        default_factory=lambda: [
+            r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
+            r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
+        ]
+    )
+    tooltip_file_paths: list[str] = field(
+        default_factory=lambda: [
+            r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
+            r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
+        ]
+    )
+    tooltip_success_keyphrases: list[str] = field(
+        default_factory=lambda: [
+            "marshaller has been dispatched",
+            "follow me car",
+            "boarding",
+            "safedock© system activated",
+        ]
+    )
     sleep_short: float = 0.1
     sleep_long: float = 0.3
     ground_check_interval: float = 1.0
     aircraft_request_interval: float = 2.0
     max_menu_check_attempts: int = 15
-    logging_level: str = 'DEBUG'
-    logging_format: str = '%(asctime)s - %(levelname)s - %(message)s'
-    logging_datefmt: str = '%H:%M:%S'
-    SI_API_KEY: str = 'YOUR_API_KEY_HERE'
-    default_airline: str = 'GSX'
+    logging_level: str = "DEBUG"
+    logging_format: str = "%(asctime)s - %(levelname)s - %(message)s"
+    logging_datefmt: str = "%H:%M:%S"
+    SI_API_KEY: str = "YOUR_API_KEY_HERE"
+    default_airline: str = "GSX"
     minimize_to_tray: bool = True
     always_on_top: bool = False
-    position_keywords: dict[str, list[str]] = field(default_factory=lambda: {
-        'gsx_gate': ['Gate', 'Dock'],
-        'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
-        'si_terminal': ['Terminal', 'International', 'Parking', 'Domestic', 'Main', 'Central', 'Pier', 'Concourse', 'Level', 'Apron', 'Stand']
-    })
-    matching_weights: dict[str, float] = field(default_factory=lambda: {
-        'gate_number': 0.6,
-        'gate_prefix': 0.3,
-        'terminal': 0.1
-    })
+    position_keywords: dict[str, list[str]] = field(
+        default_factory=lambda: {
+            "gsx_gate": ["Gate", "Dock"],
+            "gsx_parking": ["Parking", "Stand", "Remote", "Ramp", "Apron"],
+            "si_terminal": [
+                "Terminal",
+                "International",
+                "Parking",
+                "Domestic",
+                "Main",
+                "Central",
+                "Pier",
+                "Concourse",
+                "Level",
+                "Apron",
+                "Stand",
+            ],
+        }
+    )
+    matching_weights: dict[str, float] = field(
+        default_factory=lambda: {
+            "gate_number": 0.6,
+            "gate_prefix": 0.3,
+            "terminal": 0.1,
+        }
+    )
     matching_minimum_score: float = 70.0
     disclaimer_version: int = 0
 
@@ -62,58 +85,70 @@ class GADConfig:
         format=logging_format,
         datefmt=logging_datefmt,
     )
-    # These are computed at runtime (not in YAML)
     username: str = field(default_factory=getpass.getuser)
     flight_json_path: str = field(init=False)
 
     def __post_init__(self):
-        # Dynamically set flight_json_path based on username
-        self.flight_json_path = f"C:\\Users\\{self.username}\\AppData\\Local\\SayIntentionsAI\\flight.json"
+        self.flight_json_path = (
+            f"C:\\Users\\{self.username}\\AppData\\Local\\SayIntentionsAI\\flight.json"
+        )
 
     @classmethod
     def _get_defaults(cls):
         """Return default configuration values"""
         return {
-            'menu_file_paths': [
+            "menu_file_paths": [
                 r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
                 r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\menu",
             ],
-            'tooltip_file_paths': [
+            "tooltip_file_paths": [
                 r"C:\Program Files (x86)\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
                 r"C:\Program Files\Addon Manager\MSFS\fsdreamteam-gsx-pro\html_ui\InGamePanels\FSDT_GSX_Panel\tooltip",
             ],
-            'sleep_short': 0.1,
-            'sleep_long': 0.3,
-            'ground_check_interval': 1.0,
-            'aircraft_request_interval': 2.0,
-            'max_menu_check_attempts': 4,
-            'logging_level': 'DEBUG',
-            'logging_format': '%(asctime)s - %(levelname)s - %(message)s',
-            'logging_datefmt': '%H:%M:%S',
-            'SI_API_KEY': 'YOUR_API_KEY_HERE',
-            'default_airline': 'GSX',
-            'minimize_to_tray': True,
-            'always_on_top': False,
-            'position_keywords': {
-                'gsx_gate': ['Gate', 'Dock'],
-                'gsx_parking': ['Parking', 'Stand', 'Remote', 'Ramp', 'Apron'],
-                'si_terminal': ['Terminal', 'International', 'Parking', 'Domestic', 'Main', 'Central', 'Pier', 'Concourse', 'Level', 'Apron', 'Stand']
+            "sleep_short": 0.1,
+            "sleep_long": 0.3,
+            "ground_check_interval": 1.0,
+            "aircraft_request_interval": 2.0,
+            "max_menu_check_attempts": 4,
+            "logging_level": "DEBUG",
+            "logging_format": "%(asctime)s - %(levelname)s - %(message)s",
+            "logging_datefmt": "%H:%M:%S",
+            "SI_API_KEY": "YOUR_API_KEY_HERE",
+            "default_airline": "GSX",
+            "minimize_to_tray": True,
+            "always_on_top": False,
+            "position_keywords": {
+                "gsx_gate": ["Gate", "Dock"],
+                "gsx_parking": ["Parking", "Stand", "Remote", "Ramp", "Apron"],
+                "si_terminal": [
+                    "Terminal",
+                    "International",
+                    "Parking",
+                    "Domestic",
+                    "Main",
+                    "Central",
+                    "Pier",
+                    "Concourse",
+                    "Level",
+                    "Apron",
+                    "Stand",
+                ],
             },
-            'matching_weights': {
-                'gate_number': 0.6,
-                'gate_prefix': 0.3,
-                'terminal': 0.1
+            "matching_weights": {
+                "gate_number": 0.6,
+                "gate_prefix": 0.3,
+                "terminal": 0.1,
             },
-            'matching_minimum_score': 70.0,
-            'disclaimer_version': 0
+            "matching_minimum_score": 70.0,
+            "disclaimer_version": 0,
         }
 
     @classmethod
     def get_config_path(cls) -> Path:
         """Get the path to the config file (persistent location for EXE)"""
-        if getattr(sys, 'frozen', False):
+        if getattr(sys, "frozen", False):
             # Running as PyInstaller bundle - use AppData for persistence
-            appdata = Path(os.getenv('APPDATA'))
+            appdata = Path(os.getenv("APPDATA"))
             config_dir = appdata / "GateAssignmentDirector"
             config_dir.mkdir(parents=True, exist_ok=True)
             return config_dir / "config.yaml"
@@ -130,24 +165,26 @@ class GADConfig:
         config_file = Path(yaml_path)
 
         if not config_file.exists():
-            # Create default YAML file
             defaults = cls._get_defaults()
-            with open(config_file, 'w', encoding='utf-8') as f:
+            with open(config_file, "w", encoding="utf-8") as f:
                 yaml.dump(defaults, f, default_flow_style=False, allow_unicode=True)
             logger.info("Created default config file: %s", yaml_path)
 
-        # Load from YAML
-        with open(config_file, 'r', encoding='utf-8') as f:
+        with open(config_file, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
             logger.info("Read config file: %s", yaml_path)
 
         # Ensure float fields are always floats (YAML may load 1.0 as int 1)
-        float_fields = ['sleep_short', 'sleep_long', 'ground_check_interval', 'aircraft_request_interval']
+        float_fields = [
+            "sleep_short",
+            "sleep_long",
+            "ground_check_interval",
+            "aircraft_request_interval",
+        ]
         for field in float_fields:
             if field in data:
                 data[field] = float(data[field])
 
-        # Create instance with YAML data
         return cls(**data)
 
     def save_yaml(self, yaml_path: str = None):
@@ -156,33 +193,32 @@ class GADConfig:
             yaml_path = self.get_config_path()
         # Only save the configurable fields (exclude computed ones)
         data = {
-            'menu_file_paths': self.menu_file_paths,
-            'tooltip_file_paths': self.tooltip_file_paths,
-            'tooltip_success_keyphrases': self.tooltip_success_keyphrases,
-            'sleep_short': self.sleep_short,
-            'sleep_long': self.sleep_long,
-            'ground_check_interval': self.ground_check_interval,
-            'aircraft_request_interval': self.aircraft_request_interval,
-            'max_menu_check_attempts': self.max_menu_check_attempts,
-            'logging_level': self.logging_level,
-            'logging_format': self.logging_format,
-            'logging_datefmt': self.logging_datefmt,
-            'SI_API_KEY': self.SI_API_KEY,
-            'default_airline': self.default_airline,
-            'minimize_to_tray': self.minimize_to_tray,
-            'always_on_top': self.always_on_top,
-            'position_keywords': self.position_keywords,
-            'matching_weights': self.matching_weights,
-            'matching_minimum_score': self.matching_minimum_score,
-            'disclaimer_version': self.disclaimer_version,
+            "menu_file_paths": self.menu_file_paths,
+            "tooltip_file_paths": self.tooltip_file_paths,
+            "tooltip_success_keyphrases": self.tooltip_success_keyphrases,
+            "sleep_short": self.sleep_short,
+            "sleep_long": self.sleep_long,
+            "ground_check_interval": self.ground_check_interval,
+            "aircraft_request_interval": self.aircraft_request_interval,
+            "max_menu_check_attempts": self.max_menu_check_attempts,
+            "logging_level": self.logging_level,
+            "logging_format": self.logging_format,
+            "logging_datefmt": self.logging_datefmt,
+            "SI_API_KEY": self.SI_API_KEY,
+            "default_airline": self.default_airline,
+            "minimize_to_tray": self.minimize_to_tray,
+            "always_on_top": self.always_on_top,
+            "position_keywords": self.position_keywords,
+            "matching_weights": self.matching_weights,
+            "matching_minimum_score": self.matching_minimum_score,
+            "disclaimer_version": self.disclaimer_version,
         }
 
-        with open(yaml_path, 'w', encoding='utf-8') as f:
+        with open(yaml_path, "w", encoding="utf-8") as f:
             yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
             logger.info("Saved config file: %s", yaml_path)
 
 
-# Global config instance (load from YAML)
 config = GADConfig.from_yaml()
 
 logging.basicConfig(

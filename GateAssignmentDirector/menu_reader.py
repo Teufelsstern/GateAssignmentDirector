@@ -72,7 +72,9 @@ class MenuReader:
                             file_timestamp=current_timestamp,
                         )
                         if error_count > 0:
-                            logger.debug("Managed to read menu despite %s errors", error_count)
+                            logger.debug(
+                                "Managed to read menu despite %s errors", error_count
+                            )
                         break
                 except (OSError, IOError) as e:
                     error_count += 1

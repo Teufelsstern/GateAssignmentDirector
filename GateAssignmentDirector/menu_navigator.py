@@ -77,7 +77,9 @@ class MenuNavigator:
             return success
 
         # If first attempt failed, try GSX refresh command and check again
-        logger.warning(f"Menu did not change after clicking index {index}, attempting GSX refresh...")
+        logger.warning(
+            f"Menu did not change after clicking index {index}, attempting GSX refresh..."
+        )
         self.menu_choice.value = -2  # GSX refresh command
         time.sleep(self.config.sleep_short)
 
@@ -106,7 +108,11 @@ class MenuNavigator:
                     pre_value = self.menu_choice.value
                     self.menu_choice.value = index
                     time.sleep(self.config.sleep_short)
-                    logger.debug("Menu_Choice value is now %s, was %s", self.menu_choice.value, pre_value)
+                    logger.debug(
+                        "Menu_Choice value is now %s, was %s",
+                        self.menu_choice.value,
+                        pre_value,
+                    )
                     success, info = self._wait_for_change()
                     if success:
                         return success, info
@@ -145,15 +151,19 @@ class MenuNavigator:
             self.menu_reader.read_menu()
             new_title = self.menu_reader.current_state.title
             new_options = self.menu_reader.current_state.options
-            if (
-                new_title != old_title
-            ):
-                logger.debug("Title changed from %s to %s. Change detected.", old_title, new_title)
+            if new_title != old_title:
+                logger.debug(
+                    "Title changed from %s to %s. Change detected.",
+                    old_title,
+                    new_title,
+                )
                 return True, (old_title, old_options)
-            elif (
-                new_options != old_options
-            ):
-                logger.debug("Options changed from %s to %s. Change detected.", old_options, new_options)
+            elif new_options != old_options:
+                logger.debug(
+                    "Options changed from %s to %s. Change detected.",
+                    old_options,
+                    new_options,
+                )
                 return True, (old_title, old_options)
         return False, (old_title, old_options)
 

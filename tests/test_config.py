@@ -30,6 +30,7 @@ class TestGADConfigDefaults(unittest.TestCase):
             'matching_weights',
             'matching_minimum_score',
             'tooltip_file_paths',
+            'disclaimer_version',
         }
 
         self.assertEqual(set(defaults.keys()), expected_keys)

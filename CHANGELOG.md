@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-10-12
+
+### Added
+- Auto-stop monitoring after successful gate assignment
+  - Prevents duplicate assignments from flight.json changes
+  - Applies to both automatic and manual gate assignments
+  - Status message informs user monitoring has stopped
+
+### Fixed
+- Airport label now updates when destination changes during active monitoring
+  - Previously only checked departure airport changes
+  - Now properly detects IFR clearance with destination assignment
+- 45 unit tests updated for new auto-stop behavior
+  - Added disclaimer_version to mock config setup
+  - Updated director tests to expect monitoring stop after success
+  - All 342 tests passing
+
+### Changed
+- Code formatting standardized with Black
+  - Consistent whitespace, line breaks, and quote style
+  - No functional changes, only formatting
+
+### Removed
+- CLI interface (cli_gsx.py)
+  - Unmaintained and unused by target audience
+  - GUI and director.py provide all necessary functionality
+
+### Documentation
+- Depersonalized agent documentation
+  - Removed agent names from public documentation
+  - References now use generic "this agent" terminology
+
 ## [1.0.0] - 2025-10-09
 
 ### Major Release

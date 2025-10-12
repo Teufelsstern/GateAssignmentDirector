@@ -88,7 +88,10 @@ class TooltipReader:
             current_timestamp = self.get_file_timestamp()
 
             # Check if timestamp changed
-            if current_timestamp is not None and current_timestamp != baseline_timestamp:
+            if (
+                current_timestamp is not None
+                and current_timestamp != baseline_timestamp
+            ):
                 # File was updated, check content
                 tooltip_content = self.read_tooltip().lower()
 

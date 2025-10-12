@@ -21,22 +21,40 @@ def setup_config_tab(parent_ui, tab):
 
     parent_ui.config_entries = {}
 
-    _label(frame=scroll_frame, text="API Settings", size=16, pady=(0, 0), padx=(5,0))
+    _label(frame=scroll_frame, text="API Settings", size=16, pady=(0, 0), padx=(5, 0))
     create_config_field(
-        parent_ui, scroll_frame, field_name="SI_API_KEY", label_text="SI API Key", padx=(5,0), entry_width=100
+        parent_ui,
+        scroll_frame,
+        field_name="SI_API_KEY",
+        label_text="SI API Key",
+        padx=(5, 0),
+        entry_width=100,
     )
 
-    _label(frame=scroll_frame, text="GSX Settings", size=16, pady=(10, 0), padx=(5,0))
+    _label(frame=scroll_frame, text="GSX Settings", size=16, pady=(10, 0), padx=(5, 0))
     create_config_field(
-        parent_ui, scroll_frame, field_name="default_airline", label_text="Default Airline", padx=(5,0), entry_width=100
+        parent_ui,
+        scroll_frame,
+        field_name="default_airline",
+        label_text="Default Airline",
+        padx=(5, 0),
+        entry_width=100,
     )
 
-    _label(frame=scroll_frame, text="UI Settings", size=16, pady=(10, 0), padx=(5,0))
+    _label(frame=scroll_frame, text="UI Settings", size=16, pady=(10, 0), padx=(5, 0))
     create_config_checkbox(
-        parent_ui, scroll_frame, field_name="minimize_to_tray", label_text="Minimize to tray on close", padx=(5,0)
+        parent_ui,
+        scroll_frame,
+        field_name="minimize_to_tray",
+        label_text="Minimize to tray on close",
+        padx=(5, 0),
     )
     create_config_checkbox(
-        parent_ui, scroll_frame, field_name="always_on_top", label_text="Always on top", padx=(5,0)
+        parent_ui,
+        scroll_frame,
+        field_name="always_on_top",
+        label_text="Always on top",
+        padx=(5, 0),
     )
 
     _label(
@@ -44,10 +62,12 @@ def setup_config_tab(parent_ui, tab):
         text="_________ Advanced Settings ___________",
         size=14,
         color="#d97440",
-        pady=(20, 10)
+        pady=(20, 10),
     )
 
-    _label(frame=scroll_frame, text="Timing Settings", size=16, pady=(10, 0), padx=(5,0))
+    _label(
+        frame=scroll_frame, text="Timing Settings", size=16, pady=(10, 0), padx=(5, 0)
+    )
 
     timing_fields = [
         ("sleep_short", "Short delay (s). Never shorter than 0.1"),
@@ -55,23 +75,42 @@ def setup_config_tab(parent_ui, tab):
     ]
 
     for field, label in timing_fields:
-        create_config_field(parent_ui, scroll_frame, field, label, padx=(5,0), entry_width=30)
+        create_config_field(
+            parent_ui, scroll_frame, field, label, padx=(5, 0), entry_width=30
+        )
 
-    _label(frame=scroll_frame, text="Interval Settings", size=16, pady=(10, 0), padx=(5,0))
+    _label(
+        frame=scroll_frame, text="Interval Settings", size=16, pady=(10, 0), padx=(5, 0)
+    )
     interval_fields = [
-        ("ground_check_interval", "Delay (s) between ground checks. Never lower than 0.5"),
-        ("aircraft_request_interval", "Delay (s) between aircraft requests. Never lower than 0.5"),
+        (
+            "ground_check_interval",
+            "Delay (s) between ground checks. Never lower than 0.5",
+        ),
+        (
+            "aircraft_request_interval",
+            "Delay (s) between aircraft requests. Never lower than 0.5",
+        ),
     ]
 
     for field, label in interval_fields:
-        create_config_field(parent_ui, scroll_frame, field, label, padx=(5,0), entry_width=50)
+        create_config_field(
+            parent_ui, scroll_frame, field, label, padx=(5, 0), entry_width=50
+        )
 
-    _label(frame=scroll_frame, text="Menu Settings", size=16, pady=(10, 0), padx=(5,0))
+    _label(frame=scroll_frame, text="Menu Settings", size=16, pady=(10, 0), padx=(5, 0))
     create_config_field(
-        parent_ui, scroll_frame, "max_menu_check_attempts", "Max Menu Check Attempts", padx=(5,0), entry_width=30
+        parent_ui,
+        scroll_frame,
+        "max_menu_check_attempts",
+        "Max Menu Check Attempts",
+        padx=(5, 0),
+        entry_width=30,
     )
 
-    _label(frame=scroll_frame, text="Logging Settings", size=16, pady=(10, 0), padx=(5,0))
+    _label(
+        frame=scroll_frame, text="Logging Settings", size=16, pady=(10, 0), padx=(5, 0)
+    )
 
     logging_fields = [
         ("logging_level", "Logging Level", 60),
@@ -80,7 +119,9 @@ def setup_config_tab(parent_ui, tab):
     ]
 
     for field, label, width in logging_fields:
-        create_config_field(parent_ui, scroll_frame, field, label, padx=(5,0), entry_width=width)
+        create_config_field(
+            parent_ui, scroll_frame, field, label, padx=(5, 0), entry_width=width
+        )
 
     # Info about computed fields
     _label(
@@ -93,6 +134,7 @@ def setup_config_tab(parent_ui, tab):
 
     # Show config file location
     from GateAssignmentDirector.gad_config import GADConfig
+
     config_path = str(GADConfig.get_config_path())
     _label(
         frame=scroll_frame,
@@ -110,9 +152,9 @@ def setup_config_tab(parent_ui, tab):
         parent_ui.load_config_values,
         text="Reload Config",
         side="left",
-        padx=(0, 5)
+        padx=(0, 5),
     )
-    attach_tooltip(reload_btn, 'reload_config_btn')
+    attach_tooltip(reload_btn, "reload_config_btn")
 
     save_btn = _button(
         btn_frame,
@@ -123,17 +165,43 @@ def setup_config_tab(parent_ui, tab):
         side="right",
         padx=(5, 0),
     )
-    attach_tooltip(save_btn, 'save_config_btn')
+    attach_tooltip(save_btn, "save_config_btn")
 
     parent_ui.load_config_values()
 
 
-def create_config_field(parent_ui, parent, field_name:str, label_text:str, label_width:int = 60, entry_width:int = 60, padx:tuple[int,int]=(0,10), size:int = 14, side:str = "left"):
+def create_config_field(
+    parent_ui,
+    parent,
+    field_name: str,
+    label_text: str,
+    label_width: int = 60,
+    entry_width: int = 60,
+    padx: tuple[int, int] = (0, 10),
+    size: int = 14,
+    side: str = "left",
+):
     """Create a labeled entry field for configuration"""
     frame = ctk.CTkFrame(parent, fg_color="transparent")
     frame.pack(fill="x", expand=False)
-    label = _label(frame, text=label_text + ":", size=size, padx=(10,10), pady=(0,5), side=side, width=label_width, bold=False)
-    entry = ctk.CTkEntry(frame, width=entry_width, height=5, corner_radius=6, border_width=3, border_color="#3a3a3a")
+    label = _label(
+        frame,
+        text=label_text + ":",
+        size=size,
+        padx=(10, 10),
+        pady=(0, 5),
+        side=side,
+        width=label_width,
+        bold=False,
+    )
+    entry = ctk.CTkEntry(
+        frame,
+        width=entry_width,
+        height=5,
+        corner_radius=6,
+        border_width=3,
+        border_color="#3a3a3a",
+    )
     entry.pack(expand=False, side=side)
 
     parent_ui.config_entries[field_name] = entry
@@ -142,10 +210,17 @@ def create_config_field(parent_ui, parent, field_name:str, label_text:str, label
     attach_tooltip(label, field_name)
 
 
-def create_config_checkbox(parent_ui, parent, field_name:str, label_text:str, padx:tuple[int,int]=(0,10), size:int = 14):
+def create_config_checkbox(
+    parent_ui,
+    parent,
+    field_name: str,
+    label_text: str,
+    padx: tuple[int, int] = (0, 10),
+    size: int = 14,
+):
     """Create a checkbox for boolean configuration"""
     frame = ctk.CTkFrame(parent, fg_color="transparent")
-    frame.pack(fill="x", expand=False, pady=(0,5))
+    frame.pack(fill="x", expand=False, pady=(0, 5))
 
     checkbox = ctk.CTkCheckBox(
         frame,
@@ -154,7 +229,7 @@ def create_config_checkbox(parent_ui, parent, field_name:str, label_text:str, pa
         corner_radius=6,
         border_width=2,
         checkbox_width=20,
-        checkbox_height=20
+        checkbox_height=20,
     )
     checkbox.pack(anchor="w", padx=(10, 10), pady=(0, 5))
 

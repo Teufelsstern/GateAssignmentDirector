@@ -1,4 +1,3 @@
-# exceptions.py
 """Custom exceptions for GSX Hook
 
 This module defines all custom exceptions used throughout the GSX Hook system.

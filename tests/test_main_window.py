@@ -11,8 +11,16 @@ sys.modules['PIL.Image'] = MagicMock()
 sys.modules['PIL.ImageDraw'] = MagicMock()
 
 
+def _create_mock_config():
+    """Create a mock config with disclaimer_version set to avoid comparison errors"""
+    mock_config = MagicMock()
+    mock_config.disclaimer_version = 1
+    mock_config.flight_json_path = "C:/test/flight.json"
+    return mock_config
+
+
 with patch('GateAssignmentDirector.director.GateAssignmentDirector'), \
-     patch('GateAssignmentDirector.gad_config.GADConfig.from_yaml'), \
+     patch('GateAssignmentDirector.gad_config.GADConfig.from_yaml', return_value=_create_mock_config()), \
      patch('GateAssignmentDirector.ui.main_window.setup_monitor_tab'), \
      patch('GateAssignmentDirector.ui.main_window.setup_logs_tab'), \
      patch('GateAssignmentDirector.ui.main_window.setup_config_tab'), \
@@ -26,7 +34,7 @@ class TestDirectorUILogMethods(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures with mocked UI components"""
         with patch('GateAssignmentDirector.director.GateAssignmentDirector'), \
-             patch('GateAssignmentDirector.gad_config.GADConfig.from_yaml'), \
+             patch('GateAssignmentDirector.gad_config.GADConfig.from_yaml', return_value=_create_mock_config()), \
              patch('GateAssignmentDirector.ui.main_window.setup_monitor_tab'), \
              patch('GateAssignmentDirector.ui.main_window.setup_logs_tab'), \
              patch('GateAssignmentDirector.ui.main_window.setup_config_tab'), \
@@ -209,7 +217,7 @@ class TestDirectorUIMonitoringControls(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures with mocked UI components"""
         with patch('GateAssignmentDirector.director.GateAssignmentDirector') as mock_director_cls, \
-             patch('GateAssignmentDirector.gad_config.GADConfig.from_yaml'), \
+             patch('GateAssignmentDirector.gad_config.GADConfig.from_yaml', return_value=_create_mock_config()), \
              patch('GateAssignmentDirector.ui.main_window.setup_monitor_tab'), \
              patch('GateAssignmentDirector.ui.main_window.setup_logs_tab'), \
              patch('GateAssignmentDirector.ui.main_window.setup_config_tab'), \
@@ -224,8 +232,6 @@ class TestDirectorUIMonitoringControls(unittest.TestCase):
         self.ui.status_label = MagicMock()
         self.ui.activity_text = MagicMock()
         self.ui.airport_label = MagicMock()
-        self.ui.config = MagicMock()
-        self.ui.config.flight_json_path = "C:/test/flight.json"
 
     @patch('threading.Timer')
     def test_start_monitoring_ui_state_changes(self, mock_timer):
@@ -312,7 +318,7 @@ class TestDirectorUIOverrideControls(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures with mocked UI components"""
         with patch('GateAssignmentDirector.director.GateAssignmentDirector'), \
-             patch('GateAssignmentDirector.gad_config.GADConfig.from_yaml'), \
+             patch('GateAssignmentDirector.gad_config.GADConfig.from_yaml', return_value=_create_mock_config()), \
              patch('GateAssignmentDirector.ui.main_window.setup_monitor_tab'), \
              patch('GateAssignmentDirector.ui.main_window.setup_logs_tab'), \
              patch('GateAssignmentDirector.ui.main_window.setup_config_tab'), \
@@ -503,7 +509,7 @@ class TestDirectorUIGateManagement(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures with mocked UI components"""
         with patch('GateAssignmentDirector.director.GateAssignmentDirector'), \
-             patch('GateAssignmentDirector.gad_config.GADConfig.from_yaml'), \
+             patch('GateAssignmentDirector.gad_config.GADConfig.from_yaml', return_value=_create_mock_config()), \
              patch('GateAssignmentDirector.ui.main_window.setup_monitor_tab'), \
              patch('GateAssignmentDirector.ui.main_window.setup_logs_tab'), \
              patch('GateAssignmentDirector.ui.main_window.setup_config_tab'), \

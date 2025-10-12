@@ -58,7 +58,13 @@ class GsxHook:
             self.is_initialized = True
             logger.info("GSX Hook initialized successfully")
 
-        except (GsxConnectionError, GsxFileNotFoundError, OSError, IOError, Exception) as e:
+        except (
+            GsxConnectionError,
+            GsxFileNotFoundError,
+            OSError,
+            IOError,
+            Exception,
+        ) as e:
             logger.error(f"Failed to initialize GSX Hook: {e}")
             self.is_initialized = False
             self._cleanup_partial_init()
@@ -80,7 +86,9 @@ class GsxHook:
         self.sim_manager.set_variable(GsxVariable.MENU_OPEN.value, 0)
         time.sleep(0.1)
 
-    def assign_gate_when_ready(self, airport: str, status_callback=None, **kwargs) -> tuple[bool, dict | None]:
+    def assign_gate_when_ready(
+        self, airport: str, status_callback=None, **kwargs
+    ) -> tuple[bool, dict | None]:
         """
         Public interface for gate assignment with airport logging
 
@@ -96,8 +104,9 @@ class GsxHook:
             logger.error("GSX Hook not initialized")
             return False, None
 
-        # assign_gate now handles retries internally (without re-matching)
-        success, gate_info = self.gate_assignment.assign_gate(airport=airport, status_callback=status_callback, **kwargs)
+        success, gate_info = self.gate_assignment.assign_gate(
+            airport=airport, status_callback=status_callback, **kwargs
+        )
         return success, gate_info
 
     def is_on_ground(self) -> bool:

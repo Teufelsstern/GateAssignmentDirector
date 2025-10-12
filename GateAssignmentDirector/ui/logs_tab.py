@@ -30,9 +30,9 @@ def setup_logs_tab(parent_ui, tab):
         fg_color="#4a4a4a",
         hover_color="#5a5a5a",
         side="left",
-        padx=(0, 10)
+        padx=(0, 10),
     )
-    attach_tooltip(save_btn, 'save_logs_btn')
+    attach_tooltip(save_btn, "save_logs_btn")
 
     clear_btn = _button(
         button_frame,
@@ -41,6 +41,6 @@ def setup_logs_tab(parent_ui, tab):
         height=30,
         fg_color="#4a4a4a",
         hover_color="#5a5a5a",
-        side="left"
+        side="left",
     )
-    attach_tooltip(clear_btn, 'clear_logs_btn')
+    attach_tooltip(clear_btn, "clear_logs_btn")

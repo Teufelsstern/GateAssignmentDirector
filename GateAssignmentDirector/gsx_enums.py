@@ -1,4 +1,3 @@
-# enums_own.py (or enums.py)
 """Enumerations and constants for GSX Hook
 
 This module contains all enumerations and constant values used throughout
@@ -141,6 +140,7 @@ class GsxErrorCode(Enum):
     GSX_NOT_AVAILABLE = 6
     INVALID_GATE = 7
     INVALID_AIRLINE = 8
+
 
 class GateGroups(IntEnum):
     T_NAME = 1

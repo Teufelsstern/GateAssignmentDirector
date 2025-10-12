@@ -76,7 +76,9 @@ class GateAssignment:
                 logger.warning(
                     f"Could not parse ICAO from menu title: '{current_menu_state.title}'"
                 )
-            logger.debug("Airport %s has not been parsed yet. Starting parsing", airport)
+            logger.debug(
+                "Airport %s has not been parsed yet. Starting parsing", airport
+            )
             self.menu_logger.start_session(gate_info=GateInfo(airport=airport))
             self._refresh_menu()
             level_0_page = 0
@@ -84,7 +86,9 @@ class GateAssignment:
                 current_menu_state = self.menu_reader.read_menu()
                 all_options = current_menu_state.options
                 level_0_options = [
-                    opt for opt in all_options if ("Next" not in opt and "Runway" not in opt)
+                    opt
+                    for opt in all_options
+                    if ("Next" not in opt and "Runway" not in opt)
                 ]
                 logger.debug(
                     f"Found {len(level_0_options)} options on page {level_0_page}"
@@ -125,14 +129,20 @@ class GateAssignment:
                             navigation_info=navigation_info,
                         )
                         for opt in current_menu_state.options:
-                            logger.debug("\tFor option \"%s\" logged option %s", option, opt)
+                            logger.debug(
+                                '\tFor option "%s" logged option %s', option, opt
+                            )
                         if any("Next" in opt for opt in current_menu_state.options):
                             logger.debug(
                                 f"Clicking Next at level 1 (click #{level_1_next_clicks + 1}) for page {level_0_page}, option {actual_index}"
                             )
                             success, info = self.menu_navigator.click_next()
                             if not success:
-                                raise GsxMenuNotChangedError("Failed to click next after 3 attempts at %s with %s", info[0], info[1])
+                                raise GsxMenuNotChangedError(
+                                    "Failed to click next after 3 attempts at %s with %s",
+                                    info[0],
+                                    info[1],
+                                )
                             level_1_next_clicks += 1
                         else:
                             logger.debug(
@@ -211,10 +221,7 @@ class GateAssignment:
 
         airport_data = self.map_available_spots(airport)
 
-        # Reconstruct terminal with proper spacing
         terminal_full = " ".join(filter(None, [terminal, terminal_number]))
-
-        # Reconstruct gate with prefix + number + suffix
         gate_full = (gate_prefix or "") + (gate_number or "") + (gate_suffix or "")
 
         matching_gsx_gate, needs_api_call = self.find_gate(
@@ -271,11 +278,10 @@ class GateAssignment:
                 self.menu_navigator.click_planned(matching_gsx_gate)
                 self.menu_navigator.find_and_click(["activate"], SearchType.KEYWORD)
 
-                # Check if GSX already succeeded (tooltip confirms)
                 if self.tooltip_reader.check_for_success(baseline_timestamp):
                     logger.info("Gate activated successfully (confirmed via tooltip)")
                     if status_callback:
-                        gate_name = matching_gsx_gate.get('gate', 'Unknown')
+                        gate_name = matching_gsx_gate.get("gate", "Unknown")
                         status_callback(f"Successfully assigned to gate {gate_name}")
                     self._close_menu()
                     return True, matching_gsx_gate
@@ -286,28 +292,38 @@ class GateAssignment:
                     [self.config.default_airline or "GSX"], SearchType.AIRLINE
                 )
 
-                # Check tooltip after airline selection
-                if self.tooltip_reader.check_for_success(baseline_timestamp, timeout=2.0):
-                    logger.info("Gate assignment completed successfully (confirmed via tooltip)")
+                if self.tooltip_reader.check_for_success(
+                    baseline_timestamp, timeout=2.0
+                ):
+                    logger.info(
+                        "Gate assignment completed successfully (confirmed via tooltip)"
+                    )
                     if status_callback:
-                        gate_name = matching_gsx_gate.get('gate', 'Unknown')
+                        gate_name = matching_gsx_gate.get("gate", "Unknown")
                         status_callback(f"Successfully assigned to gate {gate_name}")
                     self._close_menu()
                     return True, matching_gsx_gate
                 else:
-                    logger.warning("Gate assignment uncertain - no tooltip confirmation after airline selection")
+                    logger.warning(
+                        "Gate assignment uncertain - no tooltip confirmation after airline selection"
+                    )
                     if status_callback:
-                        gate_name = matching_gsx_gate.get('gate', 'Unknown')
-                        status_callback(f"Assigned to gate {gate_name} (uncertain - verify in GSX)")
+                        gate_name = matching_gsx_gate.get("gate", "Unknown")
+                        status_callback(
+                            f"Assigned to gate {gate_name} (uncertain - verify in GSX)"
+                        )
                     self._close_menu()
                     return True, {**matching_gsx_gate, "_uncertain": True}
 
             except GsxMenuNotChangedError as e:
-                # Check tooltip as fallback
-                if self.tooltip_reader.check_for_success(baseline_timestamp, timeout=0.5):
-                    logger.info("Gate assignment succeeded (tooltip confirmation after menu error)")
+                if self.tooltip_reader.check_for_success(
+                    baseline_timestamp, timeout=0.5
+                ):
+                    logger.info(
+                        "Gate assignment succeeded (tooltip confirmation after menu error)"
+                    )
                     if status_callback:
-                        gate_name = matching_gsx_gate.get('gate', 'Unknown')
+                        gate_name = matching_gsx_gate.get("gate", "Unknown")
                         status_callback(f"Successfully assigned to gate {gate_name}")
                     self._close_menu()
                     return True, matching_gsx_gate
@@ -315,18 +331,26 @@ class GateAssignment:
                 # Menu didn't change, but action might have succeeded anyway
                 logger.warning(f"Gate assignment uncertain: {e}")
                 if status_callback:
-                    gate_name = matching_gsx_gate.get('gate', 'Unknown')
-                    status_callback(f"Assigned to gate {gate_name} (uncertain - verify in GSX)")
+                    gate_name = matching_gsx_gate.get("gate", "Unknown")
+                    status_callback(
+                        f"Assigned to gate {gate_name} (uncertain - verify in GSX)"
+                    )
                 # Leave menu open so user can verify - return success with uncertain flag
                 return True, {**matching_gsx_gate, "_uncertain": True}
 
             except (GsxMenuError, GsxTimeoutError) as e:
                 if attempt < max_attempts - 1:
-                    logger.warning(f"Gate clicking failed (attempt {attempt + 1}/{max_attempts}): {e}")
-                    logger.info("Retrying gate assignment (already matched gate, skipping re-match)...")
+                    logger.warning(
+                        f"Gate clicking failed (attempt {attempt + 1}/{max_attempts}): {e}"
+                    )
+                    logger.info(
+                        "Retrying gate assignment (already matched gate, skipping re-match)..."
+                    )
                     time.sleep(0.5)
                 else:
-                    logger.error(f"Gate assignment failed after {max_attempts} attempts: {e}")
+                    logger.error(
+                        f"Gate assignment failed after {max_attempts} attempts: {e}"
+                    )
                     if status_callback:
                         status_callback(f"Gate assignment failed: {e}")
                     return False, None
@@ -354,8 +378,8 @@ class GateAssignment:
 
     def _refresh_menu(self) -> None:
         """Refresh GSX menu (closes submenus but preserves page position)"""
-        #self.sim_manager.set_variable(GsxVariable.MENU_OPEN.value, 0)
-        #time.sleep(0.5)
+        # self.sim_manager.set_variable(GsxVariable.MENU_OPEN.value, 0)
+        # time.sleep(0.5)
         self.sim_manager.set_variable(GsxVariable.MENU_OPEN.value, 1)
         time.sleep(0.1)
         self.sim_manager.set_variable(GsxVariable.MENU_CHOICE.value, -2)
@@ -386,15 +410,19 @@ class GateAssignment:
         Returns:
             Tuple of (gate_data, is_exact_match)
         """
-        gate_data, is_exact, score, score_components = self.gate_matcher.find_best_match(
-            airport_data, terminal, gate
+        gate_data, is_exact, score, score_components = (
+            self.gate_matcher.find_best_match(airport_data, terminal, gate)
         )
         if gate_data:
             # Exact matches don't need API call
             if is_exact:
                 needs_api_call = False
             # For fuzzy matches, check score components if available
-            elif score_components and score_components["gate_prefix"] > 50.0 and score_components["gate_number"] > 80.0:
+            elif (
+                score_components
+                and score_components["gate_prefix"] > 50.0
+                and score_components["gate_number"] > 80.0
+            ):
                 needs_api_call = False
             else:
                 needs_api_call = True

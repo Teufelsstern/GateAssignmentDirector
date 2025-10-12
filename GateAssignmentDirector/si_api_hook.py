@@ -51,14 +51,21 @@ class GateParser:
         self.config = config
 
         # Build terminal keywords pattern from config
-        terminal_keywords = '|'.join(self.config.position_keywords['si_terminal'])
-        self.terminal_pattern = re.compile(rf'\b({terminal_keywords})\b', re.IGNORECASE)
+        terminal_keywords = "|".join(self.config.position_keywords["si_terminal"])
+        self.terminal_pattern = re.compile(rf"\b({terminal_keywords})\b", re.IGNORECASE)
 
         # Gate identifier at end: optional letter + digits + optional letter (with optional space)
-        self.gate_pattern = re.compile(r'([A-Z])?(\d+)\s*([A-Z])?\s*$', re.IGNORECASE)
+        self.gate_pattern = re.compile(r"([A-Z])?(\d+)\s*([A-Z])?\s*$", re.IGNORECASE)
 
         # Noise keywords to filter out from terminal descriptors
-        self.noise_keywords = ['overflow', 'gate', 'remote', 'stand', 'parking', 'terminal']
+        self.noise_keywords = [
+            "overflow",
+            "gate",
+            "remote",
+            "stand",
+            "parking",
+            "terminal",
+        ]
 
     def parse_gate(self, gate_string: str) -> GateInfo:
         """
@@ -88,7 +95,7 @@ class GateParser:
             gate_suffix = gate_match.group(3) or ""
 
             # Normalize gate number by removing leading zeros
-            gate_number_normalized = gate_number.lstrip('0') or '0'
+            gate_number_normalized = gate_number.lstrip("0") or "0"
 
             # Store gate components
             if gate_prefix:
@@ -104,7 +111,7 @@ class GateParser:
                 gate_info.gate_number = gate_number_normalized
 
             # Remove gate from string for terminal extraction
-            gate_string_without_gate = gate_string[:gate_match.start()].strip()
+            gate_string_without_gate = gate_string[: gate_match.start()].strip()
         else:
             # No gate found
             gate_string_without_gate = gate_string
@@ -120,31 +127,39 @@ class GateParser:
 
             # Filter out noise keywords
             for keyword in self.noise_keywords:
-                middle_text = re.sub(rf'\b{keyword}\b', '', middle_text, flags=re.IGNORECASE)
+                middle_text = re.sub(
+                    rf"\b{keyword}\b", "", middle_text, flags=re.IGNORECASE
+                )
 
             # Clean up extra whitespace
-            middle_text = ' '.join(middle_text.split())
+            middle_text = " ".join(middle_text.split())
 
             # Check if first word is a single letter/digit (terminal number)
             if middle_text:
                 first_word = middle_text.split()[0] if middle_text else ""
-                if len(first_word) == 1 and (first_word.isalpha() or first_word.isdigit()):
+                if len(first_word) == 1 and (
+                    first_word.isalpha() or first_word.isdigit()
+                ):
                     # Single letter/digit is terminal number
                     gate_info.terminal_number = first_word.upper()
                     # Rest is descriptor
-                    remaining = ' '.join(middle_text.split()[1:])
+                    remaining = " ".join(middle_text.split()[1:])
                     if remaining:
-                        gate_info.terminal_name = f"{terminal_keyword.capitalize()} {remaining}"
+                        gate_info.terminal_name = (
+                            f"{terminal_keyword.capitalize()} {remaining}"
+                        )
                     else:
                         gate_info.terminal_name = terminal_keyword.capitalize()
                 else:
                     # Multi-word descriptor, keep it all
-                    gate_info.terminal_name = f"{terminal_keyword.capitalize()} {middle_text}"
+                    gate_info.terminal_name = (
+                        f"{terminal_keyword.capitalize()} {middle_text}"
+                    )
             else:
                 gate_info.terminal_name = terminal_keyword.capitalize()
         else:
             # No terminal keyword found - check if we have "gate" keyword
-            if 'gate' in gate_string.lower():
+            if "gate" in gate_string.lower():
                 gate_info.terminal_name = "Terminal"
 
         return gate_info
@@ -192,7 +207,9 @@ class JSONMonitor:
 
     def get_log_level_for_field(self, field_path: str) -> str:
         """Get log level for specific field, fall back to default"""
-        return self.field_log_levels.get(field_path) or self.field_log_levels.get("default", self.default_log_level)
+        return self.field_log_levels.get(field_path) or self.field_log_levels.get(
+            "default", self.default_log_level
+        )
 
     def extract_flight_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Extract relevant flight data from JSON"""
@@ -201,12 +218,12 @@ class JSONMonitor:
             current_flight = flight_details.get("current_flight", {})
 
             flight_data = {
-                'current_airport': flight_details.get('current_airport'),
-                'destination_airport': current_flight.get('flight_destination'),
-                'departure_airport': current_flight.get('flight_origin'),
-                'airline': current_flight.get('airline'),
-                'flight_number': current_flight.get('flight_number'),
-                'assigned_gate': current_flight.get('assigned_gate'),
+                "current_airport": flight_details.get("current_airport"),
+                "destination_airport": current_flight.get("flight_destination"),
+                "departure_airport": current_flight.get("flight_origin"),
+                "airline": current_flight.get("airline"),
+                "flight_number": current_flight.get("flight_number"),
+                "assigned_gate": current_flight.get("assigned_gate"),
             }
 
             return flight_data
@@ -239,7 +256,7 @@ class JSONMonitor:
                     logger.info(f"GATE ASSIGNED: {gate_info}")
                     if self.gate_callback:
                         gate_data = asdict(gate_info)
-                        gate_data['airport'] = destination_airport
+                        gate_data["airport"] = destination_airport
                         self.gate_callback(gate_data)
                     elif self.enable_gsx_integration:
                         self.call_gsx_gate_finder(gate_info)

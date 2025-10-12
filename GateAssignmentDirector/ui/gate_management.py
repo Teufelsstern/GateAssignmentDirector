@@ -25,7 +25,7 @@ class GateManagementWindow:
         self.gate_assignment = gate_assignment
 
         def set_icon():
-            if getattr(sys, 'frozen', False):
+            if getattr(sys, "frozen", False):
                 base_path = Path(sys._MEIPASS)
                 icon_path = base_path / "GateAssignmentDirector" / "icon.ico"
             else:
@@ -67,23 +67,23 @@ class GateManagementWindow:
         self.tree = ttk.Treeview(
             tree_container,
             selectmode="extended",
-            columns=('size', 'jetways', 'terminal', 'fulltext'),
-            show='tree headings'
+            columns=("size", "jetways", "terminal", "fulltext"),
+            show="tree headings",
         )
-        self.tree.heading('#0', text='Gate')
-        self.tree.column('#0', width=150, minwidth=100)
+        self.tree.heading("#0", text="Gate")
+        self.tree.column("#0", width=150, minwidth=100)
 
-        self.tree.heading('size', text='Size')
-        self.tree.column('size', width=80, minwidth=60)
+        self.tree.heading("size", text="Size")
+        self.tree.column("size", width=80, minwidth=60)
 
-        self.tree.heading('jetways', text='Jetways')
-        self.tree.column('jetways', width=70, minwidth=50)
+        self.tree.heading("jetways", text="Jetways")
+        self.tree.column("jetways", width=70, minwidth=50)
 
-        self.tree.heading('terminal', text='Terminal')
-        self.tree.column('terminal', width=100, minwidth=80)
+        self.tree.heading("terminal", text="Terminal")
+        self.tree.column("terminal", width=100, minwidth=80)
 
-        self.tree.heading('fulltext', text='Full Text')
-        self.tree.column('fulltext', width=200, minwidth=150)
+        self.tree.heading("fulltext", text="Full Text")
+        self.tree.column("fulltext", width=200, minwidth=150)
 
         self.tree.pack(side="left", fill="both", expand=True)
 
@@ -93,7 +93,7 @@ class GateManagementWindow:
         scrollbar.pack(side="right", fill="y")
         self.tree.configure(yscrollcommand=scrollbar.set)
 
-        self.tree.bind('<<TreeviewSelect>>', self.on_tree_select)
+        self.tree.bind("<<TreeviewSelect>>", self.on_tree_select)
         bottom_frame = ctk.CTkFrame(left_frame)
         bottom_frame.pack(fill="x", padx=10, pady=(5, 10))
 
@@ -115,9 +115,9 @@ class GateManagementWindow:
             self.reset_data,
             text="Reset Data",
             height=28,
-            fg_color=c('dusty_rose'),
-            hover_color=c('dusty_rose', hover=True),
-            text_color=c('sage_dark'),
+            fg_color=c("dusty_rose"),
+            hover_color=c("dusty_rose", hover=True),
+            text_color=c("sage_dark"),
             pady=(15, 2),
         )
 
@@ -126,9 +126,9 @@ class GateManagementWindow:
             self.load_data,
             text="Reload Data",
             height=28,
-            fg_color=c('periwinkle'),
-            hover_color=c('periwinkle', hover=True),
-            text_color=c('sage_dark'),
+            fg_color=c("periwinkle"),
+            hover_color=c("periwinkle", hover=True),
+            text_color=c("sage_dark"),
             pady=(2, 5),
         )
 
@@ -137,9 +137,9 @@ class GateManagementWindow:
             self.save_data,
             text="Sort & Save",
             height=28,
-            fg_color=c('sage'),
-            hover_color=c('sage', hover=True),
-            text_color=c('sage_dark'),
+            fg_color=c("sage"),
+            hover_color=c("sage", hover=True),
+            text_color=c("sage_dark"),
             pady=(0, 0),
         )
 
@@ -156,7 +156,7 @@ class GateManagementWindow:
             text="Select gate(s) or terminal in tree, then specify destination:",
             size=12,
             pady=(0, 5),
-            padx=(10, 0)
+            padx=(10, 0),
         )
 
         gate_row = ctk.CTkFrame(gate_frame, fg_color="transparent")
@@ -166,8 +166,8 @@ class GateManagementWindow:
             gate_row,
             corner_radius=6,
             border_width=1,
-            border_color=c('charcoal_lighter'),
-            width=120
+            border_color=c("charcoal_lighter"),
+            width=120,
         )
         self.gate_entry.pack(side="left", padx=(0, 15))
 
@@ -178,8 +178,8 @@ class GateManagementWindow:
             from_to_row,
             corner_radius=6,
             border_width=1,
-            border_color=c('charcoal_lighter'),
-            width=50
+            border_color=c("charcoal_lighter"),
+            width=50,
         )
         self.from_terminal_entry.pack(side="left", padx=(0, 15))
         _label(from_to_row, text="To:", size=16, padx=(0, 2), side="left")
@@ -187,8 +187,8 @@ class GateManagementWindow:
             from_to_row,
             corner_radius=6,
             border_width=1,
-            border_color=c('charcoal_lighter'),
-            width=50
+            border_color=c("charcoal_lighter"),
+            width=50,
         )
         self.to_terminal_entry.pack(side="left")
 
@@ -197,11 +197,11 @@ class GateManagementWindow:
             self.move_gate,
             text="Move Selected Gate(s)",
             height=32,
-            fg_color=c('sage'),
-            hover_color=c('sage', hover=True),
-            text_color=c('sage_dark'),
+            fg_color=c("sage"),
+            hover_color=c("sage", hover=True),
+            text_color=c("sage_dark"),
             padx=(10, 10),
-            pady=(5, 10)
+            pady=(5, 10),
         )
 
         rename_frame = ctk.CTkFrame(right_frame)
@@ -220,7 +220,7 @@ class GateManagementWindow:
             variable=self.rename_mode,
             value="gate",
             command=self._on_rename_mode_change,
-            font=("Arial", 14)
+            font=("Arial", 14),
         ).pack(side="left", padx=(0, 15))
 
         ctk.CTkRadioButton(
@@ -229,59 +229,69 @@ class GateManagementWindow:
             variable=self.rename_mode,
             value="terminal",
             command=self._on_rename_mode_change,
-            font=("Arial", 14)
+            font=("Arial", 14),
         ).pack(side="left")
 
         # Gate rename fields
         self.gate_rename_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
         self.gate_rename_row.pack(fill="x", padx=10, pady=0)
-        self.gate_label = _label(self.gate_rename_row, text="Gate:", size=16, padx=(0, 2), side="left")
+        self.gate_label = _label(
+            self.gate_rename_row, text="Gate:", size=16, padx=(0, 2), side="left"
+        )
         self.rename_gate_entry = ctk.CTkEntry(
             self.gate_rename_row,
             corner_radius=6,
             border_width=1,
-            border_color=c('charcoal_lighter'),
-            width=50
+            border_color=c("charcoal_lighter"),
+            width=50,
         )
         self.rename_gate_entry.pack(side="left", padx=(0, 15))
-        self.terminal_label = _label(self.gate_rename_row, text="Terminal:", size=16, padx=(0, 2), side="left")
+        self.terminal_label = _label(
+            self.gate_rename_row, text="Terminal:", size=16, padx=(0, 2), side="left"
+        )
         self.rename_terminal_entry = ctk.CTkEntry(
             self.gate_rename_row,
             corner_radius=6,
             border_width=1,
-            border_color=c('charcoal_lighter'),
-            width=50
+            border_color=c("charcoal_lighter"),
+            width=50,
         )
         self.rename_terminal_entry.pack(side="left")
 
         # Terminal rename fields
         self.terminal_rename_row = ctk.CTkFrame(rename_frame, fg_color="transparent")
-        self.current_terminal_label = _label(self.terminal_rename_row, text="Current:", size=16, padx=(0, 2), side="left")
+        self.current_terminal_label = _label(
+            self.terminal_rename_row, text="Current:", size=16, padx=(0, 2), side="left"
+        )
         self.rename_current_terminal_entry = ctk.CTkEntry(
             self.terminal_rename_row,
             corner_radius=6,
             border_width=1,
-            border_color=c('charcoal_lighter'),
-            width=80
+            border_color=c("charcoal_lighter"),
+            width=80,
         )
         self.rename_current_terminal_entry.pack(side="left", padx=(0, 15))
-        self.new_terminal_label = _label(self.terminal_rename_row, text="New:", size=16, padx=(0, 2), side="left")
+        self.new_terminal_label = _label(
+            self.terminal_rename_row, text="New:", size=16, padx=(0, 2), side="left"
+        )
         self.rename_new_terminal_entry = ctk.CTkEntry(
             self.terminal_rename_row,
             corner_radius=6,
             border_width=1,
-            border_color=c('charcoal_lighter'),
-            width=80
+            border_color=c("charcoal_lighter"),
+            width=80,
         )
         self.rename_new_terminal_entry.pack(side="left")
 
         # New gate key field (only for gate mode)
-        self.new_key_label_widget = _label(rename_frame, text="New gate key:", size=16, pady=(5, 0), padx=(10, 0))
+        self.new_key_label_widget = _label(
+            rename_frame, text="New gate key:", size=16, pady=(5, 0), padx=(10, 0)
+        )
         self.new_gate_key_entry = ctk.CTkEntry(
             rename_frame,
             corner_radius=6,
             border_width=1,
-            border_color=c('charcoal_lighter')
+            border_color=c("charcoal_lighter"),
         )
         self.new_gate_key_entry.pack(fill="x", padx=10, pady=(0, 5))
 
@@ -290,11 +300,11 @@ class GateManagementWindow:
             self._on_rename_click,
             text="Rename Gate",
             height=32,
-            fg_color=c('sage'),
-            hover_color=c('sage', hover=True),
-            text_color=c('sage_dark'),
+            fg_color=c("sage"),
+            hover_color=c("sage", hover=True),
+            text_color=c("sage_dark"),
             padx=(10, 10),
-            pady=(0, 10)
+            pady=(0, 10),
         )
 
         # Initialize UI to gate mode
@@ -304,13 +314,18 @@ class GateManagementWindow:
         prefix_suffix_frame = ctk.CTkFrame(right_frame)
         prefix_suffix_frame.pack(fill="x", padx=10, pady=10)
 
-        _label(prefix_suffix_frame, text="Add Prefix/Suffix to Gate(s)", size=16, pady=(10, 5))
+        _label(
+            prefix_suffix_frame,
+            text="Add Prefix/Suffix to Gate(s)",
+            size=16,
+            pady=(10, 5),
+        )
         _label(
             prefix_suffix_frame,
             text="Select gate(s) or terminal in tree",
             size=12,
             pady=(0, 5),
-            padx=(10, 0)
+            padx=(10, 0),
         )
 
         prefix_suffix_row = ctk.CTkFrame(prefix_suffix_frame, fg_color="transparent")
@@ -320,8 +335,8 @@ class GateManagementWindow:
             prefix_suffix_row,
             corner_radius=6,
             border_width=1,
-            border_color=c('charcoal_lighter'),
-            width=80
+            border_color=c("charcoal_lighter"),
+            width=80,
         )
         self.prefix_entry.pack(side="left", padx=(0, 15))
         _label(prefix_suffix_row, text="Suffix:", size=16, padx=(0, 2), side="left")
@@ -329,8 +344,8 @@ class GateManagementWindow:
             prefix_suffix_row,
             corner_radius=6,
             border_width=1,
-            border_color=c('charcoal_lighter'),
-            width=80
+            border_color=c("charcoal_lighter"),
+            width=80,
         )
         self.suffix_entry.pack(side="left")
 
@@ -339,30 +354,32 @@ class GateManagementWindow:
             self.add_prefix_suffix,
             text="Apply to Selected Gate(s)",
             height=32,
-            fg_color=c('sage'),
-            hover_color=c('sage', hover=True),
-            text_color=c('sage_dark'),
+            fg_color=c("sage"),
+            hover_color=c("sage", hover=True),
+            text_color=c("sage_dark"),
             padx=(10, 10),
-            pady=(5, 10)
+            pady=(5, 10),
         )
 
         if airport:
             self.load_data()
         else:
-            self.log_status("No airport detected. Start monitoring or manually specify airport in main window.")
+            self.log_status(
+                "No airport detected. Start monitoring or manually specify airport in main window."
+            )
 
     def _parse_gate_size(self, full_text: str) -> str:
         """Extract aircraft size from gate full_text with defensive parsing."""
         if not full_text:
             return "Unknown"
-        match = re.search(r'(Small|Medium|Heavy|Ramp GA \w+)', full_text)
+        match = re.search(r"(Small|Medium|Heavy|Ramp GA \w+)", full_text)
         return match.group(1) if match else "Unknown"
 
     def _parse_jetway_count(self, full_text: str) -> str:
         """Extract jetway configuration from gate full_text with defensive parsing."""
         if not full_text:
             return "-"
-        match = re.search(r'(\d+x\s*/J|None)', full_text)
+        match = re.search(r"(\d+x\s*/J|None)", full_text)
         return match.group(1).strip() if match else "-"
 
     def reset_data(self):
@@ -371,7 +388,7 @@ class GateManagementWindow:
             "Reset Airport Data",
             f"This will delete the interpreted data for {self.airport} and re-parse from raw data.\n\n"
             "Are you sure you want to continue?",
-            icon='warning'
+            icon="warning",
         )
 
         if not confirm:
@@ -405,7 +422,7 @@ class GateManagementWindow:
                         "Data Reset Complete",
                         f"Interpreted data for {self.airport} has been reset.\n\n"
                         "Please restart the application or re-run monitoring to re-parse the airport.",
-                        icon='info'
+                        icon="info",
                     )
             else:
                 self.log_status("No interpreted file to delete - already reset")
@@ -426,10 +443,11 @@ class GateManagementWindow:
         terminals = self.data.get("terminals", {})
         for terminal_name, gates in terminals.items():
             terminal_node = self.tree.insert(
-                "", "end",
+                "",
+                "end",
                 text=f"Terminal: {terminal_name}",
-                values=('', '', terminal_name, ''),
-                open=True
+                values=("", "", terminal_name, ""),
+                open=True,
             )
 
             for gate_num, gate_info in gates.items():
@@ -438,16 +456,19 @@ class GateManagementWindow:
                 jetways = self._parse_jetway_count(full_text)
 
                 self.tree.insert(
-                    terminal_node, "end",
+                    terminal_node,
+                    "end",
                     text=f"Gate {gate_num}",
-                    values=(size, jetways, terminal_name, full_text or "-")
+                    values=(size, jetways, terminal_name, full_text or "-"),
                 )
 
     def load_data(self):
         """Load JSON data from file into working copy"""
         if not os.path.exists(self.json_path):
             self.log_status(f"Airport data not found at {self.json_path}")
-            self.log_status("Start monitoring to generate data or manually specify airport.")
+            self.log_status(
+                "Start monitoring to generate data or manually specify airport."
+            )
             return
 
         try:
@@ -470,7 +491,7 @@ class GateManagementWindow:
         gate_items = []
 
         for item in selection:
-            item_text = self.tree.item(item, 'text')
+            item_text = self.tree.item(item, "text")
             if item_text.startswith("Terminal: "):
                 terminal_items.append(item)
             elif item_text.startswith("Gate "):
@@ -487,48 +508,52 @@ class GateManagementWindow:
                 for child in children:
                     self.tree.selection_add(child)
 
-                terminal_name = self.tree.item(terminal_item, 'values')[2]
+                terminal_name = self.tree.item(terminal_item, "values")[2]
 
                 # Also fill terminal rename field
-                self.rename_current_terminal_entry.delete(0, 'end')
+                self.rename_current_terminal_entry.delete(0, "end")
                 self.rename_current_terminal_entry.insert(0, terminal_name)
 
-                self.log_status(f"Selected {len(children)} gates from Terminal {terminal_name}")
+                self.log_status(
+                    f"Selected {len(children)} gates from Terminal {terminal_name}"
+                )
 
         if gate_items:
             if len(gate_items) == 1:
                 item = gate_items[0]
-                item_text = self.tree.item(item, 'text')
-                values = self.tree.item(item, 'values')
+                item_text = self.tree.item(item, "text")
+                values = self.tree.item(item, "values")
 
                 gate_num = item_text.replace("Gate ", "")
                 terminal = values[2]
                 full_text = values[3]
 
-                self.gate_entry.delete(0, 'end')
+                self.gate_entry.delete(0, "end")
                 self.gate_entry.insert(0, gate_num)
-                self.from_terminal_entry.delete(0, 'end')
+                self.from_terminal_entry.delete(0, "end")
                 self.from_terminal_entry.insert(0, terminal)
 
-                self.rename_gate_entry.delete(0, 'end')
+                self.rename_gate_entry.delete(0, "end")
                 self.rename_gate_entry.insert(0, gate_num)
-                self.rename_terminal_entry.delete(0, 'end')
+                self.rename_terminal_entry.delete(0, "end")
                 self.rename_terminal_entry.insert(0, terminal)
-                self.new_gate_key_entry.delete(0, 'end')
+                self.new_gate_key_entry.delete(0, "end")
                 self.new_gate_key_entry.insert(0, gate_num)
 
                 self.log_status(f"Selected: Gate {gate_num} in Terminal {terminal}")
             else:
                 first_item = gate_items[0]
-                values = self.tree.item(first_item, 'values')
+                values = self.tree.item(first_item, "values")
                 terminal = values[2]
 
-                self.gate_entry.delete(0, 'end')
+                self.gate_entry.delete(0, "end")
                 self.gate_entry.insert(0, f"{len(gate_items)} gates")
-                self.from_terminal_entry.delete(0, 'end')
+                self.from_terminal_entry.delete(0, "end")
                 self.from_terminal_entry.insert(0, terminal)
 
-                self.log_status(f"Selected {len(gate_items)} gates from Terminal {terminal}")
+                self.log_status(
+                    f"Selected {len(gate_items)} gates from Terminal {terminal}"
+                )
 
     def _on_rename_mode_change(self):
         """Toggle UI fields based on rename mode (gate vs terminal)"""
@@ -597,11 +622,11 @@ class GateManagementWindow:
             gates_to_move = []
 
             for item in selection:
-                item_text = self.tree.item(item, 'text')
+                item_text = self.tree.item(item, "text")
                 if not item_text.startswith("Gate "):
                     continue  # Skip terminal nodes
 
-                values = self.tree.item(item, 'values')
+                values = self.tree.item(item, "values")
                 gate_num = item_text.replace("Gate ", "")
                 from_terminal = values[2]
 
@@ -624,7 +649,7 @@ class GateManagementWindow:
                     f"{conflict_list}\n\n"
                     f"Moving will overwrite the existing gate(s).\n\n"
                     f"Do you want to continue?",
-                    icon='warning'
+                    icon="warning",
                 )
 
                 if not proceed:
@@ -643,7 +668,9 @@ class GateManagementWindow:
                     continue
 
                 if gate_num not in terminals[from_terminal]:
-                    errors.append(f"Gate {gate_num} not found in Terminal {from_terminal}")
+                    errors.append(
+                        f"Gate {gate_num} not found in Terminal {from_terminal}"
+                    )
                     continue
 
                 # Move the gate (will overwrite if conflict exists)
@@ -713,7 +740,7 @@ class GateManagementWindow:
                     f"Renaming will merge Terminal {old_terminal} into Terminal {new_terminal}.\n"
                     f"Gates with the same number will be overwritten.\n\n"
                     f"Do you want to continue?",
-                    icon='warning'
+                    icon="warning",
                 )
                 if not proceed:
                     self.log_status("Rename cancelled")
@@ -723,7 +750,9 @@ class GateManagementWindow:
                 old_gates = terminals[old_terminal]
                 for gate_num, gate_data in old_gates.items():
                     gate_data["terminal"] = new_terminal
-                    gate_data["position_id"] = f"Terminal {new_terminal} Gate {gate_num}"
+                    gate_data["position_id"] = (
+                        f"Terminal {new_terminal} Gate {gate_num}"
+                    )
                     terminals[new_terminal][gate_num] = gate_data
 
                 # Remove old terminal
@@ -737,7 +766,9 @@ class GateManagementWindow:
                 terminals[new_terminal] = {}
                 for gate_num, gate_data in terminals[old_terminal].items():
                     gate_data["terminal"] = new_terminal
-                    gate_data["position_id"] = f"Terminal {new_terminal} Gate {gate_num}"
+                    gate_data["position_id"] = (
+                        f"Terminal {new_terminal} Gate {gate_num}"
+                    )
                     terminals[new_terminal][gate_num] = gate_data
 
                 # Remove old terminal
@@ -782,11 +813,11 @@ class GateManagementWindow:
             gates_with_existing = []
 
             for item in selection:
-                item_text = self.tree.item(item, 'text')
+                item_text = self.tree.item(item, "text")
                 if not item_text.startswith("Gate "):
                     continue  # Skip terminal nodes
 
-                values = self.tree.item(item, 'values')
+                values = self.tree.item(item, "values")
                 gate_num = item_text.replace("Gate ", "")
                 terminal = values[2]
 
@@ -794,7 +825,9 @@ class GateManagementWindow:
 
                 # Check if this gate already appears to have a prefix/suffix
                 # (Simple heuristic: if adding prefix/suffix makes it longer or changes letters)
-                has_existing = (prefix and gate_num.startswith(prefix)) or (suffix and gate_num.endswith(suffix))
+                has_existing = (prefix and gate_num.startswith(prefix)) or (
+                    suffix and gate_num.endswith(suffix)
+                )
 
                 gates_to_modify.append((item, gate_num, terminal, new_gate_key))
                 if has_existing:
@@ -805,6 +838,7 @@ class GateManagementWindow:
             if gates_with_existing:
                 # Custom dialog with 3 buttons
                 from tkinter import messagebox
+
                 response = messagebox.askquestion(
                     "Gates with Existing Prefix/Suffix",
                     f"Some gates may already have prefix/suffix:\n\n"
@@ -812,11 +846,11 @@ class GateManagementWindow:
                     f"Click 'Yes' to apply to all (including those with existing)\n"
                     f"Click 'No' to skip those gates and only apply to others\n"
                     f"(Click Cancel in the next dialog to cancel entirely)",
-                    icon='warning',
-                    type='yesno'
+                    icon="warning",
+                    type="yesno",
                 )
 
-                if response == 'yes':
+                if response == "yes":
                     mode = "apply_all"
                 else:
                     mode = "skip"
@@ -828,7 +862,9 @@ class GateManagementWindow:
 
             for item, gate_num, terminal, new_gate_key in gates_to_modify:
                 # Skip if gate has existing prefix/suffix and mode is skip
-                has_existing = (prefix and gate_num.startswith(prefix)) or (suffix and gate_num.endswith(suffix))
+                has_existing = (prefix and gate_num.startswith(prefix)) or (
+                    suffix and gate_num.endswith(suffix)
+                )
                 if mode == "skip" and has_existing:
                     skipped_count += 1
                     continue
@@ -840,7 +876,9 @@ class GateManagementWindow:
 
                 # Check if gate exists
                 if gate_num not in terminals[terminal]:
-                    self.log_status(f"ERROR: Gate {gate_num} not found in Terminal {terminal}")
+                    self.log_status(
+                        f"ERROR: Gate {gate_num} not found in Terminal {terminal}"
+                    )
                     continue
 
                 # Check if new key already exists
@@ -864,10 +902,14 @@ class GateManagementWindow:
                 self.refresh_tree()
 
             if skipped_count > 0:
-                self.log_status(f"Skipped {skipped_count} gate(s) with existing prefix/suffix")
+                self.log_status(
+                    f"Skipped {skipped_count} gate(s) with existing prefix/suffix"
+                )
 
             if conflicts:
-                conflict_msg = ", ".join([f"{t}:{old}→{new}" for t, old, new in conflicts])
+                conflict_msg = ", ".join(
+                    [f"{t}:{old}→{new}" for t, old, new in conflicts]
+                )
                 self.log_status(f"Conflicts (gates already exist): {conflict_msg}")
 
             if modified_count == 0:
@@ -915,7 +957,7 @@ class GateManagementWindow:
                     f"Gate {new_gate_key} already exists in Terminal {terminal}.\n\n"
                     f"Renaming will overwrite the existing gate.\n\n"
                     f"Do you want to continue?",
-                    icon='warning'
+                    icon="warning",
                 )
                 if not proceed:
                     self.log_status("Rename cancelled")
@@ -939,8 +981,10 @@ class GateManagementWindow:
 
     def _alphanumeric_key(self, s):
         """Natural sorting key: splits 'A10' into ['A', 10] for proper comparison"""
-        return [int(text) if text.isdigit() else text.lower()
-                for text in re.split('([0-9]+)', s)]
+        return [
+            int(text) if text.isdigit() else text.lower()
+            for text in re.split("([0-9]+)", s)
+        ]
 
     def save_data(self):
         """Save modified data back to JSON with alphanumeric sorting"""
@@ -954,11 +998,15 @@ class GateManagementWindow:
             terminals = self.data.get("terminals", {})
 
             # Sort terminals first
-            sorted_terminals = sorted(terminals.items(), key=lambda x: self._alphanumeric_key(x[0]))
+            sorted_terminals = sorted(
+                terminals.items(), key=lambda x: self._alphanumeric_key(x[0])
+            )
 
             for terminal_name, gates in sorted_terminals:
                 # Sort gates by their gate number/name
-                sorted_gates = dict(sorted(gates.items(), key=lambda x: self._alphanumeric_key(x[0])))
+                sorted_gates = dict(
+                    sorted(gates.items(), key=lambda x: self._alphanumeric_key(x[0]))
+                )
                 sorted_data["terminals"][terminal_name] = sorted_gates
 
             with open(self.json_path, "w") as f:
@@ -969,7 +1017,9 @@ class GateManagementWindow:
             self.has_unsaved_changes = False
             self.refresh_tree()
 
-            self.log_status("Changes saved successfully (gates sorted alphanumerically)")
+            self.log_status(
+                "Changes saved successfully (gates sorted alphanumerically)"
+            )
             logging.info("Gate configuration saved with alphanumeric sorting")
 
         except Exception as e:
@@ -981,7 +1031,7 @@ class GateManagementWindow:
             response = messagebox.askyesnocancel(
                 "Unsaved Changes",
                 "You have unsaved changes. Do you want to save before closing?",
-                icon='warning'
+                icon="warning",
             )
 
             if response is True:  # Yes - save and close

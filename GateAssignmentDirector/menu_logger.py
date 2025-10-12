@@ -163,14 +163,14 @@ class MenuLogger:
         spot_type = "gates"
         patterns = None
 
-        for keyword in self.config.position_keywords['gsx_gate']:
+        for keyword in self.config.position_keywords["gsx_gate"]:
             if keyword in menu_title:
                 patterns = GATE_PATTERNS
                 spot_type = "gates"
                 break
 
         if not patterns:
-            for keyword in self.config.position_keywords['gsx_parking']:
+            for keyword in self.config.position_keywords["gsx_parking"]:
                 if keyword in menu_title:
                     patterns = PARKING_PATTERNS
                     spot_type = "spots"
@@ -196,9 +196,15 @@ class MenuLogger:
                         }
 
                         if navigation_info:
-                            spot_data["level_0_page"] = navigation_info.get("level_0_page")
-                            spot_data["level_0_option_index"] = navigation_info.get("level_0_option_index")
-                            spot_data["level_1_next_clicks"] = navigation_info.get("level_1_next_clicks")
+                            spot_data["level_0_page"] = navigation_info.get(
+                                "level_0_page"
+                            )
+                            spot_data["level_0_option_index"] = navigation_info.get(
+                                "level_0_option_index"
+                            )
+                            spot_data["level_1_next_clicks"] = navigation_info.get(
+                                "level_1_next_clicks"
+                            )
 
                         self.menu_map[f"available_{spot_type}"][spot_id] = spot_data
                     break
@@ -243,7 +249,9 @@ class MenuLogger:
         - "All Parking positions" (no specific name) → "Parking" (fallback for parking)
         """
         # Pattern: <Type> - <Specific Name> (<Range>)
-        match = re.search(r'(Terminal|Apron|Gate|Parking)\s*-\s*([^(]+)', menu_title, re.IGNORECASE)
+        match = re.search(
+            r"(Terminal|Apron|Gate|Parking)\s*-\s*([^(]+)", menu_title, re.IGNORECASE
+        )
         if match:
             specific_name = match.group(2).strip()
 
@@ -252,7 +260,11 @@ class MenuLogger:
                 return specific_name
         else:
             # Try "All X Positions" pattern (e.g., "All Gate A Positions")
-            match = re.search(r'All (Gate|Ramp|Stand)\s*([A-Za-z0-9]?) Positions', menu_title, re.IGNORECASE)
+            match = re.search(
+                r"All (Gate|Ramp|Stand)\s*([A-Za-z0-9]?) Positions",
+                menu_title,
+                re.IGNORECASE,
+            )
             if match:
                 extracted = match.group(2) or ""
                 # Only return if we got something meaningful, otherwise continue to fallback
@@ -260,7 +272,7 @@ class MenuLogger:
                     return extracted
 
         # No specific terminal name found, check if menu is about parking using config keywords
-        for keyword in self.config.position_keywords.get('gsx_parking', []):
+        for keyword in self.config.position_keywords.get("gsx_parking", []):
             if keyword.lower() in menu_title.lower():
                 return "Parking"
 
@@ -277,13 +289,16 @@ class MenuLogger:
         """
         # Remove known keywords from config
         clean_id = position_id
-        for keyword in self.config.position_keywords.get('gsx_gate', []) + \
-                       self.config.position_keywords.get('gsx_parking', []):
-            clean_id = re.sub(rf'\b{keyword}\b\s*', '', clean_id, flags=re.IGNORECASE)
+        for keyword in self.config.position_keywords.get(
+            "gsx_gate", []
+        ) + self.config.position_keywords.get("gsx_parking", []):
+            clean_id = re.sub(rf"\b{keyword}\b\s*", "", clean_id, flags=re.IGNORECASE)
 
         return clean_id.strip()
 
-    def _infer_terminal_from_gate(self, gate_id: str, position_type: str) -> Optional[str]:
+    def _infer_terminal_from_gate(
+        self, gate_id: str, position_type: str
+    ) -> Optional[str]:
         """
         Infer terminal from gate identifier using heuristic rules.
         This is used as fallback when menu title doesn't provide specific terminal info.
