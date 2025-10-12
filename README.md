@@ -69,10 +69,11 @@ Automatically assigns gates in GSX based on gate information from SayIntentions 
   
 **Manually parsing gates at an airport**  
 If you want to manually parse and edit gates at an airport of your liking, you should use the override function:
-1. Click on "Manual Override"
-2. Specify the ICAO of the airport you want to parse/edit
-3. Click "Apply Override"
-4. Proceed with "Start Monitoring". Choose "Edit gates at current airport" instead if you have already parsed the airport once.
+1. Make sure you spawn on/move to a runway for GSX to show all applicable gate options.
+2. Click on "Manual Override"
+3. Specify the ICAO of the airport you want to parse/edit
+4. Click "Apply Override"
+5. Proceed with "Start Monitoring". Choose "Edit gates at current airport" instead if you have already parsed the airport once.
 
 This also applies if something has went wrong and you want to use the Director to manually assign a specific gate.  
 
